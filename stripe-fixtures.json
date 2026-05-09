@@ -1,0 +1,85 @@
+{
+  "_meta": {
+    "template_version": 0
+  },
+  "fixtures": [
+    {
+      "name": "starter",
+      "path": "/v1/products",
+      "method": "post",
+      "params": {
+        "name": "Starter",
+        "description": "For individuals and small projects."
+      }
+    },
+    {
+      "name": "price_starter_month",
+      "path": "/v1/prices",
+      "method": "post",
+      "params": {
+        "product": "${starter:id}",
+        "currency": "usd",
+        "billing_scheme": "per_unit",
+        "unit_amount": 900,
+        "recurring": {
+          "interval": "month",
+          "interval_count": 1
+        }
+      }
+    },
+    {
+      "name": "price_starter_year",
+      "path": "/v1/prices",
+      "method": "post",
+      "params": {
+        "product": "${starter:id}",
+        "currency": "usd",
+        "billing_scheme": "per_unit",
+        "unit_amount": 9000,
+        "recurring": {
+          "interval": "year",
+          "interval_count": 1
+        }
+      }
+    },
+    {
+      "name": "pro",
+      "path": "/v1/products",
+      "method": "post",
+      "params": {
+        "name": "Pro",
+        "description": "For growing teams and businesses."
+      }
+    },
+    {
+      "name": "price_pro_month",
+      "path": "/v1/prices",
+      "method": "post",
+      "params": {
+        "product": "${pro:id}",
+        "currency": "usd",
+        "billing_scheme": "per_unit",
+        "unit_amount": 2900,
+        "recurring": {
+          "interval": "month",
+          "interval_count": 1
+        }
+      }
+    },
+    {
+      "name": "price_pro_year",
+      "path": "/v1/prices",
+      "method": "post",
+      "params": {
+        "product": "${pro:id}",
+        "currency": "usd",
+        "billing_scheme": "per_unit",
+        "unit_amount": 29000,
+        "recurring": {
+          "interval": "year",
+          "interval_count": 1
+        }
+      }
+    }
+  ]
+}

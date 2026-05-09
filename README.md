@@ -1,4 +1,4 @@
-# MyApp
+# CVere
 
 A clean SaaS app built with Next.js, Supabase, and Stripe. Handles authentication, subscription billing, webhook synchronization, and transactional emails out of the box so you can focus on building your product.
 
@@ -23,7 +23,7 @@ A clean SaaS app built with Next.js, Supabase, and Stripe. Handles authenticatio
 
 ## Features
 
-- **Email authentication** -- magic link (email OTP) login via Supabase Auth
+- **Email authentication** -- email + password login via Supabase Auth (with email confirmation on signup)
 - **Type-safe server actions** -- `next-safe-action` with Zod validation, auth middleware, and composable action clients
 - **Form validation** -- React Hook Form with Zod resolver for client-side validation sharing schemas with server actions
 - **URL state management** -- `nuqs` adapter ready for type-safe search params (filters, pagination, tabs)
@@ -52,10 +52,10 @@ src/
 │   │   ├── login/page.tsx        # Login page
 │   │   ├── signup/page.tsx       # Signup page
 │   │   ├── auth-page.tsx         # Shared auth page logic
-│   │   ├── auth-ui.tsx           # Email auth form
-│   │   ├── auth-actions.ts       # Safe actions (signInWithEmail, signInWithOAuth, signOut)
+│   │   ├── auth-ui.tsx           # Email + password auth form
+│   │   ├── auth-actions.ts       # Safe actions (signInWithPassword, signUpWithPassword, signInWithOAuth, signOut)
 │   │   └── auth/callback/
-│   │       └── route.ts          # Magic link callback handler
+│   │       └── route.ts          # OAuth + email confirmation callback handler
 │   ├── (account)/                # Protected route group
 │   │   ├── account/
 │   │   │   ├── page.tsx          # Account dashboard
@@ -143,7 +143,7 @@ The initial migration creates five tables with row-level security:
 
 ```bash
 git clone <your-repo-url>
-cd myapp
+cd cvere
 npm install   # or bun install
 ```
 
