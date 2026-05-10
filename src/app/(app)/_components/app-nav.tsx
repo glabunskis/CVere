@@ -11,7 +11,7 @@ type NavItem = {
 };
 
 const items: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/dashboard', label: 'Previewer' },
   { href: '/profile', label: 'Profile' },
   { href: '/achievements', label: 'Achievements' },
   { href: '/vacancies', label: 'Vacancies' },

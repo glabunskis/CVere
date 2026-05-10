@@ -12,7 +12,7 @@ import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-clie
 
 import { applyAdviceSchema, dismissAdviceSchema, reviewCvSchema } from '../schemas';
 
-export const reviewCv = authActionClient.schema(reviewCvSchema).action(async ({ parsedInput, ctx }) => {
+export const reviewCv = authActionClient.inputSchema(reviewCvSchema).action(async ({ parsedInput, ctx }) => {
   const supabase = await createSupabaseServerClient();
   const ai = getAiProvider();
 
@@ -60,7 +60,7 @@ export const reviewCv = authActionClient.schema(reviewCvSchema).action(async ({ 
   return { ok: true as const, count: notes.length };
 });
 
-export const applyAdvice = authActionClient.schema(applyAdviceSchema).action(async ({ parsedInput, ctx }) => {
+export const applyAdvice = authActionClient.inputSchema(applyAdviceSchema).action(async ({ parsedInput, ctx }) => {
   const supabase = await createSupabaseServerClient();
 
   const { data: note, error: fetchError } = await supabase
@@ -125,7 +125,7 @@ export const applyAdvice = authActionClient.schema(applyAdviceSchema).action(asy
   return { ok: true as const };
 });
 
-export const dismissAdvice = authActionClient.schema(dismissAdviceSchema).action(async ({ parsedInput, ctx }) => {
+export const dismissAdvice = authActionClient.inputSchema(dismissAdviceSchema).action(async ({ parsedInput, ctx }) => {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from('advice_note')

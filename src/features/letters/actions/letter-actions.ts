@@ -17,7 +17,7 @@ import {
 } from '../schemas';
 
 export const generateCoverLetter = authActionClient
-  .schema(generateCoverLetterSchema)
+  .inputSchema(generateCoverLetterSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
 
@@ -61,7 +61,7 @@ export const generateCoverLetter = authActionClient
   });
 
 export const updateCoverLetter = authActionClient
-  .schema(updateCoverLetterSchema)
+  .inputSchema(updateCoverLetterSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase
@@ -75,7 +75,7 @@ export const updateCoverLetter = authActionClient
   });
 
 export const deleteCoverLetter = authActionClient
-  .schema(deleteCoverLetterSchema)
+  .inputSchema(deleteCoverLetterSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase

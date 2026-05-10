@@ -8,7 +8,7 @@ import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-clie
 import { getURL } from '@/utils/get-url';
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 

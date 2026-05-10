@@ -9,7 +9,7 @@ import { getOrCreateProfile } from '../controllers/get-profile';
 import { deleteProfileChildSchema, profileSectionInputSchema } from '../schemas';
 
 export const updateProfileSection = authActionClient
-  .schema(profileSectionInputSchema)
+  .inputSchema(profileSectionInputSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const profile = await getOrCreateProfile();
@@ -149,7 +149,7 @@ export const updateProfileSection = authActionClient
   });
 
 export const deleteProfileChild = authActionClient
-  .schema(deleteProfileChildSchema)
+  .inputSchema(deleteProfileChildSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const section = parsedInput.section;

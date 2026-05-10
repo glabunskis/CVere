@@ -3,11 +3,13 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
+import { getOrCreateCvPreferences } from '@/features/previewer/controllers/get-cv-preferences';
 import { profileSnapshotSchema } from '@/features/tailored/schemas';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 import { CoverLetter } from '@/pdf/CoverLetter';
 import { Cv } from '@/pdf/Cv';
+import { DEFAULT_ACCENT } from '@/pdf/theme';
 import { renderToBuffer } from '@react-pdf/renderer';
 
 import { exportPdfSchema } from '../schemas';
@@ -22,12 +24,16 @@ type Sections = {
   emphasis?: string[];
 };
 
-export const exportPdf = authActionClient.schema(exportPdfSchema).action(async ({ parsedInput, ctx }) => {
+export const exportPdf = authActionClient.inputSchema(exportPdfSchema).action(async ({ parsedInput, ctx }) => {
   const supabase = await createSupabaseServerClient();
 
   const userMetadata = (ctx.user.user_metadata ?? {}) as { full_name?: string };
   const identity = userMetadata.full_name ?? ctx.user.email ?? '[MISSING] name';
   const contactLine = ctx.user.email ?? undefined;
+
+  const prefs = await getOrCreateCvPreferences();
+  const template = prefs?.template ?? 'single-column';
+  const accent = prefs?.accent_hex || DEFAULT_ACCENT;
 
   let buffer: Buffer;
   let path: string;
@@ -51,7 +57,14 @@ export const exportPdf = authActionClient.schema(exportPdfSchema).action(async (
       : {}) as Sections;
 
     buffer = await renderToBuffer(
-      <Cv snapshot={snapshot.data} sections={sections} identityName={identity} contactLine={contactLine} />,
+      <Cv
+        template={template}
+        snapshot={snapshot.data}
+        sections={sections}
+        identityName={identity}
+        contactLine={contactLine}
+        accent={accent}
+      />,
     );
     path = `${ctx.user.id}/${row.slug}.pdf`;
     updateTable = 'tailored_cv';
@@ -66,7 +79,7 @@ export const exportPdf = authActionClient.schema(exportPdfSchema).action(async (
     if (error || !row) throw new Error(error?.message ?? 'Cover letter not found');
 
     buffer = await renderToBuffer(
-      <CoverLetter body={row.body} identityName={identity} contactLine={contactLine} />,
+      <CoverLetter body={row.body} identityName={identity} contactLine={contactLine} accent={accent} />,
     );
     path = `${ctx.user.id}/${row.slug}.pdf`;
     updateTable = 'cover_letter';
@@ -92,7 +105,7 @@ export const exportPdf = authActionClient.schema(exportPdfSchema).action(async (
 const signedDownloadSchema = z.object({ path: z.string().min(1) });
 
 export const createSignedDownload = authActionClient
-  .schema(signedDownloadSchema)
+  .inputSchema(signedDownloadSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const ownerPrefix = `${ctx.user.id}/`;

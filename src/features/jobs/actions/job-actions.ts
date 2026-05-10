@@ -13,7 +13,7 @@ import {
 } from '../schemas';
 
 export const ingestJobDescription = authActionClient
-  .schema(ingestJobDescriptionSchema)
+  .inputSchema(ingestJobDescriptionSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const ai = getAiProvider();
@@ -38,7 +38,7 @@ export const ingestJobDescription = authActionClient
   });
 
 export const reExtractJobDescription = authActionClient
-  .schema(reExtractJobDescriptionSchema)
+  .inputSchema(reExtractJobDescriptionSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { data: row, error: fetchError } = await supabase
@@ -64,7 +64,7 @@ export const reExtractJobDescription = authActionClient
   });
 
 export const deleteJobDescription = authActionClient
-  .schema(deleteJobDescriptionSchema)
+  .inputSchema(deleteJobDescriptionSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase

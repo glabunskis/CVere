@@ -219,6 +219,47 @@ export type Database = {
         }
         Relationships: []
       }
+      cv_preferences: {
+        Row: {
+          accent_hex: string
+          created_at: string
+          id: string
+          master_pdf_path: string | null
+          pinned_tailored_cv_id: string | null
+          template: Database["public"]["Enums"]["cv_template"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accent_hex?: string
+          created_at?: string
+          id?: string
+          master_pdf_path?: string | null
+          pinned_tailored_cv_id?: string | null
+          template?: Database["public"]["Enums"]["cv_template"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accent_hex?: string
+          created_at?: string
+          id?: string
+          master_pdf_path?: string | null
+          pinned_tailored_cv_id?: string | null
+          template?: Database["public"]["Enums"]["cv_template"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cv_preferences_pinned_tailored_cv_id_fkey"
+            columns: ["pinned_tailored_cv_id"]
+            isOneToOne: false
+            referencedRelation: "tailored_cv"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       education: {
         Row: {
           created_at: string
@@ -839,6 +880,7 @@ export type Database = {
         | "languages"
         | "global"
       cv_status: "draft" | "final"
+      cv_template: "single-column" | "two-column"
       language_proficiency:
         | "beginner"
         | "elementary"
@@ -1008,6 +1050,7 @@ export const Constants = {
         "global",
       ],
       cv_status: ["draft", "final"],
+      cv_template: ["single-column", "two-column"],
       language_proficiency: [
         "beginner",
         "elementary",

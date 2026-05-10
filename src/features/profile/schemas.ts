@@ -14,7 +14,7 @@ export const summarySchema = z.object({
 export type SummaryInput = z.infer<typeof summarySchema>;
 
 export const experienceSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.uuid().optional(),
   position: z.number().int().min(0).default(0),
   company: z.string().min(1, 'Company is required').max(200),
   role: z.string().min(1, 'Role is required').max(200),
@@ -29,7 +29,7 @@ export const experienceSchema = z.object({
 export type ExperienceInput = z.infer<typeof experienceSchema>;
 
 export const projectSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.uuid().optional(),
   position: z.number().int().min(0).default(0),
   name: z.string().min(1, 'Name is required').max(200),
   description: z.string().max(2000).nullable().optional(),
@@ -42,7 +42,7 @@ export type ProjectInput = z.infer<typeof projectSchema>;
 export const skillLevelSchema = z.enum(['beginner', 'intermediate', 'advanced', 'expert']);
 
 export const skillSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.uuid().optional(),
   position: z.number().int().min(0).default(0),
   name: z.string().min(1, 'Name is required').max(120),
   category: z.string().max(80).nullable().optional(),
@@ -51,7 +51,7 @@ export const skillSchema = z.object({
 export type SkillInput = z.infer<typeof skillSchema>;
 
 export const educationSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.uuid().optional(),
   position: z.number().int().min(0).default(0),
   institution: z.string().min(1, 'Institution is required').max(200),
   degree: z.string().max(200).nullable().optional(),
@@ -63,7 +63,7 @@ export const educationSchema = z.object({
 export type EducationInput = z.infer<typeof educationSchema>;
 
 export const certificationSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.uuid().optional(),
   position: z.number().int().min(0).default(0),
   name: z.string().min(1, 'Name is required').max(200),
   issuer: z.string().max(200).nullable().optional(),
@@ -83,7 +83,7 @@ export const languageProficiencySchema = z.enum([
 ]);
 
 export const languageSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.uuid().optional(),
   position: z.number().int().min(0).default(0),
   name: z.string().min(1, 'Name is required').max(120),
   proficiency: languageProficiencySchema.nullable().optional(),
@@ -104,7 +104,7 @@ export type ProfileSectionInput = z.infer<typeof profileSectionInputSchema>;
 
 export const deleteProfileChildSchema = z.object({
   section: z.enum(['experience', 'project', 'skill', 'education', 'certification', 'language']),
-  id: z.string().uuid(),
+  id: z.uuid(),
 });
 
 export type DeleteProfileChildInput = z.infer<typeof deleteProfileChildSchema>;

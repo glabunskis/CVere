@@ -1,0 +1,55 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[a4paper,margin=1.5cm]{geometry}
+\usepackage{fontawesome5}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{paracol}
+\usepackage{setspace}
+\usepackage{parskip}
+
+
+
+
+% --- Preamble Configuration ---
+\definecolor{accent}{HTML}{007066}
+\hypersetup{colorlinks=true,urlcolor=accent,linkcolor=accent}
+\renewcommand{\baselinestretch}{1.1}
+\setlength{\parindent}{0pt}
+\titleformat{\section}{\large\bfseries\color{accent}}{}{0em}{}[\titlerule]
+\titlespacing{\section}{0pt}{6pt}{4pt}
+\setlist[itemize]{leftmargin=1.5em, itemsep=1pt, topsep=1pt}
+
+
+\begin{document}
+
+% --- Header Section ---
+\begin{center}
+{\Huge \textbf{Glebs Labunskis}}\\[4pt] 
+\faMapMarker*~Delft, Netherlands \quad
+\faEnvelope~\href{mailto:glebs.labunskis@gmail.com}{glebs.labunskis@gmail.com} \quad
+\faPhone~(+371) 20213199 \quad
+\faLinkedin~\href{https://www.linkedin.com/in/glebs-labunskis/}{glebs-labunskis}
+\end{center}
+
+\vspace{0.3cm}
+\begin{paracol}{2}
+\setlength{\columnsep}{1cm}
+
+% ---------- Left Column: Experience & Education ----------
+\input{elements/summary}
+\input{elements/skills}
+\input{elements/projects}
+\input{elements/certs}
+\input{elements/lang}
+% ---------- Switch to Right Column: Summary, Projects, Skills, Certs, Languages ----------
+\switchcolumn
+\input{elements/experience}
+\input{elements/education}
+
+
+
+\end{paracol}
+
+\end{document}

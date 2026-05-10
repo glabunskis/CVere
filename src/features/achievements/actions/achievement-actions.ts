@@ -14,7 +14,7 @@ import {
 } from '../schemas';
 
 export const addAchievement = authActionClient
-  .schema(addAchievementSchema)
+  .inputSchema(addAchievementSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const ai = getAiProvider();
@@ -35,7 +35,7 @@ export const addAchievement = authActionClient
   });
 
 export const dismissAchievement = authActionClient
-  .schema(dismissAchievementSchema)
+  .inputSchema(dismissAchievementSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase
@@ -50,7 +50,7 @@ export const dismissAchievement = authActionClient
   });
 
 export const integrateAchievement = authActionClient
-  .schema(integrateAchievementSchema)
+  .inputSchema(integrateAchievementSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
 

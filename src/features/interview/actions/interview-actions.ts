@@ -20,7 +20,7 @@ import {
 } from '../schemas';
 
 export const addInterviewAnswer = authActionClient
-  .schema(addInterviewAnswerSchema)
+  .inputSchema(addInterviewAnswerSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase
@@ -32,7 +32,7 @@ export const addInterviewAnswer = authActionClient
   });
 
 export const updateInterviewAnswer = authActionClient
-  .schema(updateInterviewAnswerSchema)
+  .inputSchema(updateInterviewAnswerSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase
@@ -46,7 +46,7 @@ export const updateInterviewAnswer = authActionClient
   });
 
 export const deleteInterviewAnswer = authActionClient
-  .schema(deleteInterviewAnswerSchema)
+  .inputSchema(deleteInterviewAnswerSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase
@@ -60,7 +60,7 @@ export const deleteInterviewAnswer = authActionClient
   });
 
 export const draftInterviewAnswer = authActionClient
-  .schema(draftInterviewAnswerSchema)
+  .inputSchema(draftInterviewAnswerSchema)
   .action(async ({ parsedInput, ctx }) => {
     const profile = await getOrCreateProfile();
     if (!profile) throw new Error('Profile not available');
@@ -80,7 +80,7 @@ export const draftInterviewAnswer = authActionClient
   });
 
 export const reviewInterview = authActionClient
-  .schema(reviewInterviewSchema)
+  .inputSchema(reviewInterviewSchema)
   .action(async ({ ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { data: answers, error: fetchError } = await supabase
@@ -113,7 +113,7 @@ export const reviewInterview = authActionClient
   });
 
 export const applyInterviewAdvice = authActionClient
-  .schema(applyInterviewAdviceSchema)
+  .inputSchema(applyInterviewAdviceSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase
@@ -127,7 +127,7 @@ export const applyInterviewAdvice = authActionClient
   });
 
 export const dismissInterviewAdvice = authActionClient
-  .schema(dismissInterviewAdviceSchema)
+  .inputSchema(dismissInterviewAdviceSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase

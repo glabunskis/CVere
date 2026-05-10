@@ -17,7 +17,7 @@ import {
 } from '../schemas';
 import { buildProfileSnapshot, slugify } from '../snapshot';
 
-export const tailorCv = authActionClient.schema(tailorCvSchema).action(async ({ parsedInput, ctx }) => {
+export const tailorCv = authActionClient.inputSchema(tailorCvSchema).action(async ({ parsedInput, ctx }) => {
   const supabase = await createSupabaseServerClient();
 
   const { data: job, error: jobError } = await supabase
@@ -64,7 +64,7 @@ export const tailorCv = authActionClient.schema(tailorCvSchema).action(async ({ 
 });
 
 export const updateTailoredSections = authActionClient
-  .schema(updateTailoredSectionsSchema)
+  .inputSchema(updateTailoredSectionsSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
 
@@ -100,7 +100,7 @@ export const updateTailoredSections = authActionClient
   });
 
 export const setTailoredStatus = authActionClient
-  .schema(setTailoredStatusSchema)
+  .inputSchema(setTailoredStatusSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase
@@ -115,7 +115,7 @@ export const setTailoredStatus = authActionClient
   });
 
 export const deleteTailored = authActionClient
-  .schema(deleteTailoredSchema)
+  .inputSchema(deleteTailoredSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase

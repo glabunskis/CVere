@@ -1,8 +1,14 @@
 import { Text, View } from '@react-pdf/renderer';
 
-import { styles } from './theme';
+import { type PdfStyles, styles as defaultStyles } from './theme';
 
-export function Section({ title, children }: { title: string; children: React.ReactNode }) {
+type WithStyles = { styles?: PdfStyles };
+
+export function Section({
+  title,
+  children,
+  styles = defaultStyles,
+}: { title: string; children: React.ReactNode } & WithStyles) {
   return (
     <View style={styles.group} wrap={false}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -11,7 +17,10 @@ export function Section({ title, children }: { title: string; children: React.Re
   );
 }
 
-export function Bullet({ children }: { children: React.ReactNode }) {
+export function Bullet({
+  children,
+  styles = defaultStyles,
+}: { children: React.ReactNode } & WithStyles) {
   return (
     <View style={styles.bulletRow}>
       <Text style={styles.bulletDot}>{'\u2022'}</Text>
@@ -20,7 +29,11 @@ export function Bullet({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Header({ name, contact }: { name: string; contact?: string }) {
+export function Header({
+  name,
+  contact,
+  styles = defaultStyles,
+}: { name: string; contact?: string } & WithStyles) {
   return (
     <View>
       <Text style={styles.title}>{name}</Text>

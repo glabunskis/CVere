@@ -1,0 +1,43 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[a4paper,margin=1.5cm]{geometry}
+\usepackage{fontawesome5}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{parskip}
+
+\definecolor{accent}{HTML}{0066CC}
+
+\renewcommand{\baselinestretch}{1.1}
+\setlength{\parindent}{0pt}
+
+\hypersetup{
+  colorlinks=true,
+  urlcolor=accent,
+  linkcolor=accent
+}
+
+\titleformat{\section}{\large\bfseries\color{accent}}{}{0em}{}[\titlerule]
+
+\begin{document}
+
+% --- Header Section ---
+\begin{center}
+    {\Huge \textbf{Glebs Labunskis}}\\[4pt]
+    \faMapMarker*~Delft, Netherlands \quad
+    \faEnvelope~\href{mailto:glebs.labunskis@gmail.com}{glebs.labunskis@gmail.com} \quad
+    % \faPhone~(+371) 20213199 \quad
+    \faLinkedin~\href{https://www.linkedin.com/in/glebs-labunskis/}{glebs-labunskis}
+\end{center}
+
+\input{elements/summary}
+\input{elements/skills}
+\input{elements/experience}
+\input{elements/education}
+\input{elements/certs}
+\input{elements/projects}
+\input{elements/lang}
+
+\end{document}

@@ -1,0 +1,35 @@
+import type { ProfileChildren } from '@/features/profile/controllers/get-profile-children';
+import { buildProfileSnapshot } from '@/features/tailored/snapshot';
+
+import { Cv, type CvTemplate } from './Cv';
+import { DEFAULT_ACCENT } from './theme';
+
+export type MasterCvProps = {
+  summary: string | null;
+  profileChildren: ProfileChildren;
+  template: CvTemplate;
+  accent?: string;
+  identityName: string;
+  contactLine?: string;
+};
+
+export function MasterCv({
+  summary,
+  profileChildren,
+  template,
+  accent = DEFAULT_ACCENT,
+  identityName,
+  contactLine,
+}: MasterCvProps) {
+  const snapshot = buildProfileSnapshot(summary, profileChildren);
+  return (
+    <Cv
+      template={template}
+      snapshot={snapshot}
+      sections={{}}
+      identityName={identityName}
+      contactLine={contactLine}
+      accent={accent}
+    />
+  );
+}
