@@ -56,7 +56,7 @@ export const generateCoverLetter = authActionClient
     if (error) throw new Error(error.message);
 
     revalidatePath('/letters');
-    revalidatePath(`/jobs/${job.id}`);
+    revalidatePath(`/vacancies/${job.id}`);
     return { ok: true as const, id: data.id };
   });
 

@@ -11,7 +11,7 @@ import { getProfileChildren } from '@/features/profile/controllers/get-profile-c
 
 type PageProps = { params: Promise<{ id: string }> };
 
-export default async function JobDescriptionPage({ params }: PageProps) {
+export default async function VacancyPage({ params }: PageProps) {
   const { id } = await params;
   const job = await getJob(id);
   if (!job) notFound();

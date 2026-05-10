@@ -21,7 +21,7 @@ export function JdForm() {
   const { execute, isExecuting } = useAction(ingestJobDescription, {
     onSuccess: ({ data }) => {
       toast.success('Job description ingested');
-      if (data?.id) router.push(`/jobs/${data.id}`);
+      if (data?.id) router.push(`/vacancies/${data.id}`);
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to ingest'),
   });

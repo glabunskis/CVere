@@ -50,7 +50,7 @@ export async function updateSession(request: NextRequest) {
     '/dashboard',
     '/profile',
     '/achievements',
-    '/jobs',
+    '/vacancies',
     '/tailored',
     '/letters',
     '/advice',

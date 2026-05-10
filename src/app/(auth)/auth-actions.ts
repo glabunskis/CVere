@@ -38,7 +38,7 @@ export const signInWithPassword = actionClient
 
     if (error) throw error;
 
-    return redirect('/account');
+    return redirect('/dashboard');
   });
 
 export const signUpWithPassword = actionClient
@@ -59,7 +59,7 @@ export const signUpWithPassword = actionClient
     // When email confirmation is enabled, no session is returned and the user
     // must click the confirmation link before signing in.
     if (data.session) {
-      return redirect('/account');
+      return redirect('/dashboard');
     }
 
     return { needsEmailConfirmation: true };

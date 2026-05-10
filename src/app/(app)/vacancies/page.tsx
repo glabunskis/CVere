@@ -3,13 +3,13 @@ import Link from 'next/link';
 import { JdForm } from '@/features/jobs/components/jd-form';
 import { listJobs } from '@/features/jobs/controllers/get-jobs';
 
-export default async function JobsPage() {
+export default async function VacanciesPage() {
   const jobs = await listJobs();
 
   return (
     <section className='flex flex-col gap-6'>
       <header>
-        <h1 className='text-2xl font-semibold tracking-tight'>Jobs</h1>
+        <h1 className='text-2xl font-semibold tracking-tight'>Vacancies</h1>
         <p className='text-sm text-muted-foreground'>
           Vacancies you want to tailor against. Ingestion extracts requirements, stack, and ownership signals.
         </p>
@@ -21,13 +21,13 @@ export default async function JobsPage() {
         <h2 className='text-lg font-semibold'>Recent</h2>
         {jobs.length === 0 ? (
           <p className='rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground'>
-            No job descriptions yet.
+            No vacancies yet.
           </p>
         ) : (
           <ul className='flex flex-col gap-2'>
             {jobs.map((job) => (
               <li key={job.id} className='rounded-xl border bg-card p-4'>
-                <Link href={`/jobs/${job.id}`} className='flex items-baseline justify-between gap-2'>
+                <Link href={`/vacancies/${job.id}`} className='flex items-baseline justify-between gap-2'>
                   <div>
                     <p className='text-sm font-semibold'>
                       {job.role ?? '[MISSING] role'}

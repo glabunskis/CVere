@@ -13,7 +13,9 @@ export default async function DashboardPage() {
   const profile = await getOrCreateProfile();
   if (!profile) {
     return (
-      <section className='py-10 text-center text-sm text-muted-foreground'>Sign in to use CVere.</section>
+      <section className='py-10 text-center text-sm text-muted-foreground'>
+        We couldn&apos;t load your profile. Please refresh the page or try again shortly.
+      </section>
     );
   }
 

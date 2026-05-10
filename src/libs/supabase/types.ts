@@ -22,7 +22,9 @@ export type Database = {
           normalized_text: string | null
           raw_text: string
           status: Database["public"]["Enums"]["achievement_status"]
-          target_section: Database["public"]["Enums"]["achievement_section"] | null
+          target_section:
+            | Database["public"]["Enums"]["achievement_section"]
+            | null
           updated_at: string
           user_id: string
         }
@@ -33,7 +35,9 @@ export type Database = {
           normalized_text?: string | null
           raw_text: string
           status?: Database["public"]["Enums"]["achievement_status"]
-          target_section?: Database["public"]["Enums"]["achievement_section"] | null
+          target_section?:
+            | Database["public"]["Enums"]["achievement_section"]
+            | null
           updated_at?: string
           user_id: string
         }
@@ -44,7 +48,9 @@ export type Database = {
           normalized_text?: string | null
           raw_text?: string
           status?: Database["public"]["Enums"]["achievement_status"]
-          target_section?: Database["public"]["Enums"]["achievement_section"] | null
+          target_section?:
+            | Database["public"]["Enums"]["achievement_section"]
+            | null
           updated_at?: string
           user_id?: string
         }
@@ -435,7 +441,9 @@ export type Database = {
           id: string
           name: string
           position: number
-          proficiency: Database["public"]["Enums"]["language_proficiency"] | null
+          proficiency:
+            | Database["public"]["Enums"]["language_proficiency"]
+            | null
           profile_id: string
           updated_at: string
           user_id: string
@@ -445,7 +453,9 @@ export type Database = {
           id?: string
           name: string
           position?: number
-          proficiency?: Database["public"]["Enums"]["language_proficiency"] | null
+          proficiency?:
+            | Database["public"]["Enums"]["language_proficiency"]
+            | null
           profile_id: string
           updated_at?: string
           user_id: string
@@ -455,7 +465,9 @@ export type Database = {
           id?: string
           name?: string
           position?: number
-          proficiency?: Database["public"]["Enums"]["language_proficiency"] | null
+          proficiency?:
+            | Database["public"]["Enums"]["language_proficiency"]
+            | null
           profile_id?: string
           updated_at?: string
           user_id?: string

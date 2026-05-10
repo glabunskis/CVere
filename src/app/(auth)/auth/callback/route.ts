@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${siteUrl}/login`);
     }
 
-    return NextResponse.redirect(`${siteUrl}/account`);
+    return NextResponse.redirect(`${siteUrl}/dashboard`);
   }
 
   return NextResponse.redirect(siteUrl);

@@ -37,7 +37,7 @@ export function JdActions({ jobId, hasExtracted }: { jobId: string; hasExtracted
   const { execute: del, isExecuting: deleting } = useAction(deleteJobDescription, {
     onSuccess: () => {
       toast.success('Deleted');
-      router.push('/jobs');
+      router.push('/vacancies');
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to delete'),
   });

@@ -33,7 +33,7 @@ export const ingestJobDescription = authActionClient
       .single();
     if (error) throw new Error(error.message);
 
-    revalidatePath('/jobs');
+    revalidatePath('/vacancies');
     return { ok: true as const, id: data.id };
   });
 
@@ -59,7 +59,7 @@ export const reExtractJobDescription = authActionClient
       .eq('user_id', ctx.user.id);
     if (error) throw new Error(error.message);
 
-    revalidatePath(`/jobs/${parsedInput.id}`);
+    revalidatePath(`/vacancies/${parsedInput.id}`);
     return { ok: true as const };
   });
 
@@ -73,6 +73,6 @@ export const deleteJobDescription = authActionClient
       .eq('id', parsedInput.id)
       .eq('user_id', ctx.user.id);
     if (error) throw new Error(error.message);
-    revalidatePath('/jobs');
+    revalidatePath('/vacancies');
     return { ok: true as const };
   });
