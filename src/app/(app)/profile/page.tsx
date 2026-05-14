@@ -1,6 +1,8 @@
+import { getOrCreateCvPreferences } from '@/features/previewer/controllers/get-cv-preferences';
 import { FactEditor } from '@/features/profile/components/fact-editor';
 import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
 import { getProfileChildren } from '@/features/profile/controllers/get-profile-children';
+import { DEFAULT_CV_DATE_FORMAT } from '@/utils/format-date';
 
 export default async function ProfilePage() {
   const profile = await getOrCreateProfile();
@@ -12,7 +14,10 @@ export default async function ProfilePage() {
     );
   }
 
-  const sections = await getProfileChildren(profile.id);
+  const [sections, prefs] = await Promise.all([
+    getProfileChildren(profile.id),
+    getOrCreateCvPreferences(),
+  ]);
 
   return (
     <section className='flex flex-col gap-6'>
@@ -22,7 +27,12 @@ export default async function ProfilePage() {
           Canonical fact base. The only place facts are written. Tailored variants never overwrite this.
         </p>
       </header>
-      <FactEditor summary={profile.summary} sections={sections} />
+      <FactEditor
+        summary={profile.summary}
+        sections={sections}
+        educationDateFormat={prefs?.education_date_format ?? DEFAULT_CV_DATE_FORMAT}
+        certificationDateFormat={prefs?.certification_date_format ?? DEFAULT_CV_DATE_FORMAT}
+      />
     </section>
   );
 }

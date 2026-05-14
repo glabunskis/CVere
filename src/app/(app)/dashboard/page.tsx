@@ -51,6 +51,8 @@ export default async function DashboardPage() {
       <PreviewerSidebar
         template={prefs.template}
         accentHex={prefs.accent_hex}
+        educationDateFormat={prefs.education_date_format}
+        certificationDateFormat={prefs.certification_date_format}
         pinnedTailoredCvId={prefs.pinned_tailored_cv_id}
         pendingAchievements={achievements.length}
         openAdvice={openAdvice.length}

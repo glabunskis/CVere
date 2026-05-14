@@ -5,6 +5,8 @@ import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import { CV_DATE_FORMATS, type CvDateFormat } from '@/utils/format-date';
 
 import { updateCvPreferences } from '../actions/update-cv-preferences';
 import type { CvTemplate } from '../schemas';
@@ -12,6 +14,8 @@ import type { CvTemplate } from '../schemas';
 type Props = {
   template: CvTemplate;
   accentHex: string;
+  educationDateFormat: CvDateFormat;
+  certificationDateFormat: CvDateFormat;
 };
 
 const TEMPLATES: { id: CvTemplate; label: string; description: string }[] = [
@@ -19,7 +23,7 @@ const TEMPLATES: { id: CvTemplate; label: string; description: string }[] = [
   { id: 'two-column', label: 'Two column', description: 'Sidebar with skills and projects.' },
 ];
 
-export function TemplatePicker({ template, accentHex }: Props) {
+export function TemplatePicker({ template, accentHex, educationDateFormat, certificationDateFormat }: Props) {
   const [localAccent, setLocalAccent] = useState(accentHex);
   const [isPending, startTransition] = useTransition();
 
@@ -36,6 +40,14 @@ export function TemplatePicker({ template, accentHex }: Props) {
     if (!/^#[0-9A-Fa-f]{6}$/.test(value)) return;
     setLocalAccent(value);
     startTransition(() => execute({ accentHex: value }));
+  }
+
+  function pickEducationDateFormat(next: CvDateFormat) {
+    startTransition(() => execute({ educationDateFormat: next }));
+  }
+
+  function pickCertificationDateFormat(next: CvDateFormat) {
+    startTransition(() => execute({ certificationDateFormat: next }));
   }
 
   return (
@@ -91,6 +103,55 @@ export function TemplatePicker({ template, accentHex }: Props) {
           />
         </div>
       </div>
+
+      <DateFormatField
+        id='education-date-format'
+        label='Education dates'
+        value={educationDateFormat}
+        disabled={isPending}
+        onChange={pickEducationDateFormat}
+      />
+      <DateFormatField
+        id='certification-date-format'
+        label='Certification dates'
+        value={certificationDateFormat}
+        disabled={isPending}
+        onChange={pickCertificationDateFormat}
+      />
+    </div>
+  );
+}
+
+function DateFormatField({
+  id,
+  label,
+  value,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: CvDateFormat;
+  disabled: boolean;
+  onChange: (next: CvDateFormat) => void;
+}) {
+  return (
+    <div className='flex flex-col gap-2'>
+      <Label htmlFor={id} className='text-xs uppercase tracking-wide text-muted-foreground'>
+        {label}
+      </Label>
+      <Select
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value as CvDateFormat)}
+      >
+        {CV_DATE_FORMATS.map((opt) => (
+          <option key={opt.id} value={opt.id}>
+            {opt.label} ({opt.example})
+          </option>
+        ))}
+      </Select>
     </div>
   );
 }

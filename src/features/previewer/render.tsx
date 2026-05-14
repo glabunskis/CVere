@@ -35,6 +35,10 @@ export async function renderAndUploadMasterCv(user: User): Promise<string> {
       accent={prefs.accent_hex || DEFAULT_ACCENT}
       identityName={identity}
       contactLine={contactLine}
+      dateFormats={{
+        education: prefs.education_date_format,
+        certification: prefs.certification_date_format,
+      }}
     />,
   );
 

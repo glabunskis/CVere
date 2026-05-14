@@ -34,6 +34,10 @@ export const exportPdf = authActionClient.inputSchema(exportPdfSchema).action(as
   const prefs = await getOrCreateCvPreferences();
   const template = prefs?.template ?? 'single-column';
   const accent = prefs?.accent_hex || DEFAULT_ACCENT;
+  const dateFormats = {
+    education: prefs?.education_date_format ?? 'mm_yyyy',
+    certification: prefs?.certification_date_format ?? 'mm_yyyy',
+  } as const;
 
   let buffer: Buffer;
   let path: string;
@@ -64,6 +68,7 @@ export const exportPdf = authActionClient.inputSchema(exportPdfSchema).action(as
         identityName={identity}
         contactLine={contactLine}
         accent={accent}
+        dateFormats={dateFormats}
       />,
     );
     path = `${ctx.user.id}/${row.slug}.pdf`;

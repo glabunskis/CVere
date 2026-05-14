@@ -8,15 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { CertificationRow } from '@/features/profile/controllers/get-profile-children';
+import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/utils/format-date';
 
 import { deleteProfileChild, updateProfileSection } from '../actions/update-profile-section';
 
 import { SectionShell } from './section-shell';
 
 type DraftState = { kind: 'idle' } | { kind: 'creating' } | { kind: 'editing'; id: string };
-type Props = { items: CertificationRow[]; readOnly?: boolean };
+type Props = { items: CertificationRow[]; readOnly?: boolean; dateFormat?: CvDateFormat };
 
-export function CertificationEditor({ items, readOnly = false }: Props) {
+export function CertificationEditor({ items, readOnly = false, dateFormat = DEFAULT_CV_DATE_FORMAT }: Props) {
   const [draft, setDraft] = useState<DraftState>({ kind: 'idle' });
 
   return (
@@ -64,6 +65,7 @@ export function CertificationEditor({ items, readOnly = false }: Props) {
             key={item.id}
             row={item}
             readOnly={readOnly}
+            dateFormat={dateFormat}
             onEdit={() => setDraft({ kind: 'editing', id: item.id })}
           />
         ),
@@ -75,16 +77,20 @@ export function CertificationEditor({ items, readOnly = false }: Props) {
 function CertificationCard({
   row,
   readOnly,
+  dateFormat,
   onEdit,
 }: {
   row: CertificationRow;
   readOnly: boolean;
+  dateFormat: CvDateFormat;
   onEdit: () => void;
 }) {
   const { execute: del, isExecuting: deleting } = useAction(deleteProfileChild, {
     onSuccess: () => toast.success('Deleted'),
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to delete'),
   });
+  const issuedLabel = formatCvDate(row.issued_at, dateFormat) ?? row.issued_at;
+  const expiresLabel = formatCvDate(row.expires_at, dateFormat) ?? row.expires_at;
 
   return (
     <article className='flex items-start justify-between gap-2 rounded-lg border p-3'>
@@ -92,8 +98,8 @@ function CertificationCard({
         <p className='text-sm font-semibold'>{row.name}</p>
         <p className='text-xs text-muted-foreground'>
           {row.issuer ?? '[MISSING]'}
-          {row.issued_at ? ` - issued ${row.issued_at}` : ''}
-          {row.expires_at ? ` - expires ${row.expires_at}` : ''}
+          {issuedLabel ? ` - issued ${issuedLabel}` : ''}
+          {expiresLabel ? ` - expires ${expiresLabel}` : ''}
         </p>
         {row.link ? (
           <a className='text-xs text-primary underline' href={row.link} target='_blank' rel='noreferrer'>

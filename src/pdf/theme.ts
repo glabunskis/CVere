@@ -91,6 +91,9 @@ export function createStyles(accent: string = DEFAULT_ACCENT) {
       color: pdfTheme.colors.muted,
       marginBottom: 1,
     },
+    dateMeta: {
+      fontStyle: 'italic',
+    },
     paragraph: {
       marginBottom: 2,
     },

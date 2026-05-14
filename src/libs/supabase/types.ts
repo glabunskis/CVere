@@ -222,7 +222,9 @@ export type Database = {
       cv_preferences: {
         Row: {
           accent_hex: string
+          certification_date_format: Database["public"]["Enums"]["cv_date_format"]
           created_at: string
+          education_date_format: Database["public"]["Enums"]["cv_date_format"]
           id: string
           master_pdf_path: string | null
           pinned_tailored_cv_id: string | null
@@ -232,7 +234,9 @@ export type Database = {
         }
         Insert: {
           accent_hex?: string
+          certification_date_format?: Database["public"]["Enums"]["cv_date_format"]
           created_at?: string
+          education_date_format?: Database["public"]["Enums"]["cv_date_format"]
           id?: string
           master_pdf_path?: string | null
           pinned_tailored_cv_id?: string | null
@@ -242,7 +246,9 @@ export type Database = {
         }
         Update: {
           accent_hex?: string
+          certification_date_format?: Database["public"]["Enums"]["cv_date_format"]
           created_at?: string
+          education_date_format?: Database["public"]["Enums"]["cv_date_format"]
           id?: string
           master_pdf_path?: string | null
           pinned_tailored_cv_id?: string | null
@@ -879,6 +885,7 @@ export type Database = {
         | "certs"
         | "languages"
         | "global"
+      cv_date_format: "year" | "mm_yyyy" | "mon_yyyy" | "mon_d_yyyy"
       cv_status: "draft" | "final"
       cv_template: "single-column" | "two-column"
       language_proficiency:
@@ -1049,6 +1056,7 @@ export const Constants = {
         "languages",
         "global",
       ],
+      cv_date_format: ["year", "mm_yyyy", "mon_yyyy", "mon_d_yyyy"],
       cv_status: ["draft", "final"],
       cv_template: ["single-column", "two-column"],
       language_proficiency: [

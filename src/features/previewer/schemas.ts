@@ -3,6 +3,9 @@ import { z } from 'zod';
 export const cvTemplateSchema = z.enum(['single-column', 'two-column']);
 export type CvTemplate = z.infer<typeof cvTemplateSchema>;
 
+export const cvDateFormatSchema = z.enum(['year', 'mm_yyyy', 'mon_yyyy', 'mon_d_yyyy']);
+export type CvDateFormatInput = z.infer<typeof cvDateFormatSchema>;
+
 export const accentHexSchema = z
   .string()
   .regex(/^#[0-9A-Fa-f]{6}$/, 'Use a hex color like #0066CC');
@@ -11,6 +14,8 @@ export const updateCvPreferencesSchema = z.object({
   template: cvTemplateSchema.optional(),
   accentHex: accentHexSchema.optional(),
   pinnedTailoredCvId: z.uuid().nullable().optional(),
+  educationDateFormat: cvDateFormatSchema.optional(),
+  certificationDateFormat: cvDateFormatSchema.optional(),
 });
 export type UpdateCvPreferencesInput = z.infer<typeof updateCvPreferencesSchema>;
 

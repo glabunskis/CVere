@@ -1,3 +1,5 @@
+import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT } from '@/utils/format-date';
+
 import type { ProfileChildren } from '../controllers/get-profile-children';
 
 import { CertificationEditor } from './certification-editor';
@@ -12,9 +14,17 @@ type Props = {
   summary: string | null;
   sections: ProfileChildren;
   mode?: 'edit' | 'read';
+  educationDateFormat?: CvDateFormat;
+  certificationDateFormat?: CvDateFormat;
 };
 
-export function FactEditor({ summary, sections, mode = 'edit' }: Props) {
+export function FactEditor({
+  summary,
+  sections,
+  mode = 'edit',
+  educationDateFormat = DEFAULT_CV_DATE_FORMAT,
+  certificationDateFormat = DEFAULT_CV_DATE_FORMAT,
+}: Props) {
   const readOnly = mode === 'read';
 
   return (
@@ -25,8 +35,12 @@ export function FactEditor({ summary, sections, mode = 'edit' }: Props) {
       <ExperienceEditor items={sections.experience} readOnly={readOnly} />
       <ProjectEditor items={sections.project} readOnly={readOnly} />
       <SkillEditor items={sections.skill} readOnly={readOnly} />
-      <EducationEditor items={sections.education} readOnly={readOnly} />
-      <CertificationEditor items={sections.certification} readOnly={readOnly} />
+      <EducationEditor items={sections.education} readOnly={readOnly} dateFormat={educationDateFormat} />
+      <CertificationEditor
+        items={sections.certification}
+        readOnly={readOnly}
+        dateFormat={certificationDateFormat}
+      />
       <LanguageEditor items={sections.language} readOnly={readOnly} />
     </div>
   );

@@ -9,15 +9,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { EducationRow } from '@/features/profile/controllers/get-profile-children';
+import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/utils/format-date';
 
 import { deleteProfileChild, updateProfileSection } from '../actions/update-profile-section';
 
 import { SectionShell } from './section-shell';
 
 type DraftState = { kind: 'idle' } | { kind: 'creating' } | { kind: 'editing'; id: string };
-type Props = { items: EducationRow[]; readOnly?: boolean };
+type Props = { items: EducationRow[]; readOnly?: boolean; dateFormat?: CvDateFormat };
 
-export function EducationEditor({ items, readOnly = false }: Props) {
+export function EducationEditor({ items, readOnly = false, dateFormat = DEFAULT_CV_DATE_FORMAT }: Props) {
   const [draft, setDraft] = useState<DraftState>({ kind: 'idle' });
 
   return (
@@ -74,6 +75,7 @@ export function EducationEditor({ items, readOnly = false }: Props) {
             key={item.id}
             row={item}
             readOnly={readOnly}
+            dateFormat={dateFormat}
             onEdit={() => setDraft({ kind: 'editing', id: item.id })}
           />
         ),
@@ -85,16 +87,21 @@ export function EducationEditor({ items, readOnly = false }: Props) {
 function EducationCard({
   row,
   readOnly,
+  dateFormat,
   onEdit,
 }: {
   row: EducationRow;
   readOnly: boolean;
+  dateFormat: CvDateFormat;
   onEdit: () => void;
 }) {
   const { execute: del, isExecuting: deleting } = useAction(deleteProfileChild, {
     onSuccess: () => toast.success('Deleted'),
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to delete'),
   });
+  const startLabel = formatCvDate(row.start_date, dateFormat);
+  const endLabel = formatCvDate(row.end_date, dateFormat);
+  const rangeLabel = startLabel && endLabel ? `${startLabel} -> ${endLabel}` : (startLabel ?? endLabel ?? null);
 
   return (
     <article className='flex flex-col gap-2 rounded-lg border p-3'>
@@ -103,9 +110,7 @@ function EducationCard({
           <p className='text-sm font-semibold'>{row.institution}</p>
           <p className='text-xs text-muted-foreground'>
             {[row.degree, row.field].filter(Boolean).join(' - ') || '[MISSING]'}
-            {row.start_date || row.end_date
-              ? ` - ${row.start_date ?? '?'} -> ${row.end_date ?? '?'}`
-              : ''}
+            {rangeLabel ? ` - ${rangeLabel}` : ''}
           </p>
         </div>
         {!readOnly ? (

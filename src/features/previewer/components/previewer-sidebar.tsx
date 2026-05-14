@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { AddAchievementForm } from '@/features/achievements/components/add-achievement-form';
+import type { CvDateFormat } from '@/utils/format-date';
 
 import { updateCvPreferences } from '../actions/update-cv-preferences';
 import type { CvTemplate } from '../schemas';
@@ -19,6 +20,8 @@ type SidebarLink = { id: string; href: string; label: string; meta?: string };
 type Props = {
   template: CvTemplate;
   accentHex: string;
+  educationDateFormat: CvDateFormat;
+  certificationDateFormat: CvDateFormat;
   pinnedTailoredCvId: string | null;
   pendingAchievements: number;
   openAdvice: number;
@@ -29,6 +32,8 @@ type Props = {
 export function PreviewerSidebar({
   template,
   accentHex,
+  educationDateFormat,
+  certificationDateFormat,
   pinnedTailoredCvId,
   pendingAchievements,
   openAdvice,
@@ -51,7 +56,12 @@ export function PreviewerSidebar({
   return (
     <aside className='flex h-full flex-col gap-4 overflow-y-auto rounded-xl border bg-card p-4'>
       <Section title='Style'>
-        <TemplatePicker template={template} accentHex={accentHex} />
+        <TemplatePicker
+          template={template}
+          accentHex={accentHex}
+          educationDateFormat={educationDateFormat}
+          certificationDateFormat={certificationDateFormat}
+        />
       </Section>
 
       <Separator />

@@ -1,4 +1,5 @@
 import type { AiProfile } from '@/libs/ai/types';
+import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/utils/format-date';
 import { Text, View } from '@react-pdf/renderer';
 
 import { Bullet, Section } from '../primitives';
@@ -12,12 +13,23 @@ export type TailoredSections = {
   emphasis?: string[];
 };
 
+export type DateFormats = {
+  education: CvDateFormat;
+  certification: CvDateFormat;
+};
+
+export const DEFAULT_DATE_FORMATS: DateFormats = {
+  education: DEFAULT_CV_DATE_FORMAT,
+  certification: DEFAULT_CV_DATE_FORMAT,
+};
+
 export type TemplateProps = {
   snapshot: AiProfile;
   sections: TailoredSections;
   identityName: string;
   contactLine?: string;
   accent: string;
+  dateFormats?: DateFormats;
 };
 
 export function applyOrder<T extends { id: string }>(items: T[], order: string[] | undefined): T[] {
@@ -53,7 +65,9 @@ export function ExperienceSection({
             <Text style={styles.inlineMuted}>{exp.company}</Text>
           </Text>
           <Text style={styles.itemMeta}>
-            {exp.startDate ?? '[MISSING]'} - {exp.isCurrent ? 'Present' : (exp.endDate ?? '[MISSING]')}
+            <Text style={styles.dateMeta}>
+              {exp.startDate ?? '[MISSING]'} - {exp.isCurrent ? 'Present' : (exp.endDate ?? '[MISSING]')}
+            </Text>
             {exp.location ? ` - ${exp.location}` : ''}
           </Text>
           {exp.summary ? <Text style={styles.paragraph}>{exp.summary}</Text> : null}
@@ -138,23 +152,35 @@ export function SkillsSection({
 export function EducationSection({
   education,
   styles,
+  dateFormat = DEFAULT_CV_DATE_FORMAT,
 }: {
   education: AiProfile['education'];
   styles: PdfStyles;
+  dateFormat?: CvDateFormat;
 }) {
   if (!education.length) return null;
   return (
     <Section title='Education' styles={styles}>
-      {education.map((edu) => (
-        <View key={edu.id} style={styles.itemGroup} wrap={false}>
-          <Text style={styles.itemTitle}>{edu.institution}</Text>
-          <Text style={styles.itemMeta}>
-            {[edu.degree, edu.field].filter(Boolean).join(' - ') || '[MISSING]'}
-            {edu.startDate || edu.endDate ? ` - ${edu.startDate ?? '?'} -> ${edu.endDate ?? '?'}` : ''}
-          </Text>
-          {edu.summary ? <Text style={styles.paragraph}>{edu.summary}</Text> : null}
-        </View>
-      ))}
+      {education.map((edu) => {
+        const start = formatCvDate(edu.startDate, dateFormat);
+        const end = formatCvDate(edu.endDate, dateFormat);
+        const range = start && end ? `${start} -> ${end}` : (start ?? end ?? null);
+        return (
+          <View key={edu.id} style={styles.itemGroup} wrap={false}>
+            <Text style={styles.itemTitle}>{edu.institution}</Text>
+            <Text style={styles.itemMeta}>
+              {[edu.degree, edu.field].filter(Boolean).join(' - ') || '[MISSING]'}
+              {range ? (
+                <Text style={styles.dateMeta}>
+                  {' - '}
+                  {range}
+                </Text>
+              ) : ''}
+            </Text>
+            {edu.summary ? <Text style={styles.paragraph}>{edu.summary}</Text> : null}
+          </View>
+        );
+      })}
     </Section>
   );
 }
@@ -162,22 +188,27 @@ export function EducationSection({
 export function CertificationsSection({
   certifications,
   styles,
+  dateFormat = DEFAULT_CV_DATE_FORMAT,
 }: {
   certifications: AiProfile['certifications'];
   styles: PdfStyles;
+  dateFormat?: CvDateFormat;
 }) {
   if (!certifications.length) return null;
   return (
     <Section title='Certifications' styles={styles}>
-      {certifications.map((cert) => (
-        <View key={cert.id} style={styles.itemGroup} wrap={false}>
-          <Text style={styles.itemTitle}>{cert.name}</Text>
-          <Text style={styles.itemMeta}>
-            {cert.issuer ?? '[MISSING]'}
-            {cert.issuedAt ? ` - ${cert.issuedAt}` : ''}
-          </Text>
-        </View>
-      ))}
+      {certifications.map((cert) => {
+        const issued = formatCvDate(cert.issuedAt, dateFormat) ?? cert.issuedAt;
+        return (
+          <View key={cert.id} style={styles.itemGroup} wrap={false}>
+            <Text style={styles.itemTitle}>{cert.name}</Text>
+            <Text style={styles.itemMeta}>
+              {cert.issuer ?? '[MISSING]'}
+              {issued ? <Text style={styles.dateMeta}> - {issued}</Text> : ''}
+            </Text>
+          </View>
+        );
+      })}
     </Section>
   );
 }
