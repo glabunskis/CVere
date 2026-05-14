@@ -3,7 +3,8 @@ import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-clie
 import 'server-only';
 
 const STORAGE_BUCKET = 'pdf';
-const SIGNED_TTL_SECONDS = 60;
+// Long TTL so the previewer iframe never needs to refresh its signed URL mid-session.
+const SIGNED_TTL_SECONDS = 60 * 60 * 8;
 
 export async function signMasterUrl(path: string | null): Promise<string | null> {
   if (!path) return null;

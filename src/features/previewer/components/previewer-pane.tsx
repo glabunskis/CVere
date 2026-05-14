@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 
@@ -18,20 +18,6 @@ type Props = {
 export function PreviewerPane({ initialUrl, pdfPath, pinnedLabel }: Props) {
   const [signedUrl, setSignedUrl] = useState<string | null>(initialUrl);
   const [version, setVersion] = useState(0);
-  const refreshTimer = useRef<NodeJS.Timeout | null>(null);
-
-  // Refresh signed URL ahead of expiry (URLs last 60s, refresh at 45s).
-  useEffect(() => {
-    if (!pdfPath) return;
-    if (refreshTimer.current) clearInterval(refreshTimer.current);
-    refreshTimer.current = setInterval(() => {
-      sign({ path: pdfPath });
-    }, 45_000);
-    return () => {
-      if (refreshTimer.current) clearInterval(refreshTimer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pdfPath]);
 
   const { execute: sign } = useAction(createSignedDownload, {
     onSuccess: ({ data }) => {
