@@ -44,9 +44,9 @@ export function ExperienceSection({
 }) {
   if (!experiences.length) return null;
   return (
-    <Section title='Experience' styles={styles}>
+    <Section title='Professional Experience' styles={styles}>
       {experiences.map((exp) => (
-        <View key={exp.id} style={styles.group} wrap={false}>
+        <View key={exp.id} style={styles.itemGroup} wrap={false}>
           <Text style={styles.itemTitle}>
             {exp.role}
             {' - '}
@@ -78,9 +78,9 @@ export function ProjectsSection({
 }) {
   if (!projects.length) return null;
   return (
-    <Section title='Projects' styles={styles}>
+    <Section title='Key Projects' styles={styles}>
       {projects.map((project) => (
-        <View key={project.id} style={styles.group} wrap={false}>
+        <View key={project.id} style={styles.itemGroup} wrap={false}>
           <Text style={styles.itemTitle}>{project.name}</Text>
           {project.description ? <Text style={styles.paragraph}>{project.description}</Text> : null}
           {project.bullets.map((bullet, idx) => (
@@ -118,7 +118,7 @@ export function SkillsSection({
   const hasCategories = Array.from(grouped.keys()).some((key) => key.length > 0);
 
   return (
-    <Section title='Skills' styles={styles}>
+    <Section title='Technical Skills' styles={styles}>
       {hasCategories ? (
         Array.from(grouped.entries()).map(([category, items]) => (
           <Text key={category || 'misc'} style={styles.paragraph}>
@@ -146,7 +146,7 @@ export function EducationSection({
   return (
     <Section title='Education' styles={styles}>
       {education.map((edu) => (
-        <View key={edu.id} style={styles.group} wrap={false}>
+        <View key={edu.id} style={styles.itemGroup} wrap={false}>
           <Text style={styles.itemTitle}>{edu.institution}</Text>
           <Text style={styles.itemMeta}>
             {[edu.degree, edu.field].filter(Boolean).join(' - ') || '[MISSING]'}
@@ -170,7 +170,7 @@ export function CertificationsSection({
   return (
     <Section title='Certifications' styles={styles}>
       {certifications.map((cert) => (
-        <View key={cert.id} style={styles.group} wrap={false}>
+        <View key={cert.id} style={styles.itemGroup} wrap={false}>
           <Text style={styles.itemTitle}>{cert.name}</Text>
           <Text style={styles.itemMeta}>
             {cert.issuer ?? '[MISSING]'}
@@ -202,8 +202,8 @@ export function LanguagesSection({
 export function SummaryBlock({ summary, styles }: { summary: string; styles: PdfStyles }) {
   if (!summary) return null;
   return (
-    <View style={styles.group}>
+    <Section title='Professional Summary' styles={styles}>
       <Text style={styles.paragraph}>{summary}</Text>
-    </View>
+    </Section>
   );
 }

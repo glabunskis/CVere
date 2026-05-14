@@ -1,6 +1,27 @@
-import { StyleSheet } from '@react-pdf/renderer';
+import path from 'node:path';
+
+import { Font, StyleSheet } from '@react-pdf/renderer';
 
 export const DEFAULT_ACCENT = '#0066CC';
+const LATIN_MODERN_ROMAN = 'Latin Modern Roman';
+const lmFamily = path.join(process.cwd(), 'src', 'pdf', 'fonts', 'lm_roman');
+
+// React-PDF's Font.register() appends sources to a family on every call; in
+// Next.js dev that means HMR reloads accumulate stale entries and the first
+// registration always wins exact-weight matches. Drop the family before
+// re-registering so the latest mapping takes effect.
+const registeredFamilies = Font.getRegisteredFonts() as Record<string, unknown>;
+delete registeredFamilies[LATIN_MODERN_ROMAN];
+
+Font.register({
+  family: LATIN_MODERN_ROMAN,
+  fonts: [
+    { src: path.join(lmFamily, 'lmroman10-regular.otf'), fontWeight: 'normal' },
+    { src: path.join(lmFamily, 'lmroman10-italic.otf'), fontWeight: 'normal', fontStyle: 'italic' },
+    { src: path.join(lmFamily, 'lmroman10-bold.otf'), fontWeight: 'bold' },
+    { src: path.join(lmFamily, 'lmroman10-bolditalic.otf'), fontWeight: 'bold', fontStyle: 'italic' },
+  ],
+});
 
 export const pdfTheme = {
   page: {
@@ -13,7 +34,7 @@ export const pdfTheme = {
     border: '#e5e5e5',
   },
   type: {
-    family: 'Helvetica' as const,
+    family: LATIN_MODERN_ROMAN,
     sizes: {
       title: 18,
       h1: 14,
@@ -36,11 +57,11 @@ export function createStyles(accent: string = DEFAULT_ACCENT) {
       fontFamily: pdfTheme.type.family,
       fontSize: pdfTheme.type.sizes.body,
       color: pdfTheme.colors.text,
-      lineHeight: 1.4,
+      lineHeight: 1.15,
     },
     title: {
       fontSize: pdfTheme.type.sizes.title,
-      fontWeight: 700,
+      fontWeight: 'bold',
       color: pdfTheme.colors.text,
       marginBottom: 4,
       textAlign: 'center',
@@ -48,34 +69,34 @@ export function createStyles(accent: string = DEFAULT_ACCENT) {
     subtitle: {
       fontSize: pdfTheme.type.sizes.small,
       color: pdfTheme.colors.muted,
-      marginBottom: 12,
+      marginBottom: 6,
       textAlign: 'center',
     },
     sectionTitle: {
       fontSize: pdfTheme.type.sizes.h1,
-      fontWeight: 700,
+      fontWeight: 'bold',
       color: accent,
-      marginTop: 14,
+      marginTop: 6,
       marginBottom: 4,
       borderBottomWidth: 1,
-      borderBottomColor: pdfTheme.colors.border,
-      paddingBottom: 2,
+      borderBottomColor: accent,
+      paddingBottom: 7,
     },
     itemTitle: {
       fontSize: pdfTheme.type.sizes.h2,
-      fontWeight: 700,
+      fontWeight: 'bold',
     },
     itemMeta: {
       fontSize: pdfTheme.type.sizes.small,
       color: pdfTheme.colors.muted,
-      marginBottom: 3,
+      marginBottom: 1,
     },
     paragraph: {
-      marginBottom: 4,
+      marginBottom: 2,
     },
     bulletRow: {
       flexDirection: 'row',
-      marginBottom: 2,
+      marginBottom: 1,
     },
     bulletDot: {
       width: 8,
@@ -86,7 +107,10 @@ export function createStyles(accent: string = DEFAULT_ACCENT) {
       flex: 1,
     },
     group: {
-      marginBottom: 8,
+      marginBottom: 6,
+    },
+    itemGroup: {
+      marginBottom: 3,
     },
     inlineMuted: {
       color: pdfTheme.colors.muted,
@@ -96,10 +120,10 @@ export function createStyles(accent: string = DEFAULT_ACCENT) {
     },
     twoColumnRow: {
       flexDirection: 'row',
-      gap: 16,
+      gap: 12,
     },
     columnLeft: {
-      width: '38%',
+      flex: 1,
     },
     columnRight: {
       flex: 1,

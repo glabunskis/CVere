@@ -188,7 +188,9 @@ function splitItems(itemize: string): string[] {
 }
 
 function extractItemize(text: string): { before: string; items: string[]; after: string } {
-  const match = text.match(/\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/);
+  // Allow an optional argument like \begin{itemize}[leftmargin=*] so it is not
+  // captured as the first item.
+  const match = text.match(/\\begin\{itemize\}(?:\[[^\]]*\])?([\s\S]*?)\\end\{itemize\}/);
   if (!match) return { before: text, items: [], after: '' };
   const items = splitItems(match[1]);
   const before = text.slice(0, match.index ?? 0);
