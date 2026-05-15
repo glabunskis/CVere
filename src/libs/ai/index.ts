@@ -1,12 +1,12 @@
-import { AzureAiProvider } from './azure';
+import { OpenAiProvider } from './openai';
 import type { AiProvider } from './provider';
 import { StubAiProvider } from './stub';
 
-export type AiProviderKind = 'stub' | 'azure';
+export type AiProviderKind = 'stub' | 'openai';
 
 export function getAiProviderKind(): AiProviderKind {
   const value = process.env.AI_PROVIDER?.trim().toLowerCase();
-  if (value === 'azure') return 'azure';
+  if (value === 'openai') return 'openai';
   return 'stub';
 }
 
@@ -19,7 +19,7 @@ export function getAiProvider(): AiProvider {
     return cachedProvider;
   }
   cachedKind = kind;
-  cachedProvider = kind === 'azure' ? new AzureAiProvider() : new StubAiProvider();
+  cachedProvider = kind === 'openai' ? new OpenAiProvider() : new StubAiProvider();
   return cachedProvider;
 }
 

@@ -163,6 +163,30 @@ export type Database = {
           },
         ]
       }
+      chat_message: {
+        Row: {
+          created_at: string
+          id: string
+          parts: Json
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parts: Json
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parts?: Json
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cover_letter: {
         Row: {
           body: string

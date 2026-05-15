@@ -20,7 +20,7 @@ import type {
 } from './types';
 
 export interface AiProvider {
-  readonly name: 'stub' | 'azure';
+  readonly name: 'stub' | 'openai';
   extractJobDescription(input: z.input<typeof extractJobDescriptionInputSchema>): Promise<ExtractedJd>;
   normalizeAchievement(input: z.input<typeof normalizeAchievementInputSchema>): Promise<NormalizedAchievement>;
   tailorCv(input: z.input<typeof tailorCvInputSchema>): Promise<TailoredSections>;

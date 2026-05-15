@@ -1,26 +1,25 @@
 import type { LanguageModel } from 'ai';
 import { MockLanguageModelV3 } from 'ai/test';
 
-import { createAzure } from '@ai-sdk/azure';
+import { createOpenAI } from '@ai-sdk/openai';
 
 export class ChatModelNotConfiguredError extends Error {
   readonly httpStatus = 500;
 
   constructor(missing: string[]) {
     super(
-      `Azure OpenAI is not configured. Missing env vars: ${missing.join(', ')}. ` +
-        `Set AZURE_RESOURCE_NAME, AZURE_API_KEY, and AZURE_CHAT_DEPLOYMENT (and optionally AZURE_API_VERSION).`,
+      `OpenAI is not configured. Missing env vars: ${missing.join(', ')}. ` +
+        `Set OPENAI_API_KEY and OPENAI_CHAT_MODEL (and optionally OPENAI_BASE_URL).`,
     );
     this.name = 'ChatModelNotConfiguredError';
   }
 }
 
-function readAzureEnv() {
-  const resourceName = process.env.AZURE_RESOURCE_NAME?.trim() || undefined;
-  const apiKey = process.env.AZURE_API_KEY?.trim() || undefined;
-  const deployment = process.env.AZURE_CHAT_DEPLOYMENT?.trim() || undefined;
-  const apiVersion = process.env.AZURE_API_VERSION?.trim() || undefined;
-  return { resourceName, apiKey, deployment, apiVersion };
+function readOpenAiEnv() {
+  const apiKey = process.env.OPENAI_API_KEY?.trim() || undefined;
+  const model = process.env.OPENAI_CHAT_MODEL?.trim() || undefined;
+  const baseURL = process.env.OPENAI_BASE_URL?.trim() || undefined;
+  return { apiKey, model, baseURL };
 }
 
 let cachedModel: LanguageModel | null = null;
@@ -28,15 +27,14 @@ let cachedModel: LanguageModel | null = null;
 export function getChatModel(): LanguageModel {
   if (cachedModel) return cachedModel;
 
-  const { resourceName, apiKey, deployment, apiVersion } = readAzureEnv();
+  const { apiKey, model, baseURL } = readOpenAiEnv();
   const missing: string[] = [];
-  if (!resourceName) missing.push('AZURE_RESOURCE_NAME');
-  if (!apiKey) missing.push('AZURE_API_KEY');
-  if (!deployment) missing.push('AZURE_CHAT_DEPLOYMENT');
+  if (!apiKey) missing.push('OPENAI_API_KEY');
+  if (!model) missing.push('OPENAI_CHAT_MODEL');
 
-  if (missing.length === 0 && resourceName && apiKey && deployment) {
-    const azure = createAzure({ resourceName, apiKey, apiVersion });
-    cachedModel = azure.chat(deployment);
+  if (missing.length === 0 && apiKey && model) {
+    const openai = createOpenAI({ apiKey, baseURL });
+    cachedModel = openai.chat(model);
     return cachedModel;
   }
 
@@ -45,18 +43,18 @@ export function getChatModel(): LanguageModel {
   }
 
   // Dev/test fallback: a stub language model that lets routes wire up without
-  // real Azure credentials. The chat-model module is imported only from server
+  // real OpenAI credentials. The chat-model module is imported only from server
   // code, so this never reaches the client bundle.
   const placeholderUsage = {
     inputTokens: { total: 0, noCache: 0, cacheRead: 0, cacheWrite: 0 },
     outputTokens: { total: 0, text: 0, reasoning: 0 },
   } as const;
   cachedModel = new MockLanguageModelV3({
-    provider: 'mock-azure',
+    provider: 'mock-openai',
     modelId: 'mock-chat',
     doGenerate: async () => ({
       content: [
-        { type: 'text', text: '[mock] AZURE_* env vars are not set; returning a placeholder.' },
+        { type: 'text', text: '[mock] OPENAI_* env vars are not set; returning a placeholder.' },
       ],
       finishReason: { unified: 'stop', raw: 'stop' },
       usage: placeholderUsage,

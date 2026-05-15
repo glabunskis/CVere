@@ -46,10 +46,10 @@ const SYSTEM_PROMPTS = {
     'You review the candidate\'s interview answers. For each answer, return one short feedback note with a severity reflecting how complete and concrete the answer is.',
 } as const;
 
-type AzureMethodName = keyof typeof SYSTEM_PROMPTS;
+type OpenAiMethodName = keyof typeof SYSTEM_PROMPTS;
 
 interface RunOptions<Schema extends z.ZodTypeAny> {
-  method: AzureMethodName;
+  method: OpenAiMethodName;
   schema: Schema;
   prompt: string;
   schemaName: string;
@@ -76,25 +76,25 @@ async function runStructured<Schema extends z.ZodTypeAny>({
       prompt,
       experimental_telemetry: {
         isEnabled: true,
-        functionId: `azure-provider:${method}`,
+        functionId: `openai-provider:${method}`,
       },
     });
     logger.info(
       { method, durationMs: Date.now() - start },
-      'azure-provider call completed',
+      'openai-provider call completed',
     );
     return output as z.infer<Schema>;
   } catch (err) {
     logger.error(
       { method, durationMs: Date.now() - start, err },
-      'azure-provider call failed',
+      'openai-provider call failed',
     );
     throw err;
   }
 }
 
-export class AzureAiProvider implements AiProvider {
-  readonly name = 'azure' as const;
+export class OpenAiProvider implements AiProvider {
+  readonly name = 'openai' as const;
 
   async extractJobDescription(
     input: z.input<typeof extractJobDescriptionInputSchema>,

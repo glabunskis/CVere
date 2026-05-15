@@ -1,6 +1,8 @@
 import { getSession } from '@/features/account/controllers/get-session';
 import { listAchievements } from '@/features/achievements/controllers/list-achievements';
 import { listAdvice } from '@/features/advice/controllers/list-advice';
+import { loadMessages } from '@/features/chat/storage/chat-message-store';
+import type { ChatUIMessage } from '@/features/chat/types';
 import { listCoverLetters } from '@/features/letters/controllers/get-letters';
 import { PreviewStoreProvider } from '@/features/previewer/components/preview-store-provider';
 import { PreviewerPane } from '@/features/previewer/components/previewer-pane';
@@ -29,13 +31,15 @@ export default async function DashboardPage() {
     );
   }
 
-  const [pdfPath, achievements, openAdvice, recentTailored, recentLetters] = await Promise.all([
+  const [pdfPath, achievements, openAdvice, recentTailored, recentLetters, chatMessages] = await Promise.all([
     ensureMasterPdfPath(user, prefs.master_pdf_path),
     listAchievements({ status: 'pending' }),
     listAdvice({ status: 'open' }),
     listTailoredCvs(),
     listCoverLetters(),
+    loadMessages(user.id),
   ]);
+  const initialChatMessages = chatMessages as ChatUIMessage[];
 
   const signedUrl = await signMasterUrl(pdfPath);
 
@@ -66,6 +70,7 @@ export default async function DashboardPage() {
             id: row.id,
             label: `${row.job?.role ?? '[MISSING] role'}${row.job?.company ? ` - ${row.job.company}` : ''}`,
           }))}
+          initialChatMessages={initialChatMessages}
         />
       </section>
     </PreviewStoreProvider>
