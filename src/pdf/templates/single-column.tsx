@@ -20,6 +20,7 @@ export function SingleColumnCv({
   snapshot,
   sections,
   identityName,
+  contact,
   contactLine,
   accent,
   dateFormats = DEFAULT_DATE_FORMATS,
@@ -33,7 +34,7 @@ export function SingleColumnCv({
   return (
     <Document>
       <Page size={pdfTheme.page.size} style={styles.page}>
-        <Header name={identityName} contact={contactLine} styles={styles} />
+        <Header name={identityName} contact={contact} contactLine={contactLine} accent={accent} styles={styles} />
         <SummaryBlock summary={summary} styles={styles} />
         <ExperienceSection experiences={experiences} styles={styles} />
         <ProjectsSection projects={projects} styles={styles} />

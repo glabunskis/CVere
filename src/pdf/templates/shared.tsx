@@ -2,7 +2,7 @@ import type { AiProfile } from '@/libs/ai/types';
 import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/utils/format-date';
 import { Text, View } from '@react-pdf/renderer';
 
-import { Bullet, Section } from '../primitives';
+import { Bullet, type ProfileContact, Section } from '../primitives';
 import type { PdfStyles } from '../theme';
 
 export type TailoredSections = {
@@ -27,6 +27,7 @@ export type TemplateProps = {
   snapshot: AiProfile;
   sections: TailoredSections;
   identityName: string;
+  contact?: ProfileContact;
   contactLine?: string;
   accent: string;
   dateFormats?: DateFormats;

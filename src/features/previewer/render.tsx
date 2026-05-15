@@ -1,6 +1,7 @@
-import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
+import { getOrCreateProfile,type ProfileRow } from '@/features/profile/controllers/get-profile';
 import { getProfileChildren } from '@/features/profile/controllers/get-profile-children';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
+import type { ProfileContact } from '@/pdf/primitives';
 import { MasterCv } from '@/pdf/render-master-cv';
 import { DEFAULT_ACCENT } from '@/pdf/theme';
 import { renderToBuffer } from '@react-pdf/renderer';
@@ -13,6 +14,17 @@ import 'server-only';
 const STORAGE_BUCKET = 'pdf';
 const MASTER_FILENAME = 'master.pdf';
 
+export function buildProfileContact(profile: ProfileRow, fallbackEmail: string | null): ProfileContact {
+  return {
+    location: profile.location,
+    phone: profile.phone,
+    email: profile.contact_email ?? fallbackEmail,
+    linkedinUrl: profile.linkedin_url,
+    githubUrl: profile.github_url,
+    websiteUrl: profile.website_url,
+  };
+}
+
 export async function renderAndUploadMasterCv(user: User): Promise<string> {
   const profile = await getOrCreateProfile();
   if (!profile) throw new Error('Profile not available');
@@ -24,8 +36,8 @@ export async function renderAndUploadMasterCv(user: User): Promise<string> {
   if (!prefs) throw new Error('CV preferences not available');
 
   const userMetadata = (user.user_metadata ?? {}) as { full_name?: string };
-  const identity = userMetadata.full_name ?? user.email ?? '[MISSING] name';
-  const contactLine = user.email ?? undefined;
+  const identity = profile.full_name ?? userMetadata.full_name ?? user.email ?? '[MISSING] name';
+  const contact = buildProfileContact(profile, user.email ?? null);
 
   const buffer = await renderToBuffer(
     <MasterCv
@@ -34,7 +46,7 @@ export async function renderAndUploadMasterCv(user: User): Promise<string> {
       template={prefs.template}
       accent={prefs.accent_hex || DEFAULT_ACCENT}
       identityName={identity}
-      contactLine={contactLine}
+      contact={contact}
       dateFormats={{
         education: prefs.education_date_format,
         certification: prefs.certification_date_format,

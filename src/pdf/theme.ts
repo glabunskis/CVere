@@ -63,14 +63,51 @@ export function createStyles(accent: string = DEFAULT_ACCENT) {
       fontSize: pdfTheme.type.sizes.title,
       fontWeight: 'bold',
       color: pdfTheme.colors.text,
-      marginBottom: 4,
+      lineHeight: 1,
+      marginBottom: 8,
       textAlign: 'center',
+      letterSpacing: 0.3,
     },
     subtitle: {
       fontSize: pdfTheme.type.sizes.small,
       color: pdfTheme.colors.muted,
       marginBottom: 6,
       textAlign: 'center',
+    },
+    headerContactRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 6,
+      rowGap: 2,
+    },
+    headerContactItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    headerContactIcon: {
+      marginRight: 3,
+    },
+    headerContactText: {
+      fontSize: pdfTheme.type.sizes.small,
+      color: pdfTheme.colors.text,
+    },
+    headerContactLink: {
+      fontSize: pdfTheme.type.sizes.small,
+      color: accent,
+      textDecoration: 'none',
+    },
+    headerContactSeparator: {
+      fontSize: pdfTheme.type.sizes.small,
+      color: pdfTheme.colors.muted,
+      marginHorizontal: 5,
+    },
+    headerRule: {
+      marginTop: 4,
+      marginBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: accent,
     },
     sectionTitle: {
       fontSize: pdfTheme.type.sizes.h1,

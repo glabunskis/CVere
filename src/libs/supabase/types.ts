@@ -608,25 +608,46 @@ export type Database = {
       }
       profile: {
         Row: {
+          contact_email: string | null
           created_at: string
+          full_name: string | null
+          github_url: string | null
           id: string
+          linkedin_url: string | null
+          location: string | null
+          phone: string | null
           summary: string | null
           updated_at: string
           user_id: string
+          website_url: string | null
         }
         Insert: {
+          contact_email?: string | null
           created_at?: string
+          full_name?: string | null
+          github_url?: string | null
           id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          phone?: string | null
           summary?: string | null
           updated_at?: string
           user_id: string
+          website_url?: string | null
         }
         Update: {
+          contact_email?: string | null
           created_at?: string
+          full_name?: string | null
+          github_url?: string | null
           id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          phone?: string | null
           summary?: string | null
           updated_at?: string
           user_id?: string
+          website_url?: string | null
         }
         Relationships: []
       }

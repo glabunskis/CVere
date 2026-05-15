@@ -1,8 +1,9 @@
 import type { ProfileChildren } from '@/features/profile/controllers/get-profile-children';
 import { buildProfileSnapshot } from '@/features/tailored/snapshot';
 
-import { Cv, type CvTemplate } from './Cv';
 import type { DateFormats } from './templates/shared';
+import { Cv, type CvTemplate } from './Cv';
+import type { ProfileContact } from './primitives';
 import { DEFAULT_ACCENT } from './theme';
 
 export type MasterCvProps = {
@@ -11,6 +12,7 @@ export type MasterCvProps = {
   template: CvTemplate;
   accent?: string;
   identityName: string;
+  contact?: ProfileContact;
   contactLine?: string;
   dateFormats?: DateFormats;
 };
@@ -21,6 +23,7 @@ export function MasterCv({
   template,
   accent = DEFAULT_ACCENT,
   identityName,
+  contact,
   contactLine,
   dateFormats,
 }: MasterCvProps) {
@@ -31,6 +34,7 @@ export function MasterCv({
       snapshot={snapshot}
       sections={{}}
       identityName={identityName}
+      contact={contact}
       contactLine={contactLine}
       accent={accent}
       dateFormats={dateFormats}

@@ -1,5 +1,6 @@
 import type {
   CertificationInput,
+  ContactInput,
   EducationInput,
   ExperienceInput,
   LanguageInput,
@@ -11,6 +12,7 @@ export type TexImportFile = { name: string; content: string };
 
 export type TexImportResult = {
   summary: string | null;
+  contact: ContactInput | null;
   experience: ExperienceInput[];
   projects: ProjectInput[];
   skills: SkillInput[];
@@ -36,6 +38,7 @@ export function parseTexImport(files: TexImportFile[]): TexImportResult {
   const warnings: string[] = [];
   const result: TexImportResult = {
     summary: null,
+    contact: null,
     experience: [],
     projects: [],
     skills: [],
@@ -107,13 +110,93 @@ export function parseTexImport(files: TexImportFile[]): TexImportResult {
         `Root .tex references files not included in upload: ${missing.join(', ')}. Upload them together (or as a .zip).`,
       );
     }
-    // Header parsing is intentionally omitted (no contact schema in v1).
-    if (/\\faEnvelope|\\faPhone|\\faLinkedin|\\faMapMarker/.test(rootFile.content)) {
-      warnings.push('Header contact details (email, phone, location, LinkedIn) were detected but not imported (no contact schema yet).');
+    const contact = parseHeaderContact(rootFile.content);
+    if (contact) {
+      result.contact = contact;
     }
   }
 
   return result;
+}
+
+// =============================================================================
+// Header contact extraction
+// =============================================================================
+
+function parseHeaderContact(rootContent: string): ContactInput | null {
+  // Header lives between \begin{center} ... \end{center} in the example layouts.
+  const centerMatch = rootContent.match(/\\begin\{center\}([\s\S]*?)\\end\{center\}/);
+  const block = centerMatch ? centerMatch[1] : rootContent;
+  if (!/\\fa(?:Envelope|Phone|Linkedin|Github|MapMarker|Globe)/.test(block)) {
+    return null;
+  }
+
+  const contact: ContactInput = {
+    fullName: null,
+    location: null,
+    phone: null,
+    contactEmail: null,
+    linkedinUrl: null,
+    githubUrl: null,
+    websiteUrl: null,
+  };
+
+  for (const segment of splitHeaderSegments(block)) {
+    if (/\\faMapMarker/.test(segment)) {
+      contact.location = stripIcons(segment) || null;
+    } else if (/\\faEnvelope/.test(segment)) {
+      contact.contactEmail = extractHrefTarget(segment, 'mailto:') ?? extractEmail(segment);
+    } else if (/\\faPhone/.test(segment)) {
+      contact.phone = stripIcons(segment) || null;
+    } else if (/\\faLinkedin/.test(segment)) {
+      const href = extractHrefRaw(segment);
+      contact.linkedinUrl = href ?? completeUrl(stripIcons(segment), 'https://www.linkedin.com/in/');
+    } else if (/\\faGithub/.test(segment)) {
+      const href = extractHrefRaw(segment);
+      contact.githubUrl = href ?? completeUrl(stripIcons(segment), 'https://github.com/');
+    } else if (/\\faGlobe/.test(segment)) {
+      contact.websiteUrl = extractHrefRaw(segment) ?? null;
+    }
+  }
+
+  const hasAny = Object.values(contact).some((value) => value && String(value).length > 0);
+  return hasAny ? contact : null;
+}
+
+function splitHeaderSegments(block: string): string[] {
+  // Authors typically separate header items with \quad / \qquad / `|`. Keep
+  // groups roughly aligned with each `\fa…` icon command.
+  return block
+    .split(/\\quad|\\qquad|\\hfill|\|/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function stripIcons(segment: string): string {
+  return unwrapLatex(segment).trim();
+}
+
+function extractHrefRaw(segment: string): string | null {
+  const m = segment.match(/\\href\{([^}]+)\}/);
+  return m ? m[1].trim() : null;
+}
+
+function extractHrefTarget(segment: string, scheme: string): string | null {
+  const raw = extractHrefRaw(segment);
+  if (!raw) return null;
+  return raw.startsWith(scheme) ? raw.slice(scheme.length) : raw;
+}
+
+function extractEmail(segment: string): string | null {
+  const text = stripIcons(segment);
+  const m = text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+  return m ? m[0] : null;
+}
+
+function completeUrl(handle: string, prefix: string): string | null {
+  if (!handle) return null;
+  if (/^https?:\/\//i.test(handle)) return handle;
+  return `${prefix}${handle.replace(/^@/, '')}`;
 }
 
 // =============================================================================

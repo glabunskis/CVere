@@ -13,6 +13,46 @@ export const summarySchema = z.object({
 });
 export type SummaryInput = z.infer<typeof summarySchema>;
 
+const optionalText = (max: number) =>
+  z
+    .string()
+    .max(max)
+    .or(z.literal(''))
+    .nullable()
+    .optional()
+    .transform((value) => (value === '' || value == null ? null : value));
+
+const optionalUrl = (max: number) =>
+  z
+    .string()
+    .max(max)
+    .url()
+    .or(z.literal(''))
+    .nullable()
+    .optional()
+    .transform((value) => (value === '' || value == null ? null : value));
+
+const optionalEmail = (max: number) =>
+  z
+    .string()
+    .max(max)
+    .email()
+    .or(z.literal(''))
+    .nullable()
+    .optional()
+    .transform((value) => (value === '' || value == null ? null : value));
+
+export const contactSchema = z.object({
+  fullName: optionalText(160),
+  location: optionalText(160),
+  phone: optionalText(40),
+  contactEmail: optionalEmail(200),
+  linkedinUrl: optionalUrl(300),
+  githubUrl: optionalUrl(300),
+  websiteUrl: optionalUrl(300),
+});
+export type ContactInput = z.infer<typeof contactSchema>;
+
 export const experienceSchema = z.object({
   id: z.uuid().optional(),
   position: z.number().int().min(0).default(0),
@@ -92,6 +132,7 @@ export type LanguageInput = z.infer<typeof languageSchema>;
 
 export const profileSectionInputSchema = z.discriminatedUnion('section', [
   z.object({ section: z.literal('summary'), payload: summarySchema }),
+  z.object({ section: z.literal('contact'), payload: contactSchema }),
   z.object({ section: z.literal('experience'), payload: experienceSchema }),
   z.object({ section: z.literal('project'), payload: projectSchema }),
   z.object({ section: z.literal('skill'), payload: skillSchema }),

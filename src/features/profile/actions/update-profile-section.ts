@@ -28,6 +28,26 @@ export const updateProfileSection = authActionClient
       return { ok: true as const };
     }
 
+    if (parsedInput.section === 'contact') {
+      const payload = parsedInput.payload;
+      const { error } = await supabase
+        .from('profile')
+        .update({
+          full_name: payload.fullName,
+          location: payload.location,
+          phone: payload.phone,
+          contact_email: payload.contactEmail,
+          linkedin_url: payload.linkedinUrl,
+          github_url: payload.githubUrl,
+          website_url: payload.websiteUrl,
+        })
+        .eq('id', profile.id)
+        .eq('user_id', ctx.user.id);
+      if (error) throw new Error(error.message);
+      revalidatePath('/profile');
+      return { ok: true as const };
+    }
+
     if (parsedInput.section === 'experience') {
       const payload = parsedInput.payload;
       const insertable = {

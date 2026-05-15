@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
+import type { TablesUpdate } from '@/libs/supabase/types';
 
 import { parseTexImport } from '../import/tex-parser';
 import { renderAndUploadMasterCv } from '../render';
@@ -26,14 +27,26 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
     }
   }
 
-  // Profile summary: replace if provided, leave alone otherwise.
+  // Profile summary + contact: replace if provided, leave existing values alone otherwise.
+  const profileUpdate: TablesUpdate<'profile'> = {};
   if (parsed.summary && parsed.summary.length > 0) {
+    profileUpdate.summary = parsed.summary;
+  }
+  if (parsed.contact) {
+    if (parsed.contact.location) profileUpdate.location = parsed.contact.location;
+    if (parsed.contact.phone) profileUpdate.phone = parsed.contact.phone;
+    if (parsed.contact.contactEmail) profileUpdate.contact_email = parsed.contact.contactEmail;
+    if (parsed.contact.linkedinUrl) profileUpdate.linkedin_url = parsed.contact.linkedinUrl;
+    if (parsed.contact.githubUrl) profileUpdate.github_url = parsed.contact.githubUrl;
+    if (parsed.contact.websiteUrl) profileUpdate.website_url = parsed.contact.websiteUrl;
+  }
+  if (Object.keys(profileUpdate).length > 0) {
     const { error } = await supabase
       .from('profile')
-      .update({ summary: parsed.summary })
+      .update(profileUpdate)
       .eq('id', profile.id)
       .eq('user_id', ctx.user.id);
-    if (error) throw new Error(`Failed to update summary: ${error.message}`);
+    if (error) throw new Error(`Failed to update profile: ${error.message}`);
   }
 
   const counts = {

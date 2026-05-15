@@ -20,6 +20,7 @@ export function TwoColumnCv({
   snapshot,
   sections,
   identityName,
+  contact,
   contactLine,
   accent,
   dateFormats = DEFAULT_DATE_FORMATS,
@@ -33,7 +34,7 @@ export function TwoColumnCv({
   return (
     <Document>
       <Page size={pdfTheme.page.size} style={styles.page}>
-        <Header name={identityName} contact={contactLine} styles={styles} />
+        <Header name={identityName} contact={contact} contactLine={contactLine} accent={accent} styles={styles} />
         <View style={styles.twoColumnRow}>
           <View style={styles.columnLeft}>
             <SummaryBlock summary={summary} styles={styles} />

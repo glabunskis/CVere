@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { getOrCreateCvPreferences } from '@/features/previewer/controllers/get-cv-preferences';
+import { buildProfileContact } from '@/features/previewer/render';
+import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
 import { profileSnapshotSchema } from '@/features/tailored/schemas';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
@@ -27,9 +29,12 @@ type Sections = {
 export const exportPdf = authActionClient.inputSchema(exportPdfSchema).action(async ({ parsedInput, ctx }) => {
   const supabase = await createSupabaseServerClient();
 
+  const profile = await getOrCreateProfile();
+  const contact = profile ? buildProfileContact(profile, ctx.user.email ?? null) : undefined;
+
   const userMetadata = (ctx.user.user_metadata ?? {}) as { full_name?: string };
-  const identity = userMetadata.full_name ?? ctx.user.email ?? '[MISSING] name';
-  const contactLine = ctx.user.email ?? undefined;
+  const identity =
+    profile?.full_name ?? userMetadata.full_name ?? ctx.user.email ?? '[MISSING] name';
 
   const prefs = await getOrCreateCvPreferences();
   const template = prefs?.template ?? 'single-column';
@@ -66,7 +71,7 @@ export const exportPdf = authActionClient.inputSchema(exportPdfSchema).action(as
         snapshot={snapshot.data}
         sections={sections}
         identityName={identity}
-        contactLine={contactLine}
+        contact={contact}
         accent={accent}
         dateFormats={dateFormats}
       />,
@@ -84,7 +89,7 @@ export const exportPdf = authActionClient.inputSchema(exportPdfSchema).action(as
     if (error || !row) throw new Error(error?.message ?? 'Cover letter not found');
 
     buffer = await renderToBuffer(
-      <CoverLetter body={row.body} identityName={identity} contactLine={contactLine} accent={accent} />,
+      <CoverLetter body={row.body} identityName={identity} contact={contact} accent={accent} />,
     );
     path = `${ctx.user.id}/${row.slug}.pdf`;
     updateTable = 'cover_letter';

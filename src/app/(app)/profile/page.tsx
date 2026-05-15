@@ -2,6 +2,7 @@ import { getOrCreateCvPreferences } from '@/features/previewer/controllers/get-c
 import { FactEditor } from '@/features/profile/components/fact-editor';
 import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
 import { getProfileChildren } from '@/features/profile/controllers/get-profile-children';
+import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 import { DEFAULT_CV_DATE_FORMAT } from '@/utils/format-date';
 
 export default async function ProfilePage() {
@@ -14,10 +15,17 @@ export default async function ProfilePage() {
     );
   }
 
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const [sections, prefs] = await Promise.all([
     getProfileChildren(profile.id),
     getOrCreateCvPreferences(),
   ]);
+
+  const userMetadata = (user?.user_metadata ?? {}) as { full_name?: string };
 
   return (
     <section className='flex flex-col gap-6'>
@@ -29,6 +37,9 @@ export default async function ProfilePage() {
       </header>
       <FactEditor
         summary={profile.summary}
+        contact={profile}
+        fallbackEmail={user?.email ?? null}
+        fallbackFullName={userMetadata.full_name ?? null}
         sections={sections}
         educationDateFormat={prefs?.education_date_format ?? DEFAULT_CV_DATE_FORMAT}
         certificationDateFormat={prefs?.certification_date_format ?? DEFAULT_CV_DATE_FORMAT}
