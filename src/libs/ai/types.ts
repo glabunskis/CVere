@@ -29,7 +29,7 @@ export const achievementSectionSchema = z.enum([
 
 export const adviceNoteSchema = z.object({
   target: adviceTargetSchema,
-  targetRefId: z.string().uuid().nullable().optional(),
+  targetRefId: z.uuid().nullable().optional(),
   severity: adviceSeveritySchema,
   body: z.string().min(1),
 });
@@ -45,7 +45,7 @@ export const aiProfileSchema = z.object({
   experience: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         company: z.string(),
         role: z.string(),
         location: z.string().nullable().optional(),
@@ -61,7 +61,7 @@ export const aiProfileSchema = z.object({
   projects: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         name: z.string(),
         description: z.string().nullable().optional(),
         link: z.string().nullable().optional(),
@@ -73,7 +73,7 @@ export const aiProfileSchema = z.object({
   skills: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         name: z.string(),
         category: z.string().nullable().optional(),
         level: z.string().nullable().optional(),
@@ -83,7 +83,7 @@ export const aiProfileSchema = z.object({
   education: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         institution: z.string(),
         degree: z.string().nullable().optional(),
         field: z.string().nullable().optional(),
@@ -96,7 +96,7 @@ export const aiProfileSchema = z.object({
   certifications: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         name: z.string(),
         issuer: z.string().nullable().optional(),
         issuedAt: z.string().nullable().optional(),
@@ -108,7 +108,7 @@ export const aiProfileSchema = z.object({
   languages: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         name: z.string(),
         proficiency: z.string().nullable().optional(),
       }),
@@ -163,27 +163,27 @@ export const tailorCvInputSchema = z.object({
 export const tailoredSectionsSchema = z.object({
   summary: z.string(),
   sections: z.object({
-    experienceOrder: z.array(z.string().uuid()).default([]),
+    experienceOrder: z.array(z.uuid()).default([]),
     experienceOverrides: z
       .record(
-        z.string().uuid(),
+        z.uuid(),
         z.object({
           summary: z.string().nullable().optional(),
           bullets: z.array(z.string()).default([]),
         }),
       )
       .default({}),
-    projectsOrder: z.array(z.string().uuid()).default([]),
+    projectsOrder: z.array(z.uuid()).default([]),
     projectsOverrides: z
       .record(
-        z.string().uuid(),
+        z.uuid(),
         z.object({
           description: z.string().nullable().optional(),
           bullets: z.array(z.string()).default([]),
         }),
       )
       .default({}),
-    skillsOrder: z.array(z.string().uuid()).default([]),
+    skillsOrder: z.array(z.uuid()).default([]),
     emphasis: z.array(z.string()).default([]),
   }),
 });
@@ -235,7 +235,7 @@ export type InterviewAnswerOutput = z.infer<typeof interviewAnswerSchema>;
 export const interviewReviewInputSchema = z.object({
   answers: z.array(
     z.object({
-      id: z.string().uuid(),
+      id: z.uuid(),
       question: z.string(),
       answer: z.string(),
     }),
@@ -243,7 +243,7 @@ export const interviewReviewInputSchema = z.object({
 });
 
 export const interviewReviewItemSchema = z.object({
-  interviewAnswerId: z.string().uuid(),
+  interviewAnswerId: z.uuid(),
   severity: adviceSeveritySchema,
   body: z.string().min(1),
 });

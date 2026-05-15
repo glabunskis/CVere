@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { updateSummary } from '@/features/chat/services/profile-content-service';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 
@@ -18,12 +19,7 @@ export const updateProfileSection = authActionClient
     }
 
     if (parsedInput.section === 'summary') {
-      const { error } = await supabase
-        .from('profile')
-        .update({ summary: parsedInput.payload.summary ?? null })
-        .eq('id', profile.id)
-        .eq('user_id', ctx.user.id);
-      if (error) throw new Error(error.message);
+      await updateSummary({ user: ctx.user, summary: parsedInput.payload.summary ?? null });
       revalidatePath('/profile');
       return { ok: true as const };
     }

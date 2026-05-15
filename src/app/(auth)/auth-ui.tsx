@@ -15,7 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { signInWithPassword, signUpWithPassword } from './auth-actions';
 
 const credentialsSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 type CredentialsForm = z.infer<typeof credentialsSchema>;

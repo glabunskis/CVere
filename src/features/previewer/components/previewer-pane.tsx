@@ -1,36 +1,25 @@
 'use client';
 
-import { useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { createSignedDownload } from '@/features/exports/actions/export-pdf';
 
 import { renderMasterCv } from '../actions/render-master-cv';
+import { usePreviewStore } from '../stores/preview-store';
 
 type Props = {
-  initialUrl: string | null;
-  pdfPath: string | null;
   pinnedLabel: string | null;
 };
 
-export function PreviewerPane({ initialUrl, pdfPath, pinnedLabel }: Props) {
-  const [signedUrl, setSignedUrl] = useState<string | null>(initialUrl);
-  const [version, setVersion] = useState(0);
-
-  const { execute: sign } = useAction(createSignedDownload, {
-    onSuccess: ({ data }) => {
-      if (data?.url) setSignedUrl(data.url);
-    },
-    onError: ({ error }) => toast.error(error.serverError ?? 'Failed to sign URL'),
-  });
+export function PreviewerPane({ pinnedLabel }: Props) {
+  const signedUrl = usePreviewStore((s) => s.signedUrl);
+  const markPreviewDirty = usePreviewStore((s) => s.markPreviewDirty);
 
   const { execute: rerender, isExecuting: rerendering } = useAction(renderMasterCv, {
     onSuccess: () => {
       toast.success('Preview refreshed');
-      if (pdfPath) sign({ path: pdfPath });
-      setVersion((v) => v + 1);
+      void markPreviewDirty();
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to refresh preview'),
   });
@@ -62,7 +51,7 @@ export function PreviewerPane({ initialUrl, pdfPath, pinnedLabel }: Props) {
       <div className='relative flex-1'>
         {signedUrl ? (
           <iframe
-            key={`${version}-${signedUrl}`}
+            key={signedUrl}
             src={`${signedUrl}#toolbar=1&navpanes=0`}
             title='CV preview'
             className='absolute inset-0 h-full w-full rounded-b-xl'
