@@ -41,15 +41,17 @@ export async function POST(req: Request): Promise<Response> {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // 2. Subscription gate — see require-active-subscription.ts.
-  // try {
-  //   await requireActiveSubscription();
-  // } catch (err) {
-  //   if (err instanceof ProSubscriptionRequiredError) {
-  //     return new Response(err.message, { status: err.httpStatus });
-  //   }
-  //   throw err;
-  // }
+  // 2. Subscription gate. Off by default; flip CHAT_REQUIRE_SUBSCRIPTION=true to enforce.
+  if (process.env.CHAT_REQUIRE_SUBSCRIPTION === 'true') {
+    try {
+      await requireActiveSubscription();
+    } catch (err) {
+      if (err instanceof ProSubscriptionRequiredError) {
+        return new Response(err.message, { status: err.httpStatus });
+      }
+      throw err;
+    }
+  }
 
   // 3. Parse body. v6 `useChat` POSTs `{ messages: UIMessage[] }`.
   let body: ChatRequestBody;

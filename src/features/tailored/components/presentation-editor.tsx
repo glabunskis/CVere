@@ -65,9 +65,9 @@ export function PresentationEditor({ id, status, pdfPath, sections }: Props) {
           summary,
           sections: {
             experienceOrder: sections.experienceOrder ?? [],
-            experienceOverrides: {},
+            experienceOverrides: [],
             projectsOrder: sections.projectsOrder ?? [],
-            projectsOverrides: {},
+            projectsOverrides: [],
             skillsOrder: sections.skillsOrder ?? [],
             emphasis: emphasisText
               .split(',')

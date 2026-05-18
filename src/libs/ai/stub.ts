@@ -209,9 +209,9 @@ export class StubAiProvider implements AiProvider {
       summary,
       sections: {
         experienceOrder,
-        experienceOverrides: {},
+        experienceOverrides: [],
         projectsOrder,
-        projectsOverrides: {},
+        projectsOverrides: [],
         skillsOrder,
         emphasis: dedupeStrings([...parsed.jd.stack, ...parsed.jd.keywords.slice(0, 5)]),
       },

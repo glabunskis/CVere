@@ -11,6 +11,7 @@
     "email:dev": "email dev --dir ./src/features/emails --port 3001",
     "email:export": "email export",
     "stripe:listen": "stripe listen --forward-to=localhost:3000/api/webhooks --project-name=cvere",
+    "smoke:ai": "node --env-file=.env.local --import tsx ./scripts/smoke-ai.ts",
     "generate-types": "npx supabase gen types typescript --project-id vjklhmtexivjfxzpsciz --schema public > src/libs/supabase/types.ts",
     "supabase:link": "env-cmd -f ./.env.local supabase link --project-ref vjklhmtexivjfxzpsciz",
     "migration:new": "supabase migration new",
@@ -69,6 +70,7 @@
     "prettier": "^3.8.2",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "supabase": "^2.98.2",
+    "tsx": "^4.22.1",
     "typescript": "^6.0.2"
   }
 }

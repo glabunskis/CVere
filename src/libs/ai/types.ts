@@ -126,12 +126,17 @@ export const extractJobDescriptionInputSchema = z.object({
   rawText: z.string().min(1),
 });
 
+// Output schema: every field is required so the JSON Schema sent to OpenAI in
+// strict structured-output mode lists them all in `required`. Empty arrays /
+// null are valid values; `.optional()` and `.default()` are intentionally
+// avoided here because they make the field non-required at the JSON Schema
+// level, which OpenAI strict mode rejects.
 export const extractedJdSchema = z.object({
-  requirements: z.array(z.string()).default([]),
-  stack: z.array(z.string()).default([]),
-  seniority: z.string().nullable().optional(),
-  keywords: z.array(z.string()).default([]),
-  ownership: z.array(z.string()).default([]),
+  requirements: z.array(z.string()),
+  stack: z.array(z.string()),
+  seniority: z.string().nullable(),
+  keywords: z.array(z.string()),
+  ownership: z.array(z.string()),
 });
 
 export type ExtractedJd = z.infer<typeof extractedJdSchema>;
@@ -160,31 +165,33 @@ export const tailorCvInputSchema = z.object({
   jd: extractedJdSchema,
 });
 
+// Output schema: same strict-mode rules as extractedJdSchema. Overrides used
+// to be `Record<uuid, override>` but Zod 4 emits that shape with a
+// `propertyNames` constraint, which OpenAI strict mode does not permit.
+// Switched to an array of `{ id, ...override }`; the id is the experience /
+// project uuid being overridden. None of the consumers currently read
+// overrides, so the shape change is internal-only.
 export const tailoredSectionsSchema = z.object({
   summary: z.string(),
   sections: z.object({
-    experienceOrder: z.array(z.uuid()).default([]),
-    experienceOverrides: z
-      .record(
-        z.uuid(),
-        z.object({
-          summary: z.string().nullable().optional(),
-          bullets: z.array(z.string()).default([]),
-        }),
-      )
-      .default({}),
-    projectsOrder: z.array(z.uuid()).default([]),
-    projectsOverrides: z
-      .record(
-        z.uuid(),
-        z.object({
-          description: z.string().nullable().optional(),
-          bullets: z.array(z.string()).default([]),
-        }),
-      )
-      .default({}),
-    skillsOrder: z.array(z.uuid()).default([]),
-    emphasis: z.array(z.string()).default([]),
+    experienceOrder: z.array(z.uuid()),
+    experienceOverrides: z.array(
+      z.object({
+        id: z.uuid(),
+        summary: z.string().nullable(),
+        bullets: z.array(z.string()),
+      }),
+    ),
+    projectsOrder: z.array(z.uuid()),
+    projectsOverrides: z.array(
+      z.object({
+        id: z.uuid(),
+        description: z.string().nullable(),
+        bullets: z.array(z.string()),
+      }),
+    ),
+    skillsOrder: z.array(z.uuid()),
+    emphasis: z.array(z.string()),
   }),
 });
 
