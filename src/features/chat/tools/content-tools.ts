@@ -174,10 +174,16 @@ export const CONTENT_TOOL_NAMES = [
 /**
  * Tool names that mutate the user's CV. Used by the route to decide whether
  * to re-render the master PDF at the end of a turn (`onStepFinish` flips the
- * `dirty` flag when any of these are called). `readProfile` is intentionally
- * excluded.
+ * `dirty` flag when any of these are called). Read-only tools (`readProfile`,
+ * `listPendingAchievements`, `listVacancies`, `readVacancy`) and the
+ * `dismissAchievement` housekeeping tool are intentionally excluded.
+ *
+ * Kept flat (single set) on purpose — sessions are generic in Phase 3+, so
+ * every tool registers on every session and tool gating belongs in the tool
+ * implementations themselves, not here.
  */
 export const MUTATING_TOOLS: ReadonlySet<string> = new Set([
+  // Summary + bullet ops (content-tools)
   'rewriteSummary',
   'editExperienceBullet',
   'addExperienceBullet',
@@ -185,6 +191,44 @@ export const MUTATING_TOOLS: ReadonlySet<string> = new Set([
   'editProjectBullet',
   'addProjectBullet',
   'removeProjectBullet',
+  // Bullet move (entry-tools)
+  'moveExperienceBullet',
+  'moveProjectBullet',
+  // Entry lifecycle (entry-tools)
+  'addExperience',
+  'editExperience',
+  'removeExperience',
+  'moveExperience',
+  'addProject',
+  'editProject',
+  'removeProject',
+  'moveProject',
+  // Section CRUD (section-tools)
+  'addSkill',
+  'editSkill',
+  'removeSkill',
+  'moveSkill',
+  'addEducation',
+  'editEducation',
+  'removeEducation',
+  'moveEducation',
+  'addCertification',
+  'editCertification',
+  'removeCertification',
+  'moveCertification',
+  'addLanguage',
+  'editLanguage',
+  'removeLanguage',
+  'moveLanguage',
+  // Identity / contact (identity-tools)
+  'setFullName',
+  'setLocation',
+  'setPhone',
+  'setContactEmail',
+  'setLinks',
+  // Achievement integration (achievement-tools) — re-renders because section inserts land
+  'integrateAchievement',
+  // Style (style-tools)
   'setTemplate',
   'setAccentHex',
   'setEducationDateFormat',

@@ -9,12 +9,60 @@ import { cn } from '@/lib/utils';
 const TOOL_LABELS: Record<string, string> = {
   readProfile: 'Read profile',
   rewriteSummary: 'Rewrite summary',
+  // Experience bullets
   editExperienceBullet: 'Edit experience bullet',
   addExperienceBullet: 'Add experience bullet',
   removeExperienceBullet: 'Remove experience bullet',
+  moveExperienceBullet: 'Move experience bullet',
+  // Project bullets
   editProjectBullet: 'Edit project bullet',
   addProjectBullet: 'Add project bullet',
   removeProjectBullet: 'Remove project bullet',
+  moveProjectBullet: 'Move project bullet',
+  // Experience entries
+  addExperience: 'Add experience',
+  editExperience: 'Edit experience',
+  removeExperience: 'Remove experience',
+  moveExperience: 'Move experience',
+  // Project entries
+  addProject: 'Add project',
+  editProject: 'Edit project',
+  removeProject: 'Remove project',
+  moveProject: 'Move project',
+  // Skills
+  addSkill: 'Add skill',
+  editSkill: 'Edit skill',
+  removeSkill: 'Remove skill',
+  moveSkill: 'Move skill',
+  // Education
+  addEducation: 'Add education',
+  editEducation: 'Edit education',
+  removeEducation: 'Remove education',
+  moveEducation: 'Move education',
+  // Certifications
+  addCertification: 'Add certification',
+  editCertification: 'Edit certification',
+  removeCertification: 'Remove certification',
+  moveCertification: 'Move certification',
+  // Languages
+  addLanguage: 'Add language',
+  editLanguage: 'Edit language',
+  removeLanguage: 'Remove language',
+  moveLanguage: 'Move language',
+  // Identity / contact
+  setFullName: 'Set full name',
+  setLocation: 'Set location',
+  setPhone: 'Set phone',
+  setContactEmail: 'Set contact email',
+  setLinks: 'Set links',
+  // Achievements
+  listPendingAchievements: 'List pending achievements',
+  integrateAchievement: 'Integrate achievement',
+  dismissAchievement: 'Dismiss achievement',
+  // Vacancies
+  listVacancies: 'List vacancies',
+  readVacancy: 'Read vacancy',
+  // Style
   setTemplate: 'Set template',
   setAccentHex: 'Set accent color',
   setEducationDateFormat: 'Set education date format',

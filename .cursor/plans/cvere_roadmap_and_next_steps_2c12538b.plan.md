@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: phase-2
     content: "Deepen master-CV chat tools: missing sections, reorder/create/delete, achievement integration, vacancy-aware editing"
-    status: pending
+    status: completed
   - id: phase-3
     content: "Multi-session chat (generic threads): schema, store rework, useChat per-session id, resumable-stream per-session id"
     status: pending
@@ -244,7 +244,7 @@ Handoff notes:
 - **Deferred to Phase 8 per the original plan**: per-tool-call re-run button (still no UI surface), retry/edit on last assistant/user message, the "chunked fade-in" effect (`smoothStream` alone reads well enough). The original plan called for a `data-preview-dirty` carrying `{kind, refId}` — that's a Phase 4 change, not Phase 1, so the side-channel still uses the legacy `{ renderedAt }` shape.
 - **Verification**: `npm run lint` clean; `npm run build` clean (Next 16.2.6, Turbopack, TypeScript pass). Manual smoke test of the streaming UX requires `OPENAI_API_KEY` + `OPENAI_CHAT_MODEL` in `.env.local`.
 
-### Phase 2 — Deepen master-CV chat tools
+### Phase 2 — Deepen master-CV chat tools (DONE)
 
 Goal: the user can do every realistic master-CV edit by talking to the agent, including the things currently bouncing them to manual forms. With Phase 1 in place, every new tool ships with its arguments and outputs visible from day one.
 
@@ -265,6 +265,28 @@ Guardrails:
 - Every new mutator returns a one-line human-readable string. (The tool-card body from Phase 1 will render arguments structured; the return value just goes in the result section.)
 
 Done when: the user can land in the dashboard, say "rebuild my CV for an SRE role at $company using this vacancy I just pasted", and the chat reads the vacancy, edits summary + relevant bullets + skills + ordering, and re-renders the PDF — all without the manual editor, with every tool call visible.
+
+Handoff notes:
+
+- **`src/features/chat/services/profile-content-service.ts`**: extended with section CRUD (`add/edit/remove/move` for skill, education, certification, language), entry lifecycle (`add/edit/remove/move` for experience and project), bullet reorder (`moveExperienceBullet`, `moveProjectBullet`), and `updateProfileIdentity` (single patch for full_name / location / phone / contact_email / linkedin_url / github_url / website_url). All routes go through `getOrCreateProfile` for the profile_id, validate ownership via `user_id`, trim strings, and coerce empty strings to `null` via the shared `normaliseNullableString` helper. New `MAX_SECTION_ROWS = 50` cap matches the existing 50-bullet cap; the new `assertCapAndNextPosition(user, table)` helper centralises the cap check + auto-positioning (max + 1). Move ops fan out one UPDATE per row that needs renumbering — bounded at 50 by the cap.
+- **`src/features/achievements/services/achievement-service.ts` (new)**: extracted `integrateAchievementById`, `dismissAchievementById`, and `listPendingAchievementRows` so both the `/achievements` safe-action and the chat tools share one implementation. The placeholder `[MISSING] company` / `[MISSING] institution` strings survive on the `experience` and `education` inserts (polish-track copy fix, not a Phase 2 change). The safe-action (`achievement-actions.ts`) keeps the `revalidatePath('/achievements' | '/profile' | '/dashboard')` triggers; the chat tool path relies on the route's end-of-turn PDF render plus normal RSC refetches.
+- **`src/features/chat/schemas.ts`**: added zod input schemas for every new tool. Identity / contact schemas use the trimmed-string + nullable-clear convention. Email and URL fields use `z.email()` / `z.url()` (zod v4 top-level helpers). `setLinksInputSchema` uses a `.refine()` to require at least one of the three link fields. The `optionalShortText`, `isoDateSchema`, and `stackSchema` helpers are local to the section/entry block; everything carries `.describe()` metadata so the model gets a clean JSON Schema.
+- **New tool modules** (each is a separate file so PRs around a single domain stay small; all of them register flat on the route alongside the existing groups):
+  - `src/features/chat/tools/section-tools.ts` — 16 tools (4 ops × 4 sections).
+  - `src/features/chat/tools/entry-tools.ts` — 10 tools (add/edit/remove/move + moveBullet × 2). `editExperience` / `editProject` cover parent-entry fields (company, role, dates, etc.); bullets stay on the dedicated bullet tools.
+  - `src/features/chat/tools/identity-tools.ts` — `setFullName`, `setLocation`, `setPhone`, `setContactEmail`, `setLinks` (last accepts any subset of linkedinUrl / githubUrl / websiteUrl).
+  - `src/features/chat/tools/achievement-tools.ts` — `listPendingAchievements`, `integrateAchievement`, `dismissAchievement`. `previewText` truncates the inbox row to 240 chars so the snapshot stays small.
+  - `src/features/chat/tools/vacancy-tools.ts` — `listVacancies`, `readVacancy`. Read-only; the chat reads raw text and edits master in place until tailored CVs ship in Phase 4. `readVacancy` clamps text at 20k chars (same as the ingest cap).
+- **`src/features/chat/tools/content-tools.ts`**: `MUTATING_TOOLS` set is now the central registry for every mutating tool name across all tool modules (per the plan's "flat" guardrail). `integrateAchievement` is included (it inserts into experience / project / etc.); `listPendingAchievements`, `listVacancies`, `readVacancy`, and `dismissAchievement` are excluded (the latter doesn't change anything that affects the rendered PDF).
+- **`src/app/api/chat/route.ts`**: spreads the five new tool builders into the existing `tools` object alongside `buildStyleTools` and `buildContentTools`. Tool gating logic in `onStepFinish` is unchanged — it still checks `MUTATING_TOOLS.has(toolName)` to flip the `dirty` flag for the end-of-turn render.
+- **`src/features/chat/system-prompt.ts`**: rewritten. Lifted the "Do not change identity-level fields" restriction now that identity tools exist. Added a tool-groups index, the per-tool confirmation rule (`integrateAchievement` needs explicit user agreement on both achievement and target section, `remove*` tools need confirmation), and the vacancy-aware-editing instruction telling the model to invent nothing beyond what's in the profile.
+- **`src/features/chat/components/tool-call-card.tsx`**: `TOOL_LABELS` extended with humanised labels for every new tool name (grouped by domain). Auto-humanise still covers anything we forget. No behavioural changes.
+- **`src/features/achievements/actions/achievement-actions.ts`**: refactored to call the new service. Behaviour and revalidation paths are unchanged.
+- **Verification**: `npm run lint` clean; `npm run build` clean (Next 16.2.6, Turbopack, TypeScript pass). End-to-end tool exercise requires a live OpenAI key — no automated test added.
+- **Deferred to later phases (not regressions)**:
+  - `stepCountIs(8)` in the route is unchanged. A long tailoring turn (readProfile + readVacancy + many edits) may hit the cap; if that happens before Phase 4, bump conservatively to 16. Left alone for now to avoid silent runtime cost growth.
+  - The "[MISSING] company" / "[MISSING] institution" placeholders on achievement integration into experience / education are still in the service — flagged as a polish-track copy fix.
+  - Per-tool re-run UI (Phase 8) and undo on destructive tools (Phase 9) still deferred; the system prompt's confirmation rule is the only safety net for the new `remove*` tools.
 
 ### Phase 3 — Multi-session chat (generic threads)
 

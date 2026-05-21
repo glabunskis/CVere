@@ -1,10 +1,15 @@
 import { z } from 'zod';
 
+import { achievementSectionSchema } from '@/features/achievements/schemas';
 import {
   accentHexSchema,
   cvDateFormatSchema,
   cvTemplateSchema,
 } from '@/features/previewer/schemas';
+import {
+  languageProficiencySchema,
+  skillLevelSchema,
+} from '@/features/profile/schemas';
 
 /**
  * Zod schemas for chat tool inputs (consumed by `streamText`'s `tools` map)
@@ -132,6 +137,342 @@ export const addProjectBulletInputSchema = z.object({
 export const removeProjectBulletInputSchema = z.object({
   projectId: projectIdSchema,
   index: bulletIndexSchema,
+});
+
+const fromIndexSchema = z
+  .int()
+  .min(0)
+  .describe('0-based source position. Out-of-range values fail.');
+
+const toIndexSchema = z
+  .int()
+  .min(0)
+  .describe(
+    '0-based destination position. Values past the end clamp to the last slot.',
+  );
+
+export const moveExperienceBulletInputSchema = z.object({
+  experienceId: experienceIdSchema,
+  fromIndex: fromIndexSchema,
+  toIndex: toIndexSchema,
+});
+
+export const moveProjectBulletInputSchema = z.object({
+  projectId: projectIdSchema,
+  fromIndex: fromIndexSchema,
+  toIndex: toIndexSchema,
+});
+
+// =============================================================================
+// Experience / project entry lifecycle
+// =============================================================================
+
+const isoDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+  .nullable()
+  .describe('ISO date (YYYY-MM-DD) or null to clear.');
+
+const optionalIsoDateSchema = isoDateSchema.optional();
+
+const optionalShortText = (max: number) =>
+  z
+    .string()
+    .max(max)
+    .nullable()
+    .optional()
+    .describe(`Optional free text, at most ${max} characters. Pass null to clear.`);
+
+const stackSchema = z
+  .array(z.string().min(1).max(80))
+  .max(40)
+  .describe('Tech stack tags (lowercase, short). Max 40 items.');
+
+const newEntryBulletsSchema = z
+  .array(bulletTextSchema)
+  .max(50)
+  .describe('Optional initial bullets. Add more later via addExperienceBullet/addProjectBullet.');
+
+export const addExperienceInputSchema = z.object({
+  company: z.string().min(1).max(200).describe('Employer name. Required.'),
+  role: z.string().min(1).max(200).describe('Job title. Required.'),
+  location: optionalShortText(200),
+  startDate: optionalIsoDateSchema,
+  endDate: optionalIsoDateSchema,
+  isCurrent: z
+    .boolean()
+    .optional()
+    .describe('True if this is the user\'s current role. Defaults to false.'),
+  summary: optionalShortText(2000),
+  bullets: newEntryBulletsSchema.optional(),
+  stack: stackSchema.optional(),
+});
+
+export const editExperienceInputSchema = z.object({
+  experienceId: experienceIdSchema,
+  company: z.string().min(1).max(200).optional(),
+  role: z.string().min(1).max(200).optional(),
+  location: optionalShortText(200),
+  startDate: optionalIsoDateSchema,
+  endDate: optionalIsoDateSchema,
+  isCurrent: z.boolean().optional(),
+  summary: optionalShortText(2000),
+  stack: stackSchema.optional(),
+});
+
+export const removeExperienceInputSchema = z.object({
+  experienceId: experienceIdSchema,
+});
+
+export const moveExperienceInputSchema = z.object({
+  experienceId: experienceIdSchema,
+  toIndex: toIndexSchema,
+});
+
+export const addProjectInputSchema = z.object({
+  name: z.string().min(1).max(200).describe('Project name. Required.'),
+  description: optionalShortText(2000),
+  link: z.url().max(300).nullable().optional().describe('Optional project URL.'),
+  bullets: newEntryBulletsSchema.optional(),
+  stack: stackSchema.optional(),
+});
+
+export const editProjectInputSchema = z.object({
+  projectId: projectIdSchema,
+  name: z.string().min(1).max(200).optional(),
+  description: optionalShortText(2000),
+  link: z.url().max(300).nullable().optional(),
+  stack: stackSchema.optional(),
+});
+
+export const removeProjectInputSchema = z.object({
+  projectId: projectIdSchema,
+});
+
+export const moveProjectInputSchema = z.object({
+  projectId: projectIdSchema,
+  toIndex: toIndexSchema,
+});
+
+// =============================================================================
+// Skill / education / certification / language CRUD
+// =============================================================================
+
+const skillIdSchema = z
+  .uuid()
+  .describe('The UUID of the target skill. Get this from `readProfile`; never invent an id.');
+
+const educationIdSchema = z
+  .uuid()
+  .describe('The UUID of the target education entry. Get this from `readProfile`; never invent an id.');
+
+const certificationIdSchema = z
+  .uuid()
+  .describe('The UUID of the target certification. Get this from `readProfile`; never invent an id.');
+
+const languageIdSchema = z
+  .uuid()
+  .describe('The UUID of the target language. Get this from `readProfile`; never invent an id.');
+
+const chatSkillLevelSchema = skillLevelSchema
+  .nullable()
+  .optional()
+  .describe(
+    'Optional skill level: "beginner", "intermediate", "advanced", or "expert". Pass null to clear.',
+  );
+
+const chatLanguageProficiencySchema = languageProficiencySchema
+  .nullable()
+  .optional()
+  .describe(
+    'Optional proficiency: "beginner", "elementary", "intermediate", "upper_intermediate", "advanced", or "native". Pass null to clear.',
+  );
+
+export const addSkillInputSchema = z.object({
+  name: z.string().min(1).max(120).describe('Skill name (e.g. "PostgreSQL"). Required.'),
+  category: optionalShortText(80),
+  level: chatSkillLevelSchema,
+});
+
+export const editSkillInputSchema = z.object({
+  skillId: skillIdSchema,
+  name: z.string().min(1).max(120).optional(),
+  category: optionalShortText(80),
+  level: chatSkillLevelSchema,
+});
+
+export const removeSkillInputSchema = z.object({ skillId: skillIdSchema });
+export const moveSkillInputSchema = z.object({
+  skillId: skillIdSchema,
+  toIndex: toIndexSchema,
+});
+
+export const addEducationInputSchema = z.object({
+  institution: z.string().min(1).max(200).describe('School / university name. Required.'),
+  degree: optionalShortText(200),
+  field: optionalShortText(200),
+  startDate: optionalIsoDateSchema,
+  endDate: optionalIsoDateSchema,
+  summary: optionalShortText(2000),
+});
+
+export const editEducationInputSchema = z.object({
+  educationId: educationIdSchema,
+  institution: z.string().min(1).max(200).optional(),
+  degree: optionalShortText(200),
+  field: optionalShortText(200),
+  startDate: optionalIsoDateSchema,
+  endDate: optionalIsoDateSchema,
+  summary: optionalShortText(2000),
+});
+
+export const removeEducationInputSchema = z.object({ educationId: educationIdSchema });
+export const moveEducationInputSchema = z.object({
+  educationId: educationIdSchema,
+  toIndex: toIndexSchema,
+});
+
+export const addCertificationInputSchema = z.object({
+  name: z.string().min(1).max(200).describe('Certification title. Required.'),
+  issuer: optionalShortText(200),
+  issuedAt: optionalIsoDateSchema,
+  expiresAt: optionalIsoDateSchema,
+  link: z.url().max(300).nullable().optional().describe('Optional verification URL.'),
+});
+
+export const editCertificationInputSchema = z.object({
+  certificationId: certificationIdSchema,
+  name: z.string().min(1).max(200).optional(),
+  issuer: optionalShortText(200),
+  issuedAt: optionalIsoDateSchema,
+  expiresAt: optionalIsoDateSchema,
+  link: z.url().max(300).nullable().optional(),
+});
+
+export const removeCertificationInputSchema = z.object({
+  certificationId: certificationIdSchema,
+});
+export const moveCertificationInputSchema = z.object({
+  certificationId: certificationIdSchema,
+  toIndex: toIndexSchema,
+});
+
+export const addLanguageInputSchema = z.object({
+  name: z.string().min(1).max(120).describe('Language name (e.g. "German"). Required.'),
+  proficiency: chatLanguageProficiencySchema,
+});
+
+export const editLanguageInputSchema = z.object({
+  languageId: languageIdSchema,
+  name: z.string().min(1).max(120).optional(),
+  proficiency: chatLanguageProficiencySchema,
+});
+
+export const removeLanguageInputSchema = z.object({ languageId: languageIdSchema });
+export const moveLanguageInputSchema = z.object({
+  languageId: languageIdSchema,
+  toIndex: toIndexSchema,
+});
+
+// =============================================================================
+// Identity / contact fields
+// =============================================================================
+
+export const setFullNameInputSchema = z.object({
+  fullName: z
+    .string()
+    .max(160)
+    .nullable()
+    .describe('Display name shown at the top of the CV. Pass null or empty to clear.'),
+});
+
+export const setLocationInputSchema = z.object({
+  location: z
+    .string()
+    .max(160)
+    .nullable()
+    .describe('City, country, or "Remote — UTC+1". Pass null or empty to clear.'),
+});
+
+export const setPhoneInputSchema = z.object({
+  phone: z
+    .string()
+    .max(40)
+    .nullable()
+    .describe('Phone number in any format. Pass null or empty to clear.'),
+});
+
+export const setContactEmailInputSchema = z.object({
+  contactEmail: z
+    .email()
+    .max(200)
+    .nullable()
+    .describe('Public contact email shown on the CV. Pass null to clear.'),
+});
+
+export const setLinksInputSchema = z
+  .object({
+    linkedinUrl: z
+      .url()
+      .max(300)
+      .nullable()
+      .optional()
+      .describe('LinkedIn profile URL. Pass null to clear; omit to leave unchanged.'),
+    githubUrl: z
+      .url()
+      .max(300)
+      .nullable()
+      .optional()
+      .describe('GitHub profile URL. Pass null to clear; omit to leave unchanged.'),
+    websiteUrl: z
+      .url()
+      .max(300)
+      .nullable()
+      .optional()
+      .describe(
+        'Personal website / portfolio URL. Pass null to clear; omit to leave unchanged.',
+      ),
+  })
+  .refine(
+    (value) =>
+      value.linkedinUrl !== undefined ||
+      value.githubUrl !== undefined ||
+      value.websiteUrl !== undefined,
+    { message: 'Provide at least one of linkedinUrl, githubUrl, or websiteUrl.' },
+  );
+
+// =============================================================================
+// Achievement integration
+// =============================================================================
+
+export const listPendingAchievementsInputSchema = z.object({});
+
+export const integrateAchievementInputSchema = z.object({
+  achievementId: z
+    .uuid()
+    .describe('UUID of the achievement to integrate. Get it from `listPendingAchievements`.'),
+  targetSection: achievementSectionSchema.describe(
+    'Section the achievement should land in: "summary", "experience", "project", "skill", ' +
+      '"education", "certification", or "language". The user must confirm the target before you call this.',
+  ),
+});
+
+export const dismissAchievementInputSchema = z.object({
+  achievementId: z
+    .uuid()
+    .describe('UUID of the achievement to dismiss. Get it from `listPendingAchievements`.'),
+});
+
+// =============================================================================
+// Vacancy reading
+// =============================================================================
+
+export const listVacanciesInputSchema = z.object({});
+
+export const readVacancyInputSchema = z.object({
+  vacancyId: z
+    .uuid()
+    .describe('UUID of the vacancy to read. Get it from `listVacancies`.'),
 });
 
 // =============================================================================

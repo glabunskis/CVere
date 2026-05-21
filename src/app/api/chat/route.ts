@@ -15,8 +15,13 @@ import {
 } from '@/features/account/controllers/require-active-subscription';
 import { appendMessages, loadMessages } from '@/features/chat/storage/chat-message-store';
 import { CHAT_SYSTEM_PROMPT } from '@/features/chat/system-prompt';
+import { buildAchievementTools } from '@/features/chat/tools/achievement-tools';
 import { buildContentTools, MUTATING_TOOLS } from '@/features/chat/tools/content-tools';
+import { buildEntryTools } from '@/features/chat/tools/entry-tools';
+import { buildIdentityTools } from '@/features/chat/tools/identity-tools';
+import { buildSectionTools } from '@/features/chat/tools/section-tools';
 import { buildStyleTools } from '@/features/chat/tools/style-tools';
+import { buildVacancyTools } from '@/features/chat/tools/vacancy-tools';
 import { renderAndUploadMasterCv } from '@/features/previewer/render';
 import { getChatModel } from '@/libs/ai/chat-model';
 import {
@@ -81,10 +86,16 @@ export async function POST(req: Request): Promise<Response> {
     }
   }
 
-  // 5. Build tools with the user closure.
+  // 5. Build tools with the user closure. Kept as one flat object — the route
+  // does not gate tools by surface or session kind.
   const tools = {
     ...buildStyleTools(user),
     ...buildContentTools(user),
+    ...buildEntryTools(user),
+    ...buildSectionTools(user),
+    ...buildIdentityTools(user),
+    ...buildAchievementTools(user),
+    ...buildVacancyTools(user),
   };
 
   // Tracks whether any mutating tool was called. End-of-turn render runs only
