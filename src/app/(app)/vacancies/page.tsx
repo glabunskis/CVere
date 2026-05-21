@@ -11,7 +11,7 @@ export default async function VacanciesPage() {
       <header>
         <h1 className='text-2xl font-semibold tracking-tight'>Vacancies</h1>
         <p className='text-sm text-muted-foreground'>
-          Vacancies you want to tailor against. Ingestion extracts requirements, stack, and ownership signals.
+          Saved vacancies. Paste the raw description; review or delete from the detail view.
         </p>
       </header>
 

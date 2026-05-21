@@ -43,27 +43,27 @@ function PrinciplesSection() {
       <div className='grid w-full gap-6 sm:grid-cols-2 lg:grid-cols-3'>
         <PrincipleCard
           title='One fact base'
-          description='Your profile is the only place that holds canonical facts. Tailored variants never overwrite it.'
+          description='Your profile is the only place that holds canonical facts. Edit it directly or via chat.'
         />
         <PrincipleCard
           title='Achievements inbox'
-          description='Capture wins as they happen. Normalize and integrate them into the right profile section on demand.'
+          description='Capture wins as they happen. Integrate them into the right profile section when you decide.'
         />
         <PrincipleCard
-          title='Vacancy-driven tailoring'
-          description='Paste a job description, see matches and gaps, then generate a tailored CV and cover letter.'
+          title='Vacancies log'
+          description='Save job descriptions you care about. Reference them later when editing your CV.'
         />
         <PrincipleCard
-          title='Critique, never auto-applied'
-          description='AI review writes advice notes. You decide what to apply or dismiss.'
+          title='Chat-driven editor'
+          description='Ask the agent to rewrite a bullet, switch templates, or change accents. Edits land on your master CV.'
         />
         <PrincipleCard
           title='No fabrication'
-          description='AI tailors by emphasis and ordering. Missing data is marked, never invented.'
+          description='The agent edits text you provide. Missing data is marked, never invented.'
         />
         <PrincipleCard
-          title='PDF export'
-          description='Render tailored CVs and cover letters to PDF straight from the app.'
+          title='Live PDF preview'
+          description='The previewer renders your master CV to PDF and re-signs it after every chat edit.'
         />
       </div>
     </section>

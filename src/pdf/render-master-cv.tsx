@@ -1,5 +1,5 @@
+import { buildProfileSnapshot } from '@/features/chat/profile-snapshot';
 import type { ProfileChildren } from '@/features/profile/controllers/get-profile-children';
-import { buildProfileSnapshot } from '@/features/tailored/snapshot';
 
 import type { DateFormats } from './templates/shared';
 import { Cv, type CvTemplate } from './Cv';

@@ -61,7 +61,7 @@ export function JdForm() {
       </div>
       <div className='flex justify-end'>
         <Button type='submit' size='sm' disabled={isExecuting || rawText.trim().length < 20}>
-          {isExecuting ? 'Extracting...' : 'Ingest'}
+          {isExecuting ? 'Ingesting...' : 'Ingest'}
         </Button>
       </div>
     </form>

@@ -8,11 +8,7 @@ import { Button } from '@/components/ui/button';
 import { renderMasterCv } from '../actions/render-master-cv';
 import { usePreviewStore } from '../stores/preview-store';
 
-type Props = {
-  pinnedLabel: string | null;
-};
-
-export function PreviewerPane({ pinnedLabel }: Props) {
+export function PreviewerPane() {
   const signedUrl = usePreviewStore((s) => s.signedUrl);
   const markPreviewDirty = usePreviewStore((s) => s.markPreviewDirty);
 
@@ -28,10 +24,7 @@ export function PreviewerPane({ pinnedLabel }: Props) {
     <div className='flex h-full flex-col rounded-xl border bg-muted/30'>
       <div className='flex items-center justify-between gap-2 border-b bg-background px-3 py-2'>
         <div className='flex items-center gap-2 text-sm'>
-          <span className='font-medium'>{pinnedLabel ? 'Pinned tailored CV' : 'Master CV'}</span>
-          {pinnedLabel ? (
-            <span className='rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground'>{pinnedLabel}</span>
-          ) : null}
+          <span className='font-medium'>Master CV</span>
         </div>
         <div className='flex items-center gap-2'>
           <Button size='sm' variant='outline' disabled={rerendering} onClick={() => rerender()}>

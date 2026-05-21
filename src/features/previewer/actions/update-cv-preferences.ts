@@ -16,16 +16,7 @@ export const updateCvPreferences = authActionClient
     }
 
     await applyCvPreferencesPatch(ctx.user, parsedInput);
-
-    // Re-render only when the visible CV changed, not for pin-only.
-    const visualChange =
-      parsedInput.template !== undefined ||
-      parsedInput.accentHex !== undefined ||
-      parsedInput.educationDateFormat !== undefined ||
-      parsedInput.certificationDateFormat !== undefined;
-    if (visualChange) {
-      await renderAndUploadMasterCv(ctx.user);
-    }
+    await renderAndUploadMasterCv(ctx.user);
 
     revalidatePath('/dashboard');
     revalidatePath('/profile');

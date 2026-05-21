@@ -7,10 +7,6 @@ export const ingestJobDescriptionSchema = z.object({
 });
 export type IngestJobDescriptionInput = z.infer<typeof ingestJobDescriptionSchema>;
 
-export const reExtractJobDescriptionSchema = z.object({
-  id: z.string().uuid(),
-});
-
 export const deleteJobDescriptionSchema = z.object({
   id: z.string().uuid(),
 });

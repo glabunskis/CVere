@@ -1,5 +1,6 @@
 import { tool } from 'ai';
 
+import { buildProfileSnapshot } from '@/features/chat/profile-snapshot';
 import {
   addExperienceBullet,
   addProjectBullet,
@@ -11,7 +12,6 @@ import {
 } from '@/features/chat/services/profile-content-service';
 import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
 import { getProfileChildren } from '@/features/profile/controllers/get-profile-children';
-import { buildProfileSnapshot } from '@/features/tailored/snapshot';
 import { logger } from '@/libs/logger';
 import type { User } from '@supabase/supabase-js';
 

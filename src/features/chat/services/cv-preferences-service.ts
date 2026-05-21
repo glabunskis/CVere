@@ -8,7 +8,6 @@ import 'server-only';
 export type CvPreferencesPatch = {
   template?: 'single-column' | 'two-column';
   accentHex?: string;
-  pinnedTailoredCvId?: string | null;
   educationDateFormat?: CvDateFormat;
   certificationDateFormat?: CvDateFormat;
 };
@@ -16,7 +15,6 @@ export type CvPreferencesPatch = {
 type CvPreferencesUpdate = {
   template?: 'single-column' | 'two-column';
   accent_hex?: string;
-  pinned_tailored_cv_id?: string | null;
   education_date_format?: CvDateFormat;
   certification_date_format?: CvDateFormat;
 };
@@ -25,7 +23,6 @@ function toUpdate(patch: CvPreferencesPatch): CvPreferencesUpdate {
   const update: CvPreferencesUpdate = {};
   if (patch.template !== undefined) update.template = patch.template;
   if (patch.accentHex !== undefined) update.accent_hex = patch.accentHex;
-  if (patch.pinnedTailoredCvId !== undefined) update.pinned_tailored_cv_id = patch.pinnedTailoredCvId;
   if (patch.educationDateFormat !== undefined) update.education_date_format = patch.educationDateFormat;
   if (patch.certificationDateFormat !== undefined) {
     update.certification_date_format = patch.certificationDateFormat;
@@ -37,7 +34,6 @@ export function isEmptyPatch(patch: CvPreferencesPatch): boolean {
   return (
     patch.template === undefined &&
     patch.accentHex === undefined &&
-    patch.pinnedTailoredCvId === undefined &&
     patch.educationDateFormat === undefined &&
     patch.certificationDateFormat === undefined
   );

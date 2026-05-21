@@ -15,10 +15,6 @@ const items: NavItem[] = [
   { href: '/profile', label: 'Profile' },
   { href: '/achievements', label: 'Achievements' },
   { href: '/vacancies', label: 'Vacancies' },
-  { href: '/tailored', label: 'Tailored' },
-  { href: '/letters', label: 'Letters' },
-  { href: '/advice', label: 'Advice' },
-  { href: '/interview', label: 'Interview' },
 ];
 
 export function AppNav() {

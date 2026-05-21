@@ -46,16 +46,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const guardedExact = ['/account', '/manage-subscription'];
-  const guardedPrefixes = [
-    '/dashboard',
-    '/profile',
-    '/achievements',
-    '/vacancies',
-    '/tailored',
-    '/letters',
-    '/advice',
-    '/interview',
-  ];
+  const guardedPrefixes = ['/dashboard', '/profile', '/achievements', '/vacancies'];
 
   const pathname = request.nextUrl.pathname;
   const isGuarded =

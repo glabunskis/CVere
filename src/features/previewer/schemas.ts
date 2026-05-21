@@ -13,7 +13,6 @@ export const accentHexSchema = z
 export const updateCvPreferencesSchema = z.object({
   template: cvTemplateSchema.optional(),
   accentHex: accentHexSchema.optional(),
-  pinnedTailoredCvId: z.uuid().nullable().optional(),
   educationDateFormat: cvDateFormatSchema.optional(),
   certificationDateFormat: cvDateFormatSchema.optional(),
 });

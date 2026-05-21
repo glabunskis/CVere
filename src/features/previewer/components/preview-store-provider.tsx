@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 
-import { createSignedDownload } from '@/features/exports/actions/export-pdf';
+import { createSignedDownload } from '@/features/previewer/actions/sign-pdf-url';
 
 import { usePreviewStore } from '../stores/preview-store';
 

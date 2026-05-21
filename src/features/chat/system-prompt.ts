@@ -11,8 +11,6 @@ Hard rules:
   is not present, tell the user the item does not exist.
 - Bullets are addressed by (id, index). Index is 0-based. If you don't
   know the current bullets, call readProfile first.
-- Do not edit tailored CVs or cover letters. They are out of scope. If the
-  user asks, say so and offer to edit the master CV instead.
 - Do not change identity-level fields (name, email, phone). They are not
   exposed as tools.
 - After every batch of edits, write one short sentence summarising what

@@ -1,6 +1,13 @@
 # CVere
 
-A clean SaaS app built with Next.js, Supabase, and Stripe. Handles authentication, subscription billing, webhook synchronization, and transactional emails out of the box so you can focus on building your product.
+A personal CV operating system. One truthful fact base. A chat agent edits the master CV in place; the PDF preview is always live next to it.
+
+## What it is
+
+- **One master CV.** A normalized profile (summary, experience, projects, skills, education, certifications, languages) is the only place facts are written.
+- **Chat-driven editing.** A streaming agent at `POST /api/chat` rewrites bullets, edits the summary, and changes template/accent/date formats via tools. It never invents data.
+- **Live PDF preview.** Every chat edit re-renders `master.pdf` and re-signs the storage URL.
+- **Manual CRUD elsewhere.** Achievements (an inbox of wins) and vacancies (saved JD raw text) are entirely user-driven — no AI calls outside the chat route.
 
 ## Tech Stack
 
@@ -10,161 +17,107 @@ A clean SaaS app built with Next.js, Supabase, and Stripe. Handles authenticatio
 | UI | [React](https://react.dev) 19 |
 | Database & Auth | [Supabase](https://supabase.com) (Postgres + Auth + RLS) |
 | Payments | [Stripe](https://stripe.com) (Checkout, Subscriptions, Customer Portal) |
+| AI | [Vercel AI SDK](https://ai-sdk.dev) + `@ai-sdk/openai` (chat agent only) |
+| PDF | [@react-pdf/renderer](https://react-pdf.org) |
 | Styling | [Tailwind CSS](https://tailwindcss.com) 4 (oklch colors) |
-| Components | [shadcn/ui](https://ui.shadcn.com) (Base Nova style, Base UI primitives) |
+| Components | [shadcn/ui](https://ui.shadcn.com) (Base Nova, Base UI primitives) |
 | Email | [React Email](https://react.email) + [Resend](https://resend.com) |
-| Server Actions | [next-safe-action](https://next-safe-action.dev) (type-safe, validated, middleware-powered) |
+| Server Actions | [next-safe-action](https://next-safe-action.dev) |
 | Forms | [React Hook Form](https://react-hook-form.com) + [@hookform/resolvers](https://github.com/react-hook-form/resolvers) |
-| URL State | [nuqs](https://nuqs.dev) (type-safe search params) |
+| URL State | [nuqs](https://nuqs.dev) |
 | Validation | [Zod](https://zod.dev) 4 |
-| Analytics | [Vercel Analytics](https://vercel.com/analytics) |
+| State | [Zustand](https://zustand.dev) (preview store) |
 | Language | TypeScript 6 (strict mode) |
-| Linting | ESLint 9 (flat config) + Prettier 3 |
-
-## Features
-
-- **Email authentication** -- email + password login via Supabase Auth (with email confirmation on signup)
-- **Type-safe server actions** -- `next-safe-action` with Zod validation, auth middleware, and composable action clients
-- **Form validation** -- React Hook Form with Zod resolver for client-side validation sharing schemas with server actions
-- **URL state management** -- `nuqs` adapter ready for type-safe search params (filters, pagination, tabs)
-- **React Compiler** -- automatic component rendering optimization, no manual memoization needed
-- **Middleware route guards** -- unauthenticated users redirected before pages render
-- **Session refresh** -- Supabase middleware keeps auth cookies in sync
-- **Subscription billing** -- Stripe Checkout for subscriptions, Customer Portal for management
-- **Webhook sync** -- Stripe products, prices, and subscriptions mirrored to Supabase
-- **Row-level security** -- users access only their own data; products/prices are public read-only
-- **Transactional emails** -- React Email templates sent via Resend
-- **Loading & error states** -- `loading.tsx` and `error.tsx` boundaries at every level
-- **Responsive layout** -- mobile menu, desktop navigation
-- **Clean defaults** -- minimal styling using shadcn/ui, ready for customization
 
 ## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── layout.tsx                # Root layout (Geist fonts, header, footer, analytics)
-│   ├── page.tsx                  # Landing page (hero, features, CTA)
-│   ├── navigation.tsx            # Auth-aware header navigation
-│   ├── loading.tsx               # Root loading spinner
-│   ├── error.tsx                 # Root error boundary
-│   ├── (auth)/                   # Auth route group
-│   │   ├── login/page.tsx        # Login page
-│   │   ├── signup/page.tsx       # Signup page
-│   │   ├── auth-page.tsx         # Shared auth page logic
-│   │   ├── auth-ui.tsx           # Email + password auth form
-│   │   ├── auth-actions.ts       # Safe actions (signInWithPassword, signUpWithPassword, signInWithOAuth, signOut)
-│   │   └── auth/callback/
-│   │       └── route.ts          # OAuth + email confirmation callback handler
-│   ├── (account)/                # Protected route group
-│   │   ├── account/
-│   │   │   ├── page.tsx          # Account dashboard
-│   │   │   └── loading.tsx       # Account loading skeleton
-│   │   └── manage-subscription/
-│   │       └── route.ts          # Stripe Customer Portal redirect
-│   └── api/webhooks/
-│       └── route.ts              # Stripe webhook handler
-│
+│   ├── (auth)/                   # login, signup, callback
+│   ├── (account)/                # account, manage-subscription
+│   ├── (app)/                    # Protected app shell + nav
+│   │   ├── dashboard/            # PDF previewer + sidebar (Library + Chat)
+│   │   ├── profile/              # Fact-base editor
+│   │   ├── achievements/         # Capture + integrate inbox
+│   │   ├── vacancies/            # Saved JDs (raw text)
+│   │   └── layout.tsx
+│   └── api/
+│       ├── chat/route.ts         # Streaming chat agent (only AI surface)
+│       └── webhooks/route.ts     # Stripe webhooks
 ├── features/
-│   ├── account/controllers/      # Auth & account data fetching
-│   │   ├── get-session.ts
-│   │   ├── get-user.ts
-│   │   ├── get-subscription.ts
-│   │   ├── get-customer-id.ts
-│   │   ├── get-or-create-customer.ts
-│   │   └── upsert-user-subscription.ts
-│   └── emails/
-│       ├── welcome.tsx           # Welcome email template
-│       └── tailwind.config.ts    # Email-specific Tailwind config
-│
-├── components/
-│   ├── ui/                       # shadcn/ui components (Base Nova)
-│   │   ├── button.tsx
-│   │   ├── input.tsx
-│   │   ├── dropdown-menu.tsx
-│   │   ├── sheet.tsx
-│   │   └── sonner.tsx
-│   ├── account-menu.tsx          # User dropdown (Account, Log Out)
-│   └── logo.tsx                  # App logo
-│
-├── lib/
-│   └── utils.ts                  # cn() helper (clsx + tailwind-merge)
-│
-│
+│   ├── account/                  # Auth, Stripe customer/subscription
+│   ├── achievements/             # Manual CRUD inbox
+│   ├── chat/                     # Tools, services, storage, system prompt
+│   ├── emails/                   # React Email templates
+│   ├── jobs/                     # Vacancies (raw text + delete)
+│   ├── previewer/                # Master CV renderer + sidebar + preview store
+│   └── profile/                  # Fact-base editor
+├── components/ui/                # shadcn/ui (Base Nova)
 ├── libs/
-│   ├── safe-action.ts            # next-safe-action clients (base + authenticated)
-│   ├── supabase/
-│   │   ├── supabase-server-client.ts
-│   │   ├── supabase-admin.ts
-│   │   ├── supabase-middleware-client.ts
-│   │   └── types.ts              # Auto-generated Supabase types
-│   ├── stripe/
-│   │   ├── stripe-admin.ts
-│   │   ├── upsert-product.ts     # Sync Stripe product to Supabase
-│   │   └── upsert-price.ts       # Sync Stripe price to Supabase
-│   └── resend/
-│       └── resend-client.ts
-│
-├── types/
-│   └── stripe.ts                 # Subscription, Product, Price types
-│
-├── utils/
-│   ├── get-env-var.ts
-│   ├── get-url.ts
-│   └── to-date-time.ts
-│
+│   ├── ai/                       # chat-model.ts, resumable-stream.ts
+│   ├── safe-action.ts
+│   ├── stripe/, supabase/, resend/, logger/
+├── pdf/                          # @react-pdf/renderer templates
 ├── config.ts                     # App name & description
 ├── proxy.ts                      # Middleware (session refresh + route guards)
-└── styles/
-    └── globals.css               # Tailwind v4 + shadcn/ui CSS variables (oklch)
+└── styles/globals.css            # Tailwind v4 + shadcn CSS variables (oklch)
 ```
+
+Path alias: `@/*` → `./src/*`
 
 ## Database Schema
 
-The initial migration creates five tables with row-level security:
+Migrations live in `supabase/migrations/`. RLS is mandatory on every public table.
 
 | Table | Purpose | RLS |
 |-------|---------|-----|
-| `users` | User profiles. Auto-created on signup via trigger. | Users read/update own row |
-| `customers` | Maps Supabase user IDs to Stripe customer IDs. | Private |
-| `products` | Stripe products synced via webhooks. | Public read-only |
-| `prices` | Stripe prices synced via webhooks. | Public read-only |
-| `subscriptions` | Stripe subscriptions synced via webhooks. | Users read own rows |
+| `users` | User profiles (auto-created on signup) | Users read/update own row |
+| `customers` | Supabase user → Stripe customer mapping | Private |
+| `products`, `prices` | Stripe catalog (synced via webhooks) | Public read-only |
+| `subscriptions` | Stripe subscriptions (synced via webhooks) | Users read own rows |
+| `profile` | Master CV root (summary + identity/contact) | Owner |
+| `experience`, `project`, `skill`, `education`, `certification`, `language` | Ordered profile children | Owner |
+| `achievement_log_entry` | Append-only inbox of wins | Owner |
+| `job_description` | Saved vacancy raw text | Owner |
+| `cv_preferences` | Template, accent, date formats, cached `master_pdf_path` | Owner |
+| `chat_message` | Persisted chat history | Owner |
+
+Storage: a private `pdf` bucket holds rendered master CVs at `pdf/{user_id}/master.pdf`. Policies enforce owner-scoped access by path prefix.
 
 ## Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org) 20+ (or [Bun](https://bun.sh))
+- [Node.js](https://nodejs.org) 20+
 - [Supabase CLI](https://supabase.com/docs/guides/cli)
 - [Stripe CLI](https://stripe.com/docs/stripe-cli)
+- An OpenAI API key (for the chat agent)
 
-### 1. Clone and Install
+### 1. Clone and install
 
 ```bash
 git clone <your-repo-url>
 cd cvere
-npm install   # or bun install
+npm install
 ```
 
-### 2. Set Up Supabase
+### 2. Set up Supabase
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Go to **Project Settings > API** and note your Project URL, Anon key, and Service role key
-3. Go to **Project Settings > Database** and reset the database password
+1. Create a project at [supabase.com](https://supabase.com).
+2. Note your Project URL, Anon key, and Service role key from **Project Settings > API**.
+3. Reset the database password under **Project Settings > Database**.
 
-### 3. Set Up Stripe
+### 3. Set up Stripe
 
-1. Create a project at [stripe.com](https://stripe.com)
-2. Go to **Developers > API keys** and note your Publishable key and Secret key
-3. Activate the [Customer Portal test link](https://dashboard.stripe.com/test/settings/billing/portal)
+1. Note your Publishable and Secret keys from **Developers > API keys**.
+2. Activate the [Customer Portal test link](https://dashboard.stripe.com/test/settings/billing/portal).
 
-### 4. Set Up Resend
+### 4. Set up Resend
 
-1. Create an account at [resend.com](https://resend.com)
-2. Create an API key at the [API Keys page](https://resend.com/api-keys)
+Create an account at [resend.com](https://resend.com) and grab an API key.
 
-### 5. Configure Environment Variables
+### 5. Configure environment variables
 
 ```bash
 cp .env.local.example .env.local
@@ -184,10 +137,12 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 
 RESEND_API_KEY=re_...
 
+OPENAI_API_KEY=sk-...
+
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-### 6. Run Database Migrations
+### 6. Run database migrations
 
 ```bash
 npx supabase login
@@ -195,7 +150,9 @@ npx supabase link --project-ref <your-project-id>
 npm run migration:up
 ```
 
-### 7. Seed Stripe Products
+`migration:up` applies migrations and regenerates `src/libs/supabase/types.ts`.
+
+### 7. Seed Stripe products
 
 ```bash
 stripe fixtures ./stripe-fixtures.json --api-key <your-stripe-sk>
@@ -203,7 +160,7 @@ stripe fixtures ./stripe-fixtures.json --api-key <your-stripe-sk>
 
 Products and prices sync to Supabase automatically via the webhook.
 
-### 8. Set Up the Stripe Webhook
+### 8. Set up the Stripe webhook
 
 **Local development:**
 
@@ -215,9 +172,9 @@ Copy the displayed webhook signing secret into `STRIPE_WEBHOOK_SECRET` in `.env.
 
 **Production:**
 
-Add a webhook endpoint in Stripe Dashboard > **Developers > Webhooks** pointing to `https://your-app.com/api/webhooks`. Select events: `product.*`, `price.*`, `checkout.session.completed`, `customer.subscription.*`.
+Add a webhook endpoint in Stripe Dashboard > **Developers > Webhooks** pointing to `https://your-app.com/api/webhooks`. Subscribe to `product.*`, `price.*`, `checkout.session.completed`, and `customer.subscription.*`.
 
-### 9. Start Development
+### 9. Start development
 
 ```bash
 npm run dev
@@ -229,53 +186,45 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Script | Description |
 |--------|-------------|
-| `npm run dev` | Start dev server with Turbopack |
+| `npm run dev` | Dev server (Turbopack) |
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
+| `npm run lint` | ESLint (flat config) |
 | `npm run stripe:listen` | Forward Stripe webhooks to localhost |
-| `npm run email:dev` | Start React Email preview server (port 3001) |
+| `npm run email:dev` | React Email preview server (port 3001) |
 | `npm run email:build` | Build email templates |
 | `npm run email:export` | Export email templates to HTML |
-| `npm run generate-types` | Regenerate Supabase TypeScript types |
+| `npm run generate-types` | Regenerate Supabase types |
 | `npm run migration:new <name>` | Create a new migration |
 | `npm run migration:up` | Run migrations + regenerate types |
+
+## Architecture Notes
+
+- **Chat is the only AI surface.** `src/app/api/chat/route.ts` exposes content tools (read profile, rewrite summary, edit/add/remove bullets) and style tools (template, accent, date formats). Every other feature is manual CRUD.
+- **Mutating tools trigger a re-render.** The route detects mutating tool calls in `onStepFinish`, then re-renders the master PDF and emits a `data-preview-dirty` event so the previewer iframe re-signs its URL.
+- **Previewer.** The dashboard hosts a PDF iframe (`PreviewerPane`) plus a sidebar (`PreviewerSidebar`) with Library and Chat tabs. The signed URL lives in a Zustand store and is refreshed via the action in `src/features/previewer/actions/sign-pdf-url.ts`.
+- **Server actions** use `next-safe-action` with Zod. The authenticated client in `src/libs/safe-action.ts` enforces sessions automatically.
+- **Middleware** (`src/proxy.ts`) refreshes Supabase auth cookies and guards `/account`, `/manage-subscription`, `/dashboard`, `/profile`, `/achievements`, `/vacancies`.
+- **Strict TypeScript.** No `any`. React Compiler is on — skip manual `memo`/`useMemo`/`useCallback` unless profiling demands it.
+- **shadcn/ui (Base Nova)** with `@base-ui/react` primitives. Components use the `render` prop for polymorphism, not `asChild`.
 
 ## Customization
 
 ### Branding
 
-Update `src/config.ts` with your app name and description. The logo in `src/components/logo.tsx` is text-only by default -- replace it with your own logo component or image.
+Update `src/config.ts` with your app name and description. The logo in `src/components/logo.tsx` is text-only; replace it with your own component or image.
 
 ### Styling
 
-This app uses shadcn/ui (Base Nova style) with oklch CSS variables defined in `src/styles/globals.css`. Modify the `:root` and `.dark` sections to change the color scheme. See the [shadcn/ui theming docs](https://ui.shadcn.com/docs/theming).
+Theme tokens are in `src/styles/globals.css` (`@theme inline`, oklch). Modify the `:root` and `.dark` sections to change the color scheme. See the [shadcn/ui theming docs](https://ui.shadcn.com/docs/theming).
 
-### Adding Components
+### Adding shadcn components
 
 ```bash
 npx shadcn@latest add <component-name>
 ```
 
-Components are generated to `src/components/ui/` using Base UI primitives.
-
-### Adding OAuth Providers
-
-The auth server actions in `src/app/(auth)/auth-actions.ts` include `signInWithOAuth` supporting Google and GitHub. To enable OAuth, configure providers in your [Supabase Auth settings](https://supabase.com/docs/guides/auth#providers) and add OAuth buttons to `src/app/(auth)/auth-ui.tsx`.
-
-### Adding a Pricing Page
-
-The Stripe webhook handler syncs products and prices to your database. Build a pricing page by querying the `products` and `prices` tables and creating Stripe Checkout sessions via the `stripeAdmin` client.
-
-## Architecture Notes
-
-- **React Compiler** is enabled in `next.config.ts` for automatic rendering optimization.
-- **Middleware** (`src/proxy.ts`) refreshes Supabase auth cookies and guards `/account` and `/manage-subscription` routes.
-- **Server components** are the default. Client components are used only where interactivity is needed.
-- **Server actions** use `next-safe-action` with Zod schema validation and composable middleware. An authenticated action client in `src/libs/safe-action.ts` checks the session automatically.
-- **Webhook handler** validates the Stripe signature, then upserts data to Supabase using the admin client.
-- **shadcn/ui** uses the Base Nova style with `@base-ui/react` primitives. Components use the `render` prop for polymorphism (not `asChild`).
-- **`@/*` path alias** maps to `./src/*`.
+Components are generated to `src/components/ui/`.
 
 ## License
 

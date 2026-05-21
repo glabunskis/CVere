@@ -32,7 +32,7 @@ export default async function ProfilePage() {
       <header>
         <h1 className='text-2xl font-semibold tracking-tight'>Profile</h1>
         <p className='text-sm text-muted-foreground'>
-          Canonical fact base. The only place facts are written. Tailored variants never overwrite this.
+          Canonical fact base. The only place facts are written.
         </p>
       </header>
       <FactEditor

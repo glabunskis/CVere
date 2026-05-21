@@ -14,7 +14,7 @@ export function AddAchievementForm() {
   const [value, setValue] = useState('');
   const { execute, isExecuting } = useAction(addAchievement, {
     onSuccess: () => {
-      toast.success('Captured. AI normalized the text.');
+      toast.success('Captured.');
       setValue('');
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to capture'),
@@ -39,7 +39,7 @@ export function AddAchievementForm() {
       />
       <div className='flex justify-end'>
         <Button type='submit' size='sm' disabled={isExecuting || !value.trim()}>
-          {isExecuting ? 'Normalizing...' : 'Capture'}
+          {isExecuting ? 'Capturing...' : 'Capture'}
         </Button>
       </div>
     </form>

@@ -43,13 +43,8 @@ export function AchievementCard({ row }: { row: AchievementRow }) {
       {row.normalized_text ? (
         <p className='text-sm whitespace-pre-wrap'>{row.normalized_text}</p>
       ) : (
-        <p className='text-sm text-muted-foreground'>Awaiting normalization.</p>
+        <p className='text-sm whitespace-pre-wrap'>{row.raw_text}</p>
       )}
-
-      <details className='text-xs'>
-        <summary className='cursor-pointer text-muted-foreground'>Original</summary>
-        <pre className='mt-2 whitespace-pre-wrap break-words text-xs text-muted-foreground'>{row.raw_text}</pre>
-      </details>
 
       {row.status === 'pending' ? (
         <div className='flex flex-wrap items-center justify-end gap-2'>

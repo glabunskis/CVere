@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 
 import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
-import { getAiProvider } from '@/libs/ai';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 
@@ -17,14 +16,12 @@ export const addAchievement = authActionClient
   .inputSchema(addAchievementSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
-    const ai = getAiProvider();
-    const normalized = await ai.normalizeAchievement({ rawText: parsedInput.rawText });
 
     const { error } = await supabase.from('achievement_log_entry').insert({
       user_id: ctx.user.id,
       raw_text: parsedInput.rawText,
-      normalized_text: normalized.normalizedText,
-      target_section: normalized.suggestedSection,
+      normalized_text: null,
+      target_section: null,
       status: 'pending',
     });
     if (error) throw new Error(error.message);

@@ -56,63 +56,6 @@ export type Database = {
         }
         Relationships: []
       }
-      advice_note: {
-        Row: {
-          body: string
-          cover_letter_id: string | null
-          created_at: string
-          id: string
-          severity: Database["public"]["Enums"]["advice_severity"]
-          status: Database["public"]["Enums"]["advice_status"]
-          tailored_cv_id: string | null
-          target: Database["public"]["Enums"]["advice_target"]
-          target_ref_id: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          body: string
-          cover_letter_id?: string | null
-          created_at?: string
-          id?: string
-          severity?: Database["public"]["Enums"]["advice_severity"]
-          status?: Database["public"]["Enums"]["advice_status"]
-          tailored_cv_id?: string | null
-          target: Database["public"]["Enums"]["advice_target"]
-          target_ref_id?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          body?: string
-          cover_letter_id?: string | null
-          created_at?: string
-          id?: string
-          severity?: Database["public"]["Enums"]["advice_severity"]
-          status?: Database["public"]["Enums"]["advice_status"]
-          tailored_cv_id?: string | null
-          target?: Database["public"]["Enums"]["advice_target"]
-          target_ref_id?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "advice_note_cover_letter_id_fkey"
-            columns: ["cover_letter_id"]
-            isOneToOne: false
-            referencedRelation: "cover_letter"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "advice_note_tailored_cv_id_fkey"
-            columns: ["tailored_cv_id"]
-            isOneToOne: false
-            referencedRelation: "tailored_cv"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       certification: {
         Row: {
           created_at: string
@@ -187,47 +130,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cover_letter: {
-        Row: {
-          body: string
-          created_at: string
-          id: string
-          job_description_id: string
-          pdf_path: string | null
-          slug: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          body?: string
-          created_at?: string
-          id?: string
-          job_description_id: string
-          pdf_path?: string | null
-          slug: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          id?: string
-          job_description_id?: string
-          pdf_path?: string | null
-          slug?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cover_letter_job_description_id_fkey"
-            columns: ["job_description_id"]
-            isOneToOne: false
-            referencedRelation: "job_description"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       customers: {
         Row: {
           id: string
@@ -251,7 +153,6 @@ export type Database = {
           education_date_format: Database["public"]["Enums"]["cv_date_format"]
           id: string
           master_pdf_path: string | null
-          pinned_tailored_cv_id: string | null
           template: Database["public"]["Enums"]["cv_template"]
           updated_at: string
           user_id: string
@@ -263,7 +164,6 @@ export type Database = {
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
           id?: string
           master_pdf_path?: string | null
-          pinned_tailored_cv_id?: string | null
           template?: Database["public"]["Enums"]["cv_template"]
           updated_at?: string
           user_id: string
@@ -275,20 +175,11 @@ export type Database = {
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
           id?: string
           master_pdf_path?: string | null
-          pinned_tailored_cv_id?: string | null
           template?: Database["public"]["Enums"]["cv_template"]
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "cv_preferences_pinned_tailored_cv_id_fkey"
-            columns: ["pinned_tailored_cv_id"]
-            isOneToOne: false
-            referencedRelation: "tailored_cv"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       education: {
         Row: {
@@ -405,79 +296,10 @@ export type Database = {
           },
         ]
       }
-      interview_advice: {
-        Row: {
-          body: string
-          created_at: string
-          id: string
-          interview_answer_id: string | null
-          severity: Database["public"]["Enums"]["advice_severity"]
-          status: Database["public"]["Enums"]["advice_status"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          body: string
-          created_at?: string
-          id?: string
-          interview_answer_id?: string | null
-          severity?: Database["public"]["Enums"]["advice_severity"]
-          status?: Database["public"]["Enums"]["advice_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          id?: string
-          interview_answer_id?: string | null
-          severity?: Database["public"]["Enums"]["advice_severity"]
-          status?: Database["public"]["Enums"]["advice_status"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "interview_advice_interview_answer_id_fkey"
-            columns: ["interview_answer_id"]
-            isOneToOne: false
-            referencedRelation: "interview_answer"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      interview_answer: {
-        Row: {
-          answer: string
-          created_at: string
-          id: string
-          question: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          answer: string
-          created_at?: string
-          id?: string
-          question: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          answer?: string
-          created_at?: string
-          id?: string
-          question?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       job_description: {
         Row: {
           company: string | null
           created_at: string
-          extracted: Json | null
           id: string
           raw_text: string
           role: string | null
@@ -487,7 +309,6 @@ export type Database = {
         Insert: {
           company?: string | null
           created_at?: string
-          extracted?: Json | null
           id?: string
           raw_text: string
           role?: string | null
@@ -497,7 +318,6 @@ export type Database = {
         Update: {
           company?: string | null
           created_at?: string
-          extracted?: Json | null
           id?: string
           raw_text?: string
           role?: string | null
@@ -831,53 +651,6 @@ export type Database = {
           },
         ]
       }
-      tailored_cv: {
-        Row: {
-          created_at: string
-          id: string
-          job_description_id: string
-          pdf_path: string | null
-          profile_snapshot: Json
-          sections: Json
-          slug: string
-          status: Database["public"]["Enums"]["cv_status"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          job_description_id: string
-          pdf_path?: string | null
-          profile_snapshot: Json
-          sections?: Json
-          slug: string
-          status?: Database["public"]["Enums"]["cv_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          job_description_id?: string
-          pdf_path?: string | null
-          profile_snapshot?: Json
-          sections?: Json
-          slug?: string
-          status?: Database["public"]["Enums"]["cv_status"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tailored_cv_job_description_id_fkey"
-            columns: ["job_description_id"]
-            isOneToOne: false
-            referencedRelation: "job_description"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       users: {
         Row: {
           avatar_url: string | null
@@ -919,19 +692,7 @@ export type Database = {
         | "certification"
         | "language"
       achievement_status: "pending" | "integrated" | "dismissed"
-      advice_severity: "info" | "weak" | "gap"
-      advice_status: "open" | "applied" | "dismissed"
-      advice_target:
-        | "summary"
-        | "experience"
-        | "projects"
-        | "skills"
-        | "education"
-        | "certs"
-        | "languages"
-        | "global"
       cv_date_format: "year" | "mm_yyyy" | "mon_yyyy" | "mon_d_yyyy"
-      cv_status: "draft" | "final"
       cv_template: "single-column" | "two-column"
       language_proficiency:
         | "beginner"
@@ -1089,20 +850,7 @@ export const Constants = {
         "language",
       ],
       achievement_status: ["pending", "integrated", "dismissed"],
-      advice_severity: ["info", "weak", "gap"],
-      advice_status: ["open", "applied", "dismissed"],
-      advice_target: [
-        "summary",
-        "experience",
-        "projects",
-        "skills",
-        "education",
-        "certs",
-        "languages",
-        "global",
-      ],
       cv_date_format: ["year", "mm_yyyy", "mon_yyyy", "mon_d_yyyy"],
-      cv_status: ["draft", "final"],
       cv_template: ["single-column", "two-column"],
       language_proficiency: [
         "beginner",

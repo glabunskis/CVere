@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import type { PropsWithChildren } from 'react';
 
-import { StubbedAiBadge } from '@/components/stubbed-ai-badge';
 import { Separator } from '@/components/ui/separator';
 import { getSession } from '@/features/account/controllers/get-session';
 
@@ -18,7 +17,6 @@ export default async function AppLayout({ children }: PropsWithChildren) {
       <div className='flex flex-col gap-2'>
         <div className='flex items-center justify-between gap-4'>
           <AppNav />
-          <StubbedAiBadge />
         </div>
         <Separator />
       </div>
