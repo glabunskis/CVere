@@ -2,6 +2,7 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  smoothStream,
   stepCountIs,
   streamText,
   UI_MESSAGE_STREAM_HEADERS,
@@ -105,6 +106,10 @@ export async function POST(req: Request): Promise<Response> {
         messages: modelMessages,
         tools,
         stopWhen: stepCountIs(8),
+        // Smooth out bursty token deltas so the client renders text at a
+        // steady, readable cadence instead of in chunky jumps. Word-level
+        // chunking gives a typewriter feel; 25 ms ≈ ~40 words/sec.
+        experimental_transform: smoothStream({ delayInMs: 25, chunking: 'word' }),
         experimental_telemetry: {
           isEnabled: true,
           functionId: 'chat-route',

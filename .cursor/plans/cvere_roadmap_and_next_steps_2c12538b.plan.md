@@ -7,7 +7,7 @@ todos:
     status: completed
   - id: phase-1
     content: "Visible streaming + visible tool calls: smooth token-by-token text, expandable tool-call cards showing inputs/outputs"
-    status: pending
+    status: completed
   - id: phase-2
     content: "Deepen master-CV chat tools: missing sections, reorder/create/delete, achievement integration, vacancy-aware editing"
     status: pending
@@ -172,7 +172,7 @@ Outcome:
 - Subscription gate landed as `CHAT_REQUIRE_SUBSCRIPTION` env flag (default `false`) in `src/app/api/chat/route.ts`; no dead commented block.
 - Langfuse intentionally skipped (see Observability).
 
-### Phase 1 — Visible streaming + visible tool calls
+### Phase 1 — Visible streaming + visible tool calls (DONE)
 
 Goal: the chat panel feels like Claude / OpenAI / Cursor. Text streams in smoothly with a blinking caret while a response is in flight; every tool call renders as a card showing the tool name, the arguments the model passed, and the output it received, with collapse/expand on demand. No new tools, no schema changes — pure UX work over the existing AI SDK parts.
 
@@ -231,6 +231,18 @@ Polish gate (Done when):
 - Errors render with the failure text inline.
 - Reload mid-turn restores both the partial text (via the existing resumable-stream path) and the tool-card state.
 - Scrolling up to re-read does not get yanked back to the bottom by streaming updates.
+
+Handoff notes:
+
+- **Server**: `src/app/api/chat/route.ts` now imports `smoothStream` from `ai` v6 and passes `experimental_transform: smoothStream({ delayInMs: 25, chunking: 'word' })` to `streamText`. Word-level chunking gives ~40 words/sec; tune the delay later if it feels off. Persistence, tool wiring, and the `data-preview-dirty` part are unchanged.
+- **`src/features/chat/components/streaming-text.tsx` (new)**: pure-presentational. Renders a text part with `whitespace-pre-wrap` and an inline blinking-caret span (`animate-caret-blink`, already shipped by `tw-animate-css`). Caret visibility is decided by the parent — the component never tries to know about stream status itself.
+- **`src/features/chat/components/tool-call-card.tsx` (new)**: replaces the old single-row badge. Header (icon + humanised name + summary + status badge + chevron) is a `<button aria-expanded>`; body shows `Arguments` and `Result`/`Error`. Auto-open rule lives in `shouldAutoOpen(state)`: open while `input-streaming`/`input-available`/`output-error`, collapsed once `output-available`. User clicks lock the open state via `useState<boolean | null>`. Payload renderer has two modes: a key/value `<dl>` for plain objects with ≤ 4 primitive fields, otherwise a `<pre>` JSON block (max-height 18rem, scrollable). `ToolPartState` is exported here and shared with the message component.
+- **`src/features/chat/components/chat-message.tsx`**: rewritten. Text parts now go through `StreamingText`; tool parts (both `tool-*` and `dynamic-tool`) through `ToolCallCard`. Reasoning parts render through a new local `ReasoningDisclosure` component (collapsed by default, same chevron pattern as the tool card). `data-preview-dirty` parts still return `null`. New prop `isStreamingLastAssistant` is used to compute `lastTextPartIndex` so the caret only trails the very last text part of a streaming assistant message.
+- **`src/features/chat/components/chat-panel.tsx`**: passes `isStreamingLastAssistant={status === 'streaming' && index === lastAssistantIndex}` to `ChatMessage`. The auto-scroll effect now finds the base-ui scroll viewport via `closest('[data-slot="scroll-area-viewport"]')` (the previous version wrote to a non-scrolling inner div, which was a no-op) and gates auto-scroll on `stickToBottomRef.current`, which is updated by a passive `scroll` listener that compares `scrollHeight - scrollTop - clientHeight` against `STICKY_BOTTOM_THRESHOLD_PX` (80 px). Scrolling more than 80 px above the bottom suspends auto-scroll until the user returns.
+- **`src/styles/globals.css`**: not touched — `tw-animate-css` already exposes the `animate-caret-blink` utility, so a new keyframe was unnecessary.
+- **Persistence**: unchanged. AI SDK v6 already round-trips tool `input`/`output`/`errorText` inside `chat_message.parts`, so reload restores the cards in their final state without store changes.
+- **Deferred to Phase 8 per the original plan**: per-tool-call re-run button (still no UI surface), retry/edit on last assistant/user message, the "chunked fade-in" effect (`smoothStream` alone reads well enough). The original plan called for a `data-preview-dirty` carrying `{kind, refId}` — that's a Phase 4 change, not Phase 1, so the side-channel still uses the legacy `{ renderedAt }` shape.
+- **Verification**: `npm run lint` clean; `npm run build` clean (Next 16.2.6, Turbopack, TypeScript pass). Manual smoke test of the streaming UX requires `OPENAI_API_KEY` + `OPENAI_CHAT_MODEL` in `.env.local`.
 
 ### Phase 2 — Deepen master-CV chat tools
 

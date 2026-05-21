@@ -25,8 +25,16 @@ type Props = {
   initialMessages: ChatUIMessage[];
 };
 
+/**
+ * Pixel threshold (in px from the bottom) under which we consider the user
+ * "stuck to the bottom" and continue auto-scrolling new content into view.
+ * Beyond this, we assume they've scrolled up to re-read and stop yanking.
+ */
+const STICKY_BOTTOM_THRESHOLD_PX = 80;
+
 export function ChatPanel({ initialMessages }: Props) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
 
   const { messages, sendMessage, status, stop, error } = useChat<ChatUIMessage>({
     id: 'chat:singleton',
@@ -53,19 +61,53 @@ export function ChatPanel({ initialMessages }: Props) {
     },
   });
 
+  // Watch the scrollable viewport (the base-ui ScrollArea wraps children in
+  // a Viewport element with `data-slot="scroll-area-viewport"`) and only
+  // auto-scroll when the user is parked near the bottom. This stops streaming
+  // updates from yanking the view back when they've scrolled up to re-read.
   useEffect(() => {
-    const node = scrollRef.current;
+    const node = contentRef.current;
+    if (!node) return undefined;
+    const viewport = node.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    if (!viewport) return undefined;
+
+    const updateStick = () => {
+      const distanceFromBottom =
+        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+      stickToBottomRef.current = distanceFromBottom <= STICKY_BOTTOM_THRESHOLD_PX;
+    };
+
+    updateStick();
+    viewport.addEventListener('scroll', updateStick, { passive: true });
+    return () => viewport.removeEventListener('scroll', updateStick);
+  }, []);
+
+  useEffect(() => {
+    if (!stickToBottomRef.current) return;
+    const node = contentRef.current;
     if (!node) return;
-    node.scrollTop = node.scrollHeight;
+    const viewport = node.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    if (!viewport) return;
+    viewport.scrollTop = viewport.scrollHeight;
   }, [messages, status]);
 
   const isEmpty = messages.length === 0;
   const showRetry = status === 'error' && error != null;
+  const isStreaming = status === 'streaming';
+
+  // Index of the last assistant message — used to scope the streaming caret.
+  let lastAssistantIndex = -1;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i]?.role === 'assistant') {
+      lastAssistantIndex = i;
+      break;
+    }
+  }
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
       <ScrollArea className='flex-1 min-h-0'>
-        <div ref={scrollRef} className='flex h-full flex-col gap-3 p-3'>
+        <div ref={contentRef} className='flex h-full flex-col gap-3 p-3'>
           {isEmpty ? (
             <Empty className='m-auto border-0'>
               <EmptyHeader>
@@ -81,8 +123,12 @@ export function ChatPanel({ initialMessages }: Props) {
               </EmptyHeader>
             </Empty>
           ) : (
-            messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+            messages.map((message, index) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                isStreamingLastAssistant={isStreaming && index === lastAssistantIndex}
+              />
             ))
           )}
           {showRetry ? (

@@ -1,80 +1,87 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
+import { ChevronDownIcon } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 
 import type { ChatUIMessage } from '../types';
 
+import { StreamingText } from './streaming-text';
+import { ToolCallCard, type ToolPartState } from './tool-call-card';
+
 type Props = {
   message: ChatUIMessage;
+  /**
+   * True only for the last assistant message while a stream is in flight.
+   * Used to render a blinking caret at the end of the trailing text part.
+   */
+  isStreamingLastAssistant?: boolean;
 };
-
-const TOOL_LABELS: Record<string, string> = {
-  readProfile: 'Read profile',
-  rewriteSummary: 'Rewrite summary',
-  editExperienceBullet: 'Edit experience bullet',
-  addExperienceBullet: 'Add experience bullet',
-  removeExperienceBullet: 'Remove experience bullet',
-  editProjectBullet: 'Edit project bullet',
-  addProjectBullet: 'Add project bullet',
-  removeProjectBullet: 'Remove project bullet',
-  setTemplate: 'Set template',
-  setAccentHex: 'Set accent color',
-  setEducationDateFormat: 'Set education date format',
-  setCertificationDateFormat: 'Set certification date format',
-};
-
-function humanizeToolName(toolName: string): string {
-  if (TOOL_LABELS[toolName]) return TOOL_LABELS[toolName];
-  // Fallback: split camelCase into words.
-  return toolName
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/^./, (c) => c.toUpperCase());
-}
 
 type ToolPart = {
   type: string;
   toolCallId: string;
-  state: 'input-streaming' | 'input-available' | 'output-available' | 'output-error' | 'approval-requested';
+  state: ToolPartState;
+  input?: unknown;
+  output?: unknown;
   errorText?: string;
+  toolName?: string;
 };
 
 function isToolPart(part: { type: string }): part is ToolPart {
   return part.type.startsWith('tool-') || part.type === 'dynamic-tool';
 }
 
-function getToolName(part: ToolPart & { toolName?: string }): string {
+function getToolName(part: ToolPart): string {
   if (part.type === 'dynamic-tool' && part.toolName) return part.toolName;
   return part.type.slice('tool-'.length);
 }
 
-function ToolStatusBadge({ state, errorText }: { state: ToolPart['state']; errorText?: string }) {
-  switch (state) {
-    case 'input-streaming':
-    case 'input-available':
-      return (
-        <Badge variant='outline' title='Working...'>
-          Working
-        </Badge>
-      );
-    case 'output-available':
-      return <Badge variant='success'>Done</Badge>;
-    case 'output-error':
-      return (
-        <Badge variant='destructive' title={errorText}>
-          Error
-        </Badge>
-      );
-    case 'approval-requested':
-      return <Badge variant='warning'>Awaiting approval</Badge>;
-    default:
-      return <Badge variant='outline'>{state}</Badge>;
-  }
+function ReasoningDisclosure({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className='rounded-md border border-dashed bg-background/40 text-xs'>
+      <button
+        type='button'
+        onClick={() => setOpen((v) => !v)}
+        className='flex w-full items-center gap-2 px-2 py-1.5 text-left text-muted-foreground transition-colors hover:bg-background/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
+        aria-expanded={open}
+      >
+        <span className='font-medium uppercase tracking-wide text-[10px]'>
+          Reasoning
+        </span>
+        <span className='flex-1' />
+        <ChevronDownIcon
+          className={cn('size-3 transition-transform', open && 'rotate-180')}
+          aria-hidden='true'
+        />
+      </button>
+      {open ? (
+        <p className='whitespace-pre-wrap break-words border-t px-2 py-2 italic text-muted-foreground'>
+          {text}
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
-export function ChatMessage({ message }: Props) {
+export function ChatMessage({ message, isStreamingLastAssistant = false }: Props) {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
+
+  // Find the last text part's index so the caret only trails the very end
+  // of the streaming response (and not earlier text parts that got broken
+  // up by tool calls).
+  let lastTextPartIndex = -1;
+  if (isStreamingLastAssistant) {
+    for (let i = message.parts.length - 1; i >= 0; i -= 1) {
+      if (message.parts[i]?.type === 'text') {
+        lastTextPartIndex = i;
+        break;
+      }
+    }
+  }
 
   return (
     <div
@@ -97,21 +104,16 @@ export function ChatMessage({ message }: Props) {
         {message.parts.map((part, index) => {
           if (part.type === 'text') {
             return (
-              <p key={index} className='whitespace-pre-wrap break-words leading-relaxed'>
-                {part.text}
-              </p>
+              <StreamingText
+                key={index}
+                text={part.text}
+                showCaret={index === lastTextPartIndex}
+              />
             );
           }
 
           if (part.type === 'reasoning') {
-            return (
-              <p
-                key={index}
-                className='whitespace-pre-wrap break-words text-xs italic text-muted-foreground'
-              >
-                {part.text}
-              </p>
-            );
+            return <ReasoningDisclosure key={index} text={part.text} />;
           }
 
           if (part.type === 'step-start') {
@@ -126,18 +128,17 @@ export function ChatMessage({ message }: Props) {
           }
 
           if (isToolPart(part)) {
-            const toolPart = part as ToolPart & { toolName?: string };
+            const toolPart = part as ToolPart;
             const toolName = getToolName(toolPart);
             return (
-              <div
+              <ToolCallCard
                 key={toolPart.toolCallId ?? index}
-                className='flex items-center justify-between gap-2 rounded-md bg-background/60 px-2 py-1'
-              >
-                <span className='text-xs font-medium text-foreground'>
-                  {humanizeToolName(toolName)}
-                </span>
-                <ToolStatusBadge state={toolPart.state} errorText={toolPart.errorText} />
-              </div>
+                toolName={toolName}
+                state={toolPart.state}
+                input={toolPart.input}
+                output={toolPart.output}
+                errorText={toolPart.errorText}
+              />
             );
           }
 
