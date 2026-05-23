@@ -380,7 +380,7 @@ Clarifications (decisions resolving sub-issues found while pressure-testing the 
 - **Title generator prompt**: a fixed system message — "Write a short, neutral title for this conversation in five words or fewer. No quotes, no punctuation, no emojis." — paired with the first user message as the user turn. `maxOutputTokens: 16`, `temperature: 0.2`. On failure or empty output: title = trimmed first 40 chars of the first user message.
 - **Title generator model wiring**: new helper `getTitleModel()` in `src/libs/ai/chat-model.ts` alongside `getChatModel()`. Reads `OPENAI_TITLE_MODEL` (default `gpt-4o-mini`). Independent so swapping the chat model never silently changes the title model.
 - **Where `after()` runs**: the title call is scheduled inside `createUIMessageStream`'s `onFinish` (where assistant messages already persist) and wrapped in `after(...)` from `next/server`. Runs after the SSE response closes; never blocks the user-visible stream.
-- **Session-list refresh**: every session-mutating safe-action (`createSession`, `renameSession`, `deleteSession`, `setLastActiveSession`) calls `revalidatePath('/dashboard')`. The session rail is a server-rendered list fed by `listSessions(userId)`; mutations re-render through `router.refresh()` on the client.
+- **Session-list refresh**: session mutations (`createSession`, `renameSession`, `deleteSession`) call `revalidatePath('/dashboard')`. The session rail is a server-rendered list fed by `listSessions(userId)`; mutations re-render through `router.refresh()` on the client.
 - **`chat_message` RLS predicate stays `auth.uid() = user_id`.** No new policy. The session join is unnecessary because `user_id` is still on the row. New `chat_session` policy is the standard "owner full access" pattern used by `cv_preferences`.
 - **Existing chat migration is frozen.** Do not edit `supabase/migrations/20260515112237_chat.sql`; the comment block on lines 7–9 already anticipates this work. All new column adds and constraints land in the two new migrations.
 - **Both new migrations can ship in one go** for this single-developer project. The split into "first" and "lock-down" is documented for the deploy-safety rule but is not enforced — local `npm run migration:up` applies them in order.
@@ -390,15 +390,32 @@ Clarifications (decisions resolving sub-issues found while pressure-testing the 
 Handoff notes:
 
 - **Schema + types**: added `supabase/migrations/20260523113100_chat_sessions.sql` and `supabase/migrations/20260523113200_chat_sessions_lock.sql`. The first migration creates `chat_session`, adds `chat_message.session_id`, adds `cv_preferences.last_active_session_id`, backfills one `General` session per user with existing messages, and installs `bump_chat_session_last_message_at` + `set_updated_at_chat_session` triggers. The second migration enforces `chat_message.session_id NOT NULL` and drops `chat_message_user_created_idx`. `npm run migration:up` was run and regenerated `src/libs/supabase/types.ts`.
-- **Session-aware storage**: `src/features/chat/storage/chat-message-store.ts` now persists/loads/clears by `sessionId` only (internally resolves `user_id` from `chat_session` so `chat_message.user_id` is preserved). New `src/features/chat/storage/chat-session-store.ts` implements `listSessions`, `getSessionById`, `getOrCreateDefaultSession`, `createSession`, `renameSession`, `deleteSession`, `setLastActiveSession`, and `generateAndSaveSessionTitle`.
+- **Session-aware storage**: `src/features/chat/storage/chat-message-store.ts` now persists/loads/clears by `sessionId`; `appendMessages` takes `userId` from the route to keep `chat_message.user_id` without an extra owner-lookup query. New `src/features/chat/storage/chat-session-store.ts` implements `listSessions`, `getSessionById`, `getOrCreateDefaultSession`, `createSession`, `renameSession`, `deleteSession`, `setLastActiveSession`, and `generateAndSaveSessionTitle`.
 - **Route + stream scope**: `src/app/api/chat/route.ts` now scopes POST and GET by owned `sessionId`, persists message history per session, and derives resumable stream ids from session (`chat:${sessionId}` via `src/libs/ai/resumable-stream.ts`). First-turn title generation is scheduled with `after()` in `createUIMessageStream` `onFinish`.
 - **Title model wiring**: `src/libs/ai/chat-model.ts` now exports `getTitleModel()` (reads `OPENAI_TITLE_MODEL`, default `gpt-4o-mini`) alongside `getChatModel()`, with dev fallback and production guard behavior matching the chat model path.
 - **Dashboard + chat UI**: `src/app/(app)/dashboard/page.tsx` now resolves active session from `?session=` via `nuqs/server`, falls back through `getOrCreateDefaultSession`, persists last-active id, and loads messages for that session. `src/features/chat/components/chat-panel.tsx` now uses `useChat` id = active session id, session-scoped transport/reconnect URLs, and renders the new `src/features/chat/components/session-rail.tsx`.
-- **Session actions + confirm dialog**: added `src/features/chat/actions/session-actions.ts` for create/rename/delete/set-active safe-actions (all revalidate `/dashboard`) and `src/components/ui/dialog.tsx` for delete confirmation. `src/features/previewer/components/previewer-sidebar.tsx` now passes `sessions` + `activeSessionId` into `ChatPanel`.
+- **Session actions + confirm dialog**: added `src/features/chat/actions/session-actions.ts` for create/rename/delete safe-actions (all revalidate `/dashboard`) and `src/components/ui/dialog.tsx` for delete confirmation. `src/features/previewer/components/previewer-sidebar.tsx` now passes `sessions` + `activeSessionId` into `ChatPanel`.
 - **Compatibility note**: POST accepts `sessionId` in body and (as fallback) query string; GET resume uses `?sessionId=` query. This keeps reconnection behavior stable with the current `DefaultChatTransport` wiring while preserving the Phase 3 request contract.
 - **Verification**: `npm run build` passes on Next 16.2.6 / TypeScript strict after the Phase 3 changes.
 
+#### Phase 3 retrospective (post-merge)
+
+- **Shipped in follow-up:** keyed `ChatPanel` by `activeSessionId` in `src/features/previewer/components/previewer-sidebar.tsx` so session switches force a clean `useChat` remount.
+- **Shipped in follow-up:** added `supabase/migrations/20260523121400_chat_message_session_insert_policy.sql` to require that inserted `chat_message.session_id` belongs to `auth.uid()`.
+- **Shipped in follow-up:** removed the `setLastActiveChatSession` safe-action and the rail-side write path; last-active persistence now flows through server-side session resolution.
+- **Shipped in follow-up:** changed `appendMessages` to `(sessionId, userId, messages)` to drop the redundant `chat_session` owner lookup query.
+- **Shipped in follow-up:** removed the dead `incomingMessages.length === 0` route branch and documented that `after()` work runs outside the request lifetime (no auth-cookie writes from `supabase-ssr`).
+- **Shipped in follow-up:** replaced `window.prompt` rename with a Base UI `Dialog` in `src/features/chat/components/session-rail.tsx`.
+- **Shipped in follow-up:** defaulted the session rail to collapsed in the current tabbed sidebar layout to keep chat content usable before the Phase 5 layout move.
+- **Shipped in follow-up:** replaced URL navigation-based switching with client-side session swapping (`Chat` instance swap + `dashboard/layout.tsx` preview ownership + `history.replaceState`), intentionally superseding the earlier "no client-side message-fetching path" Phase 3 note.
+
 ### Phase 4 — Tailored CV artefact
+
+Pre-reqs from Phase 3 retrospective:
+
+- Session switches hard-remount `useChat` (`key={activeSessionId}`), preventing cross-session streaming state bleed.
+- `chat_message` insert RLS enforces `(user_id, session_id)` ownership pairing.
+- `appendMessages(sessionId, userId, ...)` now uses route-owned `userId`, reducing persistence round trips.
 
 First chat-driven non-master artefact. Establishes the patterns letters and interview will reuse.
 
@@ -568,6 +585,8 @@ Runs alongside phases 0–9. Each phase has its own polish gate; this track capt
 - **Accessibility.** Keyboard nav for session list and tool-call cards, focus states, `aria-live="polite"` on the streaming text region (announce new tokens at most once per ~500ms to avoid screen-reader spam), contrast checked against both `:root` and `.dark`.
 - **Dark mode.** Already wired via `next-themes`; spot-check every new surface as it ships.
 - **Copy.** Tighten labels and empty-state text. Internal placeholders like `[MISSING] company` (see `integrateAchievement`) need user-friendly replacements.
+- **Phase 3 follow-up (shipped):** Session rename now uses an in-app dialog (not `window.prompt`) and keeps validation/error handling in the existing action flow.
+- **Phase 3 follow-up (shipped):** Session rail defaults to collapsed in the tabbed sidebar shell to preserve chat width until the Phase 5 layout reshuffle.
 
 ## Observability (optional, do later)
 

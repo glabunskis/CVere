@@ -29,18 +29,6 @@ function toUIMessage(row: ChatMessageRow): UIMessage {
   };
 }
 
-async function resolveSessionOwnerId(sessionId: string): Promise<string> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from('chat_session')
-    .select('user_id')
-    .eq('id', sessionId)
-    .maybeSingle();
-  if (error) throw new Error(`Failed to resolve chat session owner: ${error.message}`);
-  if (!data) throw new Error(`Chat session ${sessionId} not found.`);
-  return data.user_id;
-}
-
 export async function loadMessages(sessionId: string): Promise<UIMessage[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
@@ -54,10 +42,10 @@ export async function loadMessages(sessionId: string): Promise<UIMessage[]> {
 
 export async function appendMessages(
   sessionId: string,
+  userId: string,
   messages: UIMessage[],
 ): Promise<void> {
   if (messages.length === 0) return;
-  const userId = await resolveSessionOwnerId(sessionId);
   const supabase = await createSupabaseServerClient();
   const rows = messages.map((message) => ({
     id: message.id,

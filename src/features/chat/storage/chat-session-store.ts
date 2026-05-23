@@ -191,7 +191,9 @@ export async function getOrCreateDefaultSession(userId: string): Promise<ChatSes
 
   const mostRecent = await getMostRecentSession(userId);
   if (mostRecent) {
-    await setLastActiveSession(userId, mostRecent.id);
+    if (prefs?.last_active_session_id !== mostRecent.id) {
+      await setLastActiveSession(userId, mostRecent.id);
+    }
     return toListItem(mostRecent);
   }
 
@@ -230,6 +232,8 @@ export async function generateAndSaveSessionTitle({
     if (sessionError || !session) return;
     if (session.title !== DEFAULT_SESSION_TITLE) return;
 
+    // Supabase query builders cannot express a subquery guard inside UPDATE;
+    // this separate count check keeps title generation best-effort and cheap.
     const { count, error: countError } = await supabase
       .from('chat_message')
       .select('id', { count: 'exact', head: true })

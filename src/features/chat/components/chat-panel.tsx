@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useAction } from 'next-safe-action/hooks';
 import { DefaultChatTransport } from 'ai';
 import { MessageSquareIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,8 +14,12 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  loadChatSessionMessages,
+  setActiveChatSession,
+} from '@/features/chat/actions/session-actions';
 import { usePreviewStore } from '@/features/previewer/stores/preview-store';
-import { useChat } from '@ai-sdk/react';
+import { Chat, useChat } from '@ai-sdk/react';
 
 import type { ChatSessionListItem, ChatUIMessage } from '../types';
 
@@ -23,7 +28,7 @@ import { ChatMessage } from './chat-message';
 import { SessionRail } from './session-rail';
 
 type Props = {
-  sessionId: string;
+  initialActiveSessionId: string;
   sessions: ChatSessionListItem[];
   initialMessages: ChatUIMessage[];
 };
@@ -35,34 +40,140 @@ type Props = {
  */
 const STICKY_BOTTOM_THRESHOLD_PX = 80;
 
-export function ChatPanel({ sessionId, sessions, initialMessages }: Props) {
+export function ChatPanel({
+  initialActiveSessionId,
+  sessions,
+  initialMessages,
+}: Props) {
+  const [activeSessionId, setActiveSessionId] = useState(initialActiveSessionId);
+  const [activeSessionMessages, setActiveSessionMessages] = useState(initialMessages);
+  const [sessionList, setSessionList] = useState(sessions);
   const contentRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
+  const activeSessionIdRef = useRef(initialActiveSessionId);
+  const setMessagesRef = useRef<
+    (messages: ChatUIMessage[] | ((messages: ChatUIMessage[]) => ChatUIMessage[])) => void
+  >(() => undefined);
+  const messagesCacheRef = useRef<Record<string, ChatUIMessage[]>>({
+    [initialActiveSessionId]: initialMessages,
+  });
 
-  const { messages, sendMessage, status, stop, error } = useChat<ChatUIMessage>({
-    id: sessionId,
-    messages: initialMessages,
+  useEffect(() => {
+    activeSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
+
+  useEffect(() => {
+    setSessionList(sessions);
+  }, [sessions]);
+
+  useEffect(() => {
+    messagesCacheRef.current[initialActiveSessionId] = initialMessages;
+    setActiveSessionMessages(initialMessages);
+  }, [initialActiveSessionId, initialMessages]);
+
+  const chat = useMemo(
+    () =>
+      new Chat<ChatUIMessage>({
+        id: activeSessionId,
+        messages: activeSessionMessages,
+        transport: new DefaultChatTransport({
+          api: `/api/chat?sessionId=${encodeURIComponent(activeSessionId)}`,
+          body: { sessionId: activeSessionId },
+          // The default reconnect URL is `${api}/${chatId}/stream`. We keep
+          // reconnects on the same URL and let the route read `sessionId` from
+          // the query string.
+          prepareReconnectToStreamRequest: ({ api }) => ({ api }),
+        }),
+        // onData / onError live on `ChatInit`, not on the `useChat({ chat })`
+        // overload — passing them to the hook is silently ignored once an
+        // external Chat instance is provided.
+        onData: (dataPart) => {
+          if (dataPart.type === 'data-preview-dirty') {
+            void usePreviewStore.getState().markPreviewDirty();
+          }
+        },
+        onError: (err) => {
+          toast.error(err?.message ?? 'Chat request failed');
+        },
+      }),
+    [activeSessionId, activeSessionMessages],
+  );
+
+  const { messages, sendMessage, status, stop, error, setMessages } = useChat<ChatUIMessage>({
+    chat,
     // Re-attach to an in-flight stream after a reload. The route's GET handler
     // returns 204 when there is no active stream or Upstash Redis is not
     // configured, so this is safe to leave on unconditionally.
     resume: true,
-    transport: new DefaultChatTransport({
-      api: `/api/chat?sessionId=${encodeURIComponent(sessionId)}`,
-      body: { sessionId },
-      // The default reconnect URL is `${api}/${chatId}/stream`. We keep
-      // reconnects on the same URL and let the route read `sessionId` from
-      // the query string.
-      prepareReconnectToStreamRequest: ({ api }) => ({ api }),
-    }),
-    onData: (dataPart) => {
-      if (dataPart.type === 'data-preview-dirty') {
-        void usePreviewStore.getState().markPreviewDirty();
-      }
-    },
-    onError: (err) => {
-      toast.error(err?.message ?? 'Chat request failed');
+  });
+
+  useEffect(() => {
+    setMessagesRef.current = setMessages;
+  }, [setMessages]);
+
+  useEffect(() => {
+    messagesCacheRef.current[activeSessionId] = messages;
+  }, [activeSessionId, messages]);
+
+  const { executeAsync: fetchMessages } = useAction(loadChatSessionMessages, {
+    onError: ({ error }) => {
+      toast.error(error.serverError ?? 'Failed to load chat messages.');
     },
   });
+  const { execute: persistActiveSession } = useAction(setActiveChatSession, {
+    onError: ({ error }) => {
+      toast.error(error.serverError ?? 'Failed to save active chat session.');
+    },
+  });
+
+  const switchSession = async (nextSessionId: string) => {
+    if (nextSessionId === activeSessionIdRef.current) return;
+
+    activeSessionIdRef.current = nextSessionId;
+    setActiveSessionMessages(messagesCacheRef.current[nextSessionId] ?? []);
+    setActiveSessionId(nextSessionId);
+    window.history.replaceState(null, '', `/dashboard?session=${encodeURIComponent(nextSessionId)}`);
+    persistActiveSession({ sessionId: nextSessionId });
+
+    if (messagesCacheRef.current[nextSessionId]) {
+      return;
+    }
+
+    const result = await fetchMessages({ sessionId: nextSessionId });
+    const fetched = (result?.data?.messages ?? []) as ChatUIMessage[];
+    messagesCacheRef.current[nextSessionId] = fetched;
+
+    if (activeSessionIdRef.current === nextSessionId) {
+      setMessagesRef.current(fetched);
+    }
+  };
+
+  const upsertSession = (
+    existingSessions: ChatSessionListItem[],
+    session: ChatSessionListItem,
+  ): ChatSessionListItem[] => [session, ...existingSessions.filter((item) => item.id !== session.id)];
+
+  const handleCreated = (session: ChatSessionListItem) => {
+    setSessionList((current) => upsertSession(current, session));
+    void switchSession(session.id);
+  };
+
+  const handleRenamed = (session: ChatSessionListItem) => {
+    setSessionList((current) =>
+      current.map((item) => (item.id === session.id ? session : item)),
+    );
+  };
+
+  const handleDeleted = (deletedSessionId: string, nextSession: ChatSessionListItem) => {
+    setSessionList((current) => {
+      const filtered = current.filter((item) => item.id !== deletedSessionId);
+      if (filtered.some((item) => item.id === nextSession.id)) {
+        return filtered;
+      }
+      return upsertSession(filtered, nextSession);
+    });
+    void switchSession(nextSession.id);
+  };
 
   // Watch the scrollable viewport (the base-ui ScrollArea wraps children in
   // a Viewport element with `data-slot="scroll-area-viewport"`) and only
@@ -109,7 +220,16 @@ export function ChatPanel({ sessionId, sessions, initialMessages }: Props) {
 
   return (
     <div className='flex h-full min-h-0'>
-      <SessionRail sessions={sessions} activeSessionId={sessionId} />
+      <SessionRail
+        sessions={sessionList}
+        activeSessionId={activeSessionId}
+        onSwitch={(sessionId) => {
+          void switchSession(sessionId);
+        }}
+        onCreated={handleCreated}
+        onRenamed={handleRenamed}
+        onDeleted={handleDeleted}
+      />
 
       <div className='flex min-w-0 flex-1 flex-col'>
         <ScrollArea className='min-h-0 flex-1'>

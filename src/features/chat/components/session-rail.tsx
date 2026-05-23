@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import {
   MessageSquareIcon,
@@ -14,12 +13,6 @@ import {
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import {
-  createChatSession,
-  deleteChatSession,
-  renameChatSession,
-  setLastActiveChatSession,
-} from '@/features/chat/actions/session-actions';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +27,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  createChatSession,
+  deleteChatSession,
+  renameChatSession,
+} from '@/features/chat/actions/session-actions';
 import { cn } from '@/lib/utils';
 
 import type { ChatSessionListItem } from '../types';
@@ -41,29 +40,44 @@ import type { ChatSessionListItem } from '../types';
 type Props = {
   sessions: ChatSessionListItem[];
   activeSessionId: string;
+  onSwitch: (sessionId: string) => void;
+  onCreated: (session: ChatSessionListItem) => void;
+  onRenamed: (session: ChatSessionListItem) => void;
+  onDeleted: (deletedSessionId: string, nextSession: ChatSessionListItem) => void;
 };
 
 const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
-export function SessionRail({ sessions, activeSessionId }: Props) {
-  const [collapsed, setCollapsed] = useState(false);
+export function SessionRail({
+  sessions,
+  activeSessionId,
+  onSwitch,
+  onCreated,
+  onRenamed,
+  onDeleted,
+}: Props) {
+  const [collapsed, setCollapsed] = useState(true);
   const [pendingDelete, setPendingDelete] = useState<ChatSessionListItem | null>(null);
-  const router = useRouter();
+  const [pendingRename, setPendingRename] = useState<ChatSessionListItem | null>(null);
+  const [renameTitle, setRenameTitle] = useState('');
 
   const { execute: create, isExecuting: creating } = useAction(createChatSession, {
     onSuccess: ({ data }) => {
       const session = data?.session;
       if (!session) return;
-      router.push(`/dashboard?session=${encodeURIComponent(session.id)}`);
-      router.refresh();
+      onCreated(session);
       toast.success('New chat created.');
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to create chat.'),
   });
 
-  const { execute: rename } = useAction(renameChatSession, {
-    onSuccess: () => {
-      router.refresh();
+  const { execute: rename, isExecuting: renaming } = useAction(renameChatSession, {
+    onSuccess: ({ data }) => {
+      const session = data?.session;
+      if (!session) return;
+      onRenamed(session);
+      setPendingRename(null);
+      setRenameTitle('');
       toast.success('Chat renamed.');
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to rename chat.'),
@@ -71,19 +85,13 @@ export function SessionRail({ sessions, activeSessionId }: Props) {
 
   const { execute: remove, isExecuting: deleting } = useAction(deleteChatSession, {
     onSuccess: ({ data }) => {
-      const nextSessionId = data?.nextSessionId;
-      if (nextSessionId) {
-        router.push(`/dashboard?session=${encodeURIComponent(nextSessionId)}`);
-      }
-      router.refresh();
+      const nextSession = data?.nextSession;
+      if (!pendingDelete || !nextSession) return;
+      onDeleted(pendingDelete.id, nextSession);
       setPendingDelete(null);
       toast.success('Chat deleted.');
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to delete chat.'),
-  });
-
-  const { execute: setActiveSession } = useAction(setLastActiveChatSession, {
-    onError: ({ error }) => toast.error(error.serverError ?? 'Failed to switch chat.'),
   });
 
   const orderedSessions = useMemo(
@@ -98,8 +106,23 @@ export function SessionRail({ sessions, activeSessionId }: Props) {
 
   const openSession = (sessionId: string) => {
     if (sessionId === activeSessionId) return;
-    setActiveSession({ sessionId });
-    router.push(`/dashboard?session=${encodeURIComponent(sessionId)}`);
+    onSwitch(sessionId);
+  };
+
+  const closeRenameDialog = () => {
+    setPendingRename(null);
+    setRenameTitle('');
+  };
+
+  const submitRename = () => {
+    if (!pendingRename) return;
+    const next = renameTitle.trim();
+    if (next.length === 0) return;
+    if (next === pendingRename.title) {
+      closeRenameDialog();
+      return;
+    }
+    rename({ sessionId: pendingRename.id, title: next });
   };
 
   return (
@@ -188,9 +211,8 @@ export function SessionRail({ sessions, activeSessionId }: Props) {
                   <DropdownMenuContent align='end' className='w-40'>
                     <DropdownMenuItem
                       onClick={() => {
-                        const next = window.prompt('Rename chat', session.title)?.trim();
-                        if (!next || next === session.title) return;
-                        rename({ sessionId: session.id, title: next });
+                        setPendingRename(session);
+                        setRenameTitle(session.title);
                       }}
                     >
                       <PencilIcon />
@@ -221,7 +243,10 @@ export function SessionRail({ sessions, activeSessionId }: Props) {
         </div>
       </aside>
 
-      <Dialog open={pendingDelete != null} onOpenChange={(open) => !open && setPendingDelete(null)}>
+      <Dialog
+        open={pendingDelete != null}
+        onOpenChange={(open) => !open && !deleting && setPendingDelete(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete this chat?</DialogTitle>
@@ -245,6 +270,47 @@ export function SessionRail({ sessions, activeSessionId }: Props) {
               {deleting ? 'Deleting...' : 'Delete chat'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={pendingRename != null}
+        onOpenChange={(open) => {
+          if (!open) closeRenameDialog();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename chat</DialogTitle>
+            <DialogDescription>Give this chat a short descriptive title.</DialogDescription>
+          </DialogHeader>
+          <form
+            className='space-y-4'
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitRename();
+            }}
+          >
+            <Input
+              autoFocus
+              maxLength={80}
+              minLength={1}
+              value={renameTitle}
+              onChange={(event) => setRenameTitle(event.target.value)}
+              placeholder='Chat title'
+            />
+            <DialogFooter>
+              <Button type='button' variant='outline' onClick={closeRenameDialog}>
+                Cancel
+              </Button>
+              <Button
+                type='submit'
+                disabled={renaming || pendingRename == null || renameTitle.trim().length === 0}
+              >
+                {renaming ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>

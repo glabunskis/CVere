@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -8,7 +9,6 @@ import {
   UI_MESSAGE_STREAM_HEADERS,
   type UIMessage,
 } from 'ai';
-import { after } from 'next/server';
 
 import {
   ProSubscriptionRequiredError,
@@ -96,9 +96,6 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   const incomingMessages = (parsed.data.messages ?? []) as UIMessage[];
-  if (incomingMessages.length === 0) {
-    return new Response('messages must be a non-empty array', { status: 400 });
-  }
 
   // 4. Persist any user-side messages we don't already have. Persisting
   // before the stream means the user's prompt is durable even if generation
@@ -108,7 +105,7 @@ export async function POST(req: Request): Promise<Response> {
   const newClientMessages = incomingMessages.filter((m) => !existingIds.has(m.id));
   if (newClientMessages.length > 0) {
     try {
-      await appendMessages(sessionId, newClientMessages);
+      await appendMessages(sessionId, user.id, newClientMessages);
     } catch (err) {
       logger.error(
         { err, userId: user.id, sessionId },
@@ -199,11 +196,13 @@ export async function POST(req: Request): Promise<Response> {
       try {
         const newMessages = messages.filter((m) => !persistedIds.has(m.id));
         if (newMessages.length > 0) {
-          await appendMessages(sessionId, newMessages);
+          await appendMessages(sessionId, user.id, newMessages);
         }
 
         const firstUserMessageText = getFirstUserMessageText(incomingMessages);
         if (firstUserMessageText) {
+          // `after()` runs outside the request lifetime, so auth-cookie writes
+          // from supabase-ssr are ignored; this task only does DB reads/writes.
           after(async () => {
             await generateAndSaveSessionTitle({
               userId: user.id,

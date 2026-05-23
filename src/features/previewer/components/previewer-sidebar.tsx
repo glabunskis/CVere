@@ -106,7 +106,7 @@ export function PreviewerSidebar({
 
         <TabsContent value='chat' keepMounted className='min-h-0 flex-1'>
           <ChatPanel
-            sessionId={activeSessionId}
+            initialActiveSessionId={activeSessionId}
             sessions={sessions}
             initialMessages={initialChatMessages}
           />

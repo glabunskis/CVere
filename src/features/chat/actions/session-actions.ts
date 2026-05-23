@@ -1,8 +1,8 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
+import { loadMessages } from '@/features/chat/storage/chat-message-store';
 import {
   createSession,
   deleteSession,
@@ -26,6 +26,10 @@ const deleteSessionSchema = z.object({
   sessionId: z.uuid(),
 });
 
+const loadSessionMessagesSchema = z.object({
+  sessionId: z.uuid(),
+});
+
 const setLastActiveSessionSchema = z.object({
   sessionId: z.uuid(),
 });
@@ -34,7 +38,6 @@ export const createChatSession = authActionClient
   .inputSchema(createSessionSchema)
   .action(async ({ parsedInput, ctx }) => {
     const session = await createSession({ userId: ctx.user.id, title: parsedInput.title });
-    revalidatePath('/dashboard');
     return { ok: true as const, session };
   });
 
@@ -46,7 +49,6 @@ export const renameChatSession = authActionClient
       sessionId: parsedInput.sessionId,
       title: parsedInput.title,
     });
-    revalidatePath('/dashboard');
     return { ok: true as const, session };
   });
 
@@ -55,19 +57,29 @@ export const deleteChatSession = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     await deleteSession({ userId: ctx.user.id, sessionId: parsedInput.sessionId });
     const nextSession = await getOrCreateDefaultSession(ctx.user.id);
-    await setLastActiveSession(ctx.user.id, nextSession.id);
-    revalidatePath('/dashboard');
-    return { ok: true as const, nextSessionId: nextSession.id };
+    return { ok: true as const, nextSessionId: nextSession.id, nextSession };
   });
 
-export const setLastActiveChatSession = authActionClient
-  .inputSchema(setLastActiveSessionSchema)
+export const loadChatSessionMessages = authActionClient
+  .inputSchema(loadSessionMessagesSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const target = await getSessionById(ctx.user.id, parsedInput.sessionId);
-    if (!target) {
+    const session = await getSessionById(ctx.user.id, parsedInput.sessionId);
+    if (!session) {
       throw new Error('Chat session not found.');
     }
-    await setLastActiveSession(ctx.user.id, target.id);
-    revalidatePath('/dashboard');
+
+    const messages = await loadMessages(parsedInput.sessionId);
+    return { ok: true as const, messages };
+  });
+
+export const setActiveChatSession = authActionClient
+  .inputSchema(setLastActiveSessionSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const session = await getSessionById(ctx.user.id, parsedInput.sessionId);
+    if (!session) {
+      throw new Error('Chat session not found.');
+    }
+
+    await setLastActiveSession(ctx.user.id, session.id);
     return { ok: true as const };
   });
