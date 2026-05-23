@@ -17,25 +17,27 @@ export class ChatModelNotConfiguredError extends Error {
 
 function readOpenAiEnv() {
   const apiKey = process.env.OPENAI_API_KEY?.trim() || undefined;
-  const model = process.env.OPENAI_CHAT_MODEL?.trim() || undefined;
+  const chatModel = process.env.OPENAI_CHAT_MODEL?.trim() || undefined;
+  const titleModel = process.env.OPENAI_TITLE_MODEL?.trim() || 'gpt-4o-mini';
   const baseURL = process.env.OPENAI_BASE_URL?.trim() || undefined;
-  return { apiKey, model, baseURL };
+  return { apiKey, chatModel, titleModel, baseURL };
 }
 
-let cachedModel: LanguageModel | null = null;
+let cachedChatModel: LanguageModel | null = null;
+let cachedTitleModel: LanguageModel | null = null;
 
 export function getChatModel(): LanguageModel {
-  if (cachedModel) return cachedModel;
+  if (cachedChatModel) return cachedChatModel;
 
-  const { apiKey, model, baseURL } = readOpenAiEnv();
+  const { apiKey, chatModel, baseURL } = readOpenAiEnv();
   const missing: string[] = [];
   if (!apiKey) missing.push('OPENAI_API_KEY');
-  if (!model) missing.push('OPENAI_CHAT_MODEL');
+  if (!chatModel) missing.push('OPENAI_CHAT_MODEL');
 
-  if (missing.length === 0 && apiKey && model) {
+  if (missing.length === 0 && apiKey && chatModel) {
     const openai = createOpenAI({ apiKey, baseURL });
-    cachedModel = openai.chat(model);
-    return cachedModel;
+    cachedChatModel = openai.chat(chatModel);
+    return cachedChatModel;
   }
 
   if (process.env.NODE_ENV === 'production') {
@@ -49,7 +51,7 @@ export function getChatModel(): LanguageModel {
     inputTokens: { total: 0, noCache: 0, cacheRead: 0, cacheWrite: 0 },
     outputTokens: { total: 0, text: 0, reasoning: 0 },
   } as const;
-  cachedModel = new MockLanguageModelV3({
+  cachedChatModel = new MockLanguageModelV3({
     provider: 'mock-openai',
     modelId: 'mock-chat',
     doGenerate: async () => ({
@@ -61,9 +63,41 @@ export function getChatModel(): LanguageModel {
       warnings: [],
     }),
   }) as unknown as LanguageModel;
-  return cachedModel;
+  return cachedChatModel;
+}
+
+export function getTitleModel(): LanguageModel {
+  if (cachedTitleModel) return cachedTitleModel;
+
+  const { apiKey, titleModel, baseURL } = readOpenAiEnv();
+  if (apiKey) {
+    const openai = createOpenAI({ apiKey, baseURL });
+    cachedTitleModel = openai.chat(titleModel);
+    return cachedTitleModel;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new ChatModelNotConfiguredError(['OPENAI_API_KEY']);
+  }
+
+  const placeholderUsage = {
+    inputTokens: { total: 0, noCache: 0, cacheRead: 0, cacheWrite: 0 },
+    outputTokens: { total: 0, text: 0, reasoning: 0 },
+  } as const;
+  cachedTitleModel = new MockLanguageModelV3({
+    provider: 'mock-openai',
+    modelId: 'mock-title',
+    doGenerate: async () => ({
+      content: [{ type: 'text', text: 'General' }],
+      finishReason: { unified: 'stop', raw: 'stop' },
+      usage: placeholderUsage,
+      warnings: [],
+    }),
+  }) as unknown as LanguageModel;
+  return cachedTitleModel;
 }
 
 export function resetChatModelCache(): void {
-  cachedModel = null;
+  cachedChatModel = null;
+  cachedTitleModel = null;
 }

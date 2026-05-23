@@ -112,6 +112,7 @@ export type Database = {
           id: string
           parts: Json
           role: string
+          session_id: string
           user_id: string
         }
         Insert: {
@@ -119,6 +120,7 @@ export type Database = {
           id?: string
           parts: Json
           role: string
+          session_id: string
           user_id: string
         }
         Update: {
@@ -126,6 +128,42 @@ export type Database = {
           id?: string
           parts?: Json
           role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_session: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          title?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -152,6 +190,7 @@ export type Database = {
           created_at: string
           education_date_format: Database["public"]["Enums"]["cv_date_format"]
           id: string
+          last_active_session_id: string | null
           master_pdf_path: string | null
           template: Database["public"]["Enums"]["cv_template"]
           updated_at: string
@@ -163,6 +202,7 @@ export type Database = {
           created_at?: string
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
           id?: string
+          last_active_session_id?: string | null
           master_pdf_path?: string | null
           template?: Database["public"]["Enums"]["cv_template"]
           updated_at?: string
@@ -174,12 +214,21 @@ export type Database = {
           created_at?: string
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
           id?: string
+          last_active_session_id?: string | null
           master_pdf_path?: string | null
           template?: Database["public"]["Enums"]["cv_template"]
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cv_preferences_last_active_session_id_fkey"
+            columns: ["last_active_session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_session"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       education: {
         Row: {

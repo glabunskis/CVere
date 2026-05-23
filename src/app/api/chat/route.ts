@@ -8,12 +8,15 @@ import {
   UI_MESSAGE_STREAM_HEADERS,
   type UIMessage,
 } from 'ai';
+import { after } from 'next/server';
 
 import {
   ProSubscriptionRequiredError,
   requireActiveSubscription,
 } from '@/features/account/controllers/require-active-subscription';
+import { chatPostBodySchema } from '@/features/chat/schemas';
 import { appendMessages, loadMessages } from '@/features/chat/storage/chat-message-store';
+import { generateAndSaveSessionTitle } from '@/features/chat/storage/chat-session-store';
 import { CHAT_SYSTEM_PROMPT } from '@/features/chat/system-prompt';
 import { buildAchievementTools } from '@/features/chat/tools/achievement-tools';
 import { buildContentTools, MUTATING_TOOLS } from '@/features/chat/tools/content-tools';
@@ -34,6 +37,7 @@ import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-clie
 export const maxDuration = 60;
 
 type ChatRequestBody = {
+  sessionId?: string;
   messages?: UIMessage[];
 };
 
@@ -59,14 +63,39 @@ export async function POST(req: Request): Promise<Response> {
     }
   }
 
-  // 3. Parse body. v6 `useChat` POSTs `{ messages: UIMessage[] }`.
+  // 3. Parse body. Session id is required in Phase 3.
   let body: ChatRequestBody;
   try {
     body = (await req.json()) as ChatRequestBody;
   } catch {
     return new Response('Invalid JSON body', { status: 400 });
   }
-  const incomingMessages = body.messages ?? [];
+  const parsed = chatPostBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return new Response('Invalid request body', { status: 400 });
+  }
+
+  const url = new URL(req.url);
+  const sessionId = parsed.data.sessionId || url.searchParams.get('sessionId') || '';
+  if (!sessionId) {
+    return new Response('sessionId is required', { status: 400 });
+  }
+
+  const { data: session, error: sessionError } = await supabase
+    .from('chat_session')
+    .select('id, title')
+    .eq('id', sessionId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (sessionError) {
+    logger.error({ err: sessionError, userId: user.id, sessionId }, 'chat: session lookup failed');
+    return new Response('Failed to load chat session', { status: 500 });
+  }
+  if (!session) {
+    return new Response('Chat session not found', { status: 404 });
+  }
+
+  const incomingMessages = (parsed.data.messages ?? []) as UIMessage[];
   if (incomingMessages.length === 0) {
     return new Response('messages must be a non-empty array', { status: 400 });
   }
@@ -74,14 +103,17 @@ export async function POST(req: Request): Promise<Response> {
   // 4. Persist any user-side messages we don't already have. Persisting
   // before the stream means the user's prompt is durable even if generation
   // fails.
-  const existing = await loadMessages(user.id);
+  const existing = await loadMessages(sessionId);
   const existingIds = new Set(existing.map((m) => m.id));
   const newClientMessages = incomingMessages.filter((m) => !existingIds.has(m.id));
   if (newClientMessages.length > 0) {
     try {
-      await appendMessages(user.id, newClientMessages);
+      await appendMessages(sessionId, newClientMessages);
     } catch (err) {
-      logger.error({ err, userId: user.id }, 'chat: failed to persist incoming messages');
+      logger.error(
+        { err, userId: user.id, sessionId },
+        'chat: failed to persist incoming messages',
+      );
       return new Response('Failed to persist chat history', { status: 500 });
     }
   }
@@ -124,7 +156,7 @@ export async function POST(req: Request): Promise<Response> {
         experimental_telemetry: {
           isEnabled: true,
           functionId: 'chat-route',
-          metadata: { userId: user.id },
+          metadata: { userId: user.id, sessionId },
         },
         onStepFinish: ({ toolCalls }) => {
           for (const call of toolCalls ?? []) {
@@ -167,12 +199,23 @@ export async function POST(req: Request): Promise<Response> {
       try {
         const newMessages = messages.filter((m) => !persistedIds.has(m.id));
         if (newMessages.length > 0) {
-          await appendMessages(user.id, newMessages);
+          await appendMessages(sessionId, newMessages);
+        }
+
+        const firstUserMessageText = getFirstUserMessageText(incomingMessages);
+        if (firstUserMessageText) {
+          after(async () => {
+            await generateAndSaveSessionTitle({
+              userId: user.id,
+              sessionId,
+              firstUserMessage: firstUserMessageText,
+            });
+          });
         }
       } catch (err) {
         // Stream is already done client-side; log and swallow.
         logger.error(
-          { err, userId: user.id },
+          { err, userId: user.id, sessionId },
           'chat-route failed to persist assistant messages',
         );
       }
@@ -193,12 +236,12 @@ export async function POST(req: Request): Promise<Response> {
       if (!ctx) return;
       try {
         await ctx.createNewResumableStream(
-          getChatStreamId(user.id),
+          getChatStreamId(sessionId),
           () => sseStream,
         );
       } catch (err) {
         logger.error(
-          { err, userId: user.id },
+          { err, userId: user.id, sessionId },
           'chat-route: failed to create resumable stream',
         );
       }
@@ -213,10 +256,8 @@ export async function POST(req: Request): Promise<Response> {
  *   the previous stream has already finished.
  * - 200 with the SSE stream re-attached to the live producer otherwise.
  *
- * The stream id is derived from the user id (singleton chat per user), so the
- * client never needs to pass an id.
  */
-export async function GET(): Promise<Response> {
+export async function GET(req: Request): Promise<Response> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -230,7 +271,29 @@ export async function GET(): Promise<Response> {
     return new Response(null, { status: 204 });
   }
 
-  const streamId = getChatStreamId(user.id);
+  const sessionId = new URL(req.url).searchParams.get('sessionId');
+  if (!sessionId) {
+    return new Response('sessionId is required', { status: 400 });
+  }
+
+  const { data: session, error: sessionError } = await supabase
+    .from('chat_session')
+    .select('id')
+    .eq('id', sessionId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (sessionError) {
+    logger.error(
+      { err: sessionError, userId: user.id, sessionId },
+      'chat-route: session lookup failed on resume',
+    );
+    return new Response(null, { status: 204 });
+  }
+  if (!session) {
+    return new Response(null, { status: 204 });
+  }
+
+  const streamId = getChatStreamId(sessionId);
 
   try {
     const has = await ctx.hasExistingStream(streamId);
@@ -246,9 +309,28 @@ export async function GET(): Promise<Response> {
     return new Response(resumed, { headers: UI_MESSAGE_STREAM_HEADERS });
   } catch (err) {
     logger.error(
-      { err, userId: user.id },
+      { err, userId: user.id, sessionId },
       'chat-route: failed to resume existing stream',
     );
     return new Response(null, { status: 204 });
   }
+}
+
+function getFirstUserMessageText(messages: UIMessage[]): string | null {
+  for (const message of messages) {
+    if (message.role !== 'user') continue;
+    const text = getTextFromParts(message.parts).trim();
+    if (text.length > 0) return text;
+  }
+  return null;
+}
+
+function getTextFromParts(parts: UIMessage['parts']): string {
+  const chunks: string[] = [];
+  for (const part of parts) {
+    if (part.type === 'text' && typeof part.text === 'string') {
+      chunks.push(part.text);
+    }
+  }
+  return chunks.join(' ');
 }

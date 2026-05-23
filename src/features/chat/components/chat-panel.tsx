@@ -16,12 +16,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePreviewStore } from '@/features/previewer/stores/preview-store';
 import { useChat } from '@ai-sdk/react';
 
-import type { ChatUIMessage } from '../types';
+import type { ChatSessionListItem, ChatUIMessage } from '../types';
 
 import { ChatInput } from './chat-input';
 import { ChatMessage } from './chat-message';
+import { SessionRail } from './session-rail';
 
 type Props = {
+  sessionId: string;
+  sessions: ChatSessionListItem[];
   initialMessages: ChatUIMessage[];
 };
 
@@ -32,23 +35,23 @@ type Props = {
  */
 const STICKY_BOTTOM_THRESHOLD_PX = 80;
 
-export function ChatPanel({ initialMessages }: Props) {
+export function ChatPanel({ sessionId, sessions, initialMessages }: Props) {
   const contentRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
 
   const { messages, sendMessage, status, stop, error } = useChat<ChatUIMessage>({
-    id: 'chat:singleton',
+    id: sessionId,
     messages: initialMessages,
     // Re-attach to an in-flight stream after a reload. The route's GET handler
     // returns 204 when there is no active stream or Upstash Redis is not
     // configured, so this is safe to leave on unconditionally.
     resume: true,
     transport: new DefaultChatTransport({
-      api: '/api/chat',
-      // The default reconnect URL is `${api}/${chatId}/stream`. Our singleton
-      // GET handler lives at `/api/chat` and derives the stream id from the
-      // session, so we point reconnects there and drop the chat id from the
-      // path.
+      api: `/api/chat?sessionId=${encodeURIComponent(sessionId)}`,
+      body: { sessionId },
+      // The default reconnect URL is `${api}/${chatId}/stream`. We keep
+      // reconnects on the same URL and let the route read `sessionId` from
+      // the query string.
       prepareReconnectToStreamRequest: ({ api }) => ({ api }),
     }),
     onData: (dataPart) => {
@@ -105,47 +108,51 @@ export function ChatPanel({ initialMessages }: Props) {
   }
 
   return (
-    <div className='flex h-full min-h-0 flex-col'>
-      <ScrollArea className='flex-1 min-h-0'>
-        <div ref={contentRef} className='flex h-full flex-col gap-3 p-3'>
-          {isEmpty ? (
-            <Empty className='m-auto border-0'>
-              <EmptyHeader>
-                <EmptyMedia variant='icon'>
-                  <MessageSquareIcon />
-                </EmptyMedia>
-                <EmptyTitle>Edit your CV in chat</EmptyTitle>
-                <EmptyDescription>
-                  Ask the assistant to read your profile, rewrite a summary, tweak a
-                  bullet, or change the template. Edits land in your master CV and
-                  the preview refreshes automatically.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            messages.map((message, index) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                isStreamingLastAssistant={isStreaming && index === lastAssistantIndex}
-              />
-            ))
-          )}
-          {showRetry ? (
-            <p className='px-1 text-xs text-destructive'>
-              {error?.message ?? 'Something went wrong.'}
-            </p>
-          ) : null}
-        </div>
-      </ScrollArea>
+    <div className='flex h-full min-h-0'>
+      <SessionRail sessions={sessions} activeSessionId={sessionId} />
 
-      <ChatInput
-        status={status}
-        onSend={(text) => {
-          void sendMessage({ text });
-        }}
-        onStop={() => stop()}
-      />
+      <div className='flex min-w-0 flex-1 flex-col'>
+        <ScrollArea className='min-h-0 flex-1'>
+          <div ref={contentRef} className='flex h-full flex-col gap-3 p-3'>
+            {isEmpty ? (
+              <Empty className='m-auto border-0'>
+                <EmptyHeader>
+                  <EmptyMedia variant='icon'>
+                    <MessageSquareIcon />
+                  </EmptyMedia>
+                  <EmptyTitle>Edit your CV in chat</EmptyTitle>
+                  <EmptyDescription>
+                    Ask the assistant to read your profile, rewrite a summary, tweak a
+                    bullet, or change the template. Edits land in your master CV and
+                    the preview refreshes automatically.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              messages.map((message, index) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  isStreamingLastAssistant={isStreaming && index === lastAssistantIndex}
+                />
+              ))
+            )}
+            {showRetry ? (
+              <p className='px-1 text-xs text-destructive'>
+                {error?.message ?? 'Something went wrong.'}
+              </p>
+            ) : null}
+          </div>
+        </ScrollArea>
+
+        <ChatInput
+          status={status}
+          onSend={(text) => {
+            void sendMessage({ text });
+          }}
+          onStop={() => stop()}
+        />
+      </div>
     </div>
   );
 }

@@ -503,6 +503,7 @@ export type ChatMessageRole = z.infer<typeof chatMessageRoleSchema>;
  * by `convertToModelMessages` / the AI SDK downstream.
  */
 export const chatPostBodySchema = z.object({
+  sessionId: z.uuid().optional(),
   messages: z
     .array(
       z.object({

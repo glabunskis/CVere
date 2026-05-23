@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddAchievementForm } from '@/features/achievements/components/add-achievement-form';
 import { ChatPanel } from '@/features/chat/components/chat-panel';
-import type { ChatUIMessage } from '@/features/chat/types';
+import type { ChatSessionListItem, ChatUIMessage } from '@/features/chat/types';
 import type { CvDateFormat } from '@/utils/format-date';
 
 import type { CvTemplate } from '../schemas';
@@ -23,6 +23,8 @@ type Props = {
   educationDateFormat: CvDateFormat;
   certificationDateFormat: CvDateFormat;
   pendingAchievements: number;
+  activeSessionId: string;
+  sessions: ChatSessionListItem[];
   initialChatMessages: ChatUIMessage[];
 };
 
@@ -32,6 +34,8 @@ export function PreviewerSidebar({
   educationDateFormat,
   certificationDateFormat,
   pendingAchievements,
+  activeSessionId,
+  sessions,
   initialChatMessages,
 }: Props) {
   const links: SidebarLink[] = [
@@ -101,7 +105,11 @@ export function PreviewerSidebar({
         </TabsContent>
 
         <TabsContent value='chat' keepMounted className='min-h-0 flex-1'>
-          <ChatPanel initialMessages={initialChatMessages} />
+          <ChatPanel
+            sessionId={activeSessionId}
+            sessions={sessions}
+            initialMessages={initialChatMessages}
+          />
         </TabsContent>
       </Tabs>
     </aside>

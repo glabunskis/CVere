@@ -13,3 +13,11 @@ export type ChatUIDataParts = {
 };
 
 export type ChatUIMessage = UIMessage<never, ChatUIDataParts>;
+
+export type ChatSessionListItem = {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  lastMessageAt: string;
+};

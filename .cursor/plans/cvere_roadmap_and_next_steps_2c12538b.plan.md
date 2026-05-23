@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: phase-3
     content: "Multi-session chat (generic threads): schema, store rework, useChat per-session id, resumable-stream per-session id"
-    status: pending
+    status: completed
   - id: phase-4
     content: "Tailored CV artefact: schema, chat tools, library/picker view, parametric preview, per-CV PDF render"
     status: pending
@@ -86,7 +86,7 @@ The route appends a synthetic system message ("The user is currently looking at 
 
 ## What changed since the previous roadmap
 
-The Remove-non-chat-AI cut deleted `tailored`, `letters`, `advice`, `interview`, the cover-letter PDF, the `extracted`/`diff` job-description AI, the stub AI provider, and `pinned_tailored_cv_id`. Achievements insert with `null normalized_text/target_section` and integrate manually; vacancies are raw text + delete. See `AGENTS.md` for the current shape.
+The Remove-non-chat-AI cut deleted `tailored`, `letters`, `advice`, `interview`, the cover-letter PDF, the `extracted`/`diff` job-description AI, the old multi-file stub provider module set under `src/libs/ai/` (`stub.ts`, `provider.ts`, `openai.ts`, `types.ts`, `index.ts`), and `pinned_tailored_cv_id`. Achievements insert with `null normalized_text/target_section` and integrate manually; vacancies are raw text + delete. See `AGENTS.md` for the current shape.
 
 The user has confirmed:
 
@@ -168,7 +168,7 @@ flowchart LR
 
 Outcome:
 
-- Stub provider deleted; only `src/libs/ai/chat-model.ts` remains. `getChatModel()` returns OpenAI directly via `@ai-sdk/openai`. `OPENAI_API_KEY` documented in README.
+- Stub provider module set deleted; only `src/libs/ai/chat-model.ts` remains in that folder. `getChatModel()` returns OpenAI directly via `@ai-sdk/openai` when `OPENAI_API_KEY` + `OPENAI_CHAT_MODEL` are set. The in-file `MockLanguageModelV3` branch is an allowed dev/test fallback for missing env vars outside production; production throws `ChatModelNotConfiguredError`. `OPENAI_API_KEY` is documented in README.
 - Subscription gate landed as `CHAT_REQUIRE_SUBSCRIPTION` env flag (default `false`) in `src/app/api/chat/route.ts`; no dead commented block.
 - Langfuse intentionally skipped (see Observability).
 
@@ -386,6 +386,17 @@ Clarifications (decisions resolving sub-issues found while pressure-testing the 
 - **Both new migrations can ship in one go** for this single-developer project. The split into "first" and "lock-down" is documented for the deploy-safety rule but is not enforced — local `npm run migration:up` applies them in order.
 - **Delete-session UX**: the new shadcn `dialog` confirms ("Delete this chat? This cannot be undone."), then the safe-action deletes the row, the FK cascade clears its messages, the rail re-renders, and the client navigates to the most-recent remaining session or to a freshly created one if none remain.
 - **Session-rail UI for Phase 3**: collapsible left rail inside the existing chat panel, ~220 px when open, icon strip when collapsed, toggle in the panel header. Items show title + relative time; per-row dropdown with Rename / Delete. The page-level layout reshuffle (preview left, chat right, rail in its final home) remains Phase 5 work; the rail itself is reused there with no API changes.
+
+Handoff notes:
+
+- **Schema + types**: added `supabase/migrations/20260523113100_chat_sessions.sql` and `supabase/migrations/20260523113200_chat_sessions_lock.sql`. The first migration creates `chat_session`, adds `chat_message.session_id`, adds `cv_preferences.last_active_session_id`, backfills one `General` session per user with existing messages, and installs `bump_chat_session_last_message_at` + `set_updated_at_chat_session` triggers. The second migration enforces `chat_message.session_id NOT NULL` and drops `chat_message_user_created_idx`. `npm run migration:up` was run and regenerated `src/libs/supabase/types.ts`.
+- **Session-aware storage**: `src/features/chat/storage/chat-message-store.ts` now persists/loads/clears by `sessionId` only (internally resolves `user_id` from `chat_session` so `chat_message.user_id` is preserved). New `src/features/chat/storage/chat-session-store.ts` implements `listSessions`, `getSessionById`, `getOrCreateDefaultSession`, `createSession`, `renameSession`, `deleteSession`, `setLastActiveSession`, and `generateAndSaveSessionTitle`.
+- **Route + stream scope**: `src/app/api/chat/route.ts` now scopes POST and GET by owned `sessionId`, persists message history per session, and derives resumable stream ids from session (`chat:${sessionId}` via `src/libs/ai/resumable-stream.ts`). First-turn title generation is scheduled with `after()` in `createUIMessageStream` `onFinish`.
+- **Title model wiring**: `src/libs/ai/chat-model.ts` now exports `getTitleModel()` (reads `OPENAI_TITLE_MODEL`, default `gpt-4o-mini`) alongside `getChatModel()`, with dev fallback and production guard behavior matching the chat model path.
+- **Dashboard + chat UI**: `src/app/(app)/dashboard/page.tsx` now resolves active session from `?session=` via `nuqs/server`, falls back through `getOrCreateDefaultSession`, persists last-active id, and loads messages for that session. `src/features/chat/components/chat-panel.tsx` now uses `useChat` id = active session id, session-scoped transport/reconnect URLs, and renders the new `src/features/chat/components/session-rail.tsx`.
+- **Session actions + confirm dialog**: added `src/features/chat/actions/session-actions.ts` for create/rename/delete/set-active safe-actions (all revalidate `/dashboard`) and `src/components/ui/dialog.tsx` for delete confirmation. `src/features/previewer/components/previewer-sidebar.tsx` now passes `sessions` + `activeSessionId` into `ChatPanel`.
+- **Compatibility note**: POST accepts `sessionId` in body and (as fallback) query string; GET resume uses `?sessionId=` query. This keeps reconnection behavior stable with the current `DefaultChatTransport` wiring while preserving the Phase 3 request contract.
+- **Verification**: `npm run build` passes on Next 16.2.6 / TypeScript strict after the Phase 3 changes.
 
 ### Phase 4 — Tailored CV artefact
 

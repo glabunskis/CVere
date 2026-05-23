@@ -88,10 +88,9 @@ export function resetResumableStreamCache(): void {
 }
 
 /**
- * Stream id used for the singleton chat session per user. The chat route
- * (POST + GET) and the client (`useChat`) all derive the id the same way:
- * `chat:${user.id}`.
+ * Stream id used for resumable chat streams. Scoped per chat session:
+ * `chat:${sessionId}`.
  */
-export function getChatStreamId(userId: string): string {
-  return `chat:${userId}`;
+export function getChatStreamId(sessionId: string): string {
+  return `chat:${sessionId}`;
 }
