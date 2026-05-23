@@ -300,16 +300,16 @@ Schema:
 
 Store + route:
 
-- Rework `src/features/chat/storage/chat-message-store.ts` from `(userId)` to `(sessionId)`. Add `listSessions(userId)`, `createSession({userId, title?})`, `renameSession`, `deleteSession`. The route handler is the only caller of the message functions.
+- Rework `src/features/chat/storage/chat-message-store.ts` from `(userId)` to `(sessionId)`. Session CRUD (`listSessions`, `createSession`, `renameSession`, `deleteSession`, plus `getOrCreateDefaultSession` and `setLastActiveSession`) lives in a new sibling file `chat-session-store.ts` so message persistence and session metadata stay independent. The route handler is the only caller of the message functions.
 - Change `useChat` id in `src/features/chat/components/chat-panel.tsx` from `'chat:singleton'` to the active session id.
 - Resumable stream id derives from session id (`src/libs/ai/resumable-stream.ts`).
-- `POST /api/chat` accepts `{ sessionId, messages, context }`. Ownership check via `chat_session.user_id = auth.uid()`. The `context` payload follows the shape defined under "Current-context hint" above; the route appends a synthetic system message describing it.
+- `POST /api/chat` accepts `{ sessionId, messages }`. Ownership check via `chat_session.user_id = auth.uid()`. (The `ChatContext` payload defined under "Current-context hint" is introduced in Phase 4 when a second artefact kind exists, not in Phase 3.)
 - `GET /api/chat` takes `sessionId` for resume.
 
 Tool registration:
 
-- Every tool registers on every session. `MUTATING_TOOLS` stays a flat set. The model is trusted to pick the right artefact based on intent + context hint + tool snapshots; tools enforce ownership server-side regardless.
-- System prompt becomes one unified prompt that describes: the master CV, tailored CVs (when Phase 4 lands), cover letters (Phase 6), interview prep (Phase 7), achievements, vacancies, and the rule that the model should reference `context.previewing` when the user uses pronouns ("the summary", "this CV").
+- Every tool registers on every session. `MUTATING_TOOLS` stays a flat set. The model is trusted to pick the right artefact based on intent + (Phase 4+) context hint + tool snapshots; tools enforce ownership server-side regardless.
+- System prompt stays master-CV-only in Phase 3. It expands in Phases 4 / 6 / 7 alongside the artefacts they introduce, and the `context.previewing` pronoun rule lands together with the `ChatContext` hint in Phase 4.
 
 UI minimum:
 
@@ -317,6 +317,75 @@ UI minimum:
 - Persist last active session per user (column on `cv_preferences`) so reload restores it.
 
 Done when: a user can create, rename, delete, and switch between sessions; histories load correctly; resumable stream survives reload tied to the session, not the user; switching sessions does not flash empty state; chat behaviour is unchanged from today within any single session.
+
+#### Phase 3 prep — decisions and handoff notes
+
+Decisions on the seven gaps surfaced during prep:
+
+1. **Defer `ChatContext` to Phase 4.** Phase 3 ships without a `context` field on the request body and without a synthetic context system message. With only `master` existing, a hint that always says `master` is dead weight. The `ChatContext` type under "Current-context hint" stays as future-state documentation.
+2. **Storage takes `sessionId` only; rely on RLS.** `loadMessages(sessionId)`, `appendMessages(sessionId, …)`, `clearMessages(sessionId)`. Keep `chat_message.user_id` so the existing RLS predicate doesn't change. Mirrors how `profile-content-service` trusts RLS for ownership.
+3. **`last_message_at` maintained by DB trigger.** `after insert on chat_message for each row execute procedure public.bump_chat_session_last_message_at()`. Cheap, can't be forgotten by application code, same shape as the existing `set_updated_at`.
+4. **Title generation: cheap model + heuristic fallback.** New env `OPENAI_TITLE_MODEL` (default `gpt-4o-mini`). One-shot `generateText`, ~8 tokens, 3 s timeout, fire-and-forget via `after()`. On failure or empty output: title = trimmed first 40 chars of the first user message. Never blocks the stream.
+5. **Reconnect URL: query string on `/api/chat`.** `GET /api/chat?sessionId=<id>` resumes. Client uses `prepareReconnectToStreamRequest: ({ api }) => ({ api: \`${api}?sessionId=${sessionId}\` })`. Smaller diff than introducing `/api/chat/[sessionId]/stream`.
+6. **Session-switch UX.**
+   - New chat auto-switches to the new session id (`useChat` re-mounts under the new id).
+   - Delete current session confirms via a Base UI Dialog, then switches to the most-recent remaining session, or creates a fresh one if none remain.
+   - Initial load: dashboard server component reads `cv_preferences.last_active_session_id`, calls `getOrCreateDefaultSession(userId)` if null, then `loadMessages(activeSessionId)`. Switching only re-mounts `useChat`, never the panel shell, so there is no empty-state flash.
+7. **Keep `chat_message.user_id`.** Avoids touching the existing RLS predicate. Migration adds `session_id`; drops nothing on `chat_message` until the lock-down follow-up.
+
+Migration plan (two files):
+
+- **First migration** `supabase/migrations/<ts>_chat_sessions.sql`:
+  - `create table chat_session(id uuid pk default gen_random_uuid(), user_id uuid not null references auth.users on delete cascade, title text not null default 'New chat', created_at timestamptz default now(), updated_at timestamptz default now(), last_message_at timestamptz default now())`.
+  - Owner full-access RLS policies on `chat_session`.
+  - `alter table cv_preferences add column last_active_session_id uuid null references chat_session(id) on delete set null`.
+  - `alter table chat_message add column session_id uuid null references chat_session(id) on delete cascade`.
+  - Backfill: one session per user with `title = 'General'`, attach every existing `chat_message` row to that session.
+  - `bump_chat_session_last_message_at` after-insert trigger on `chat_message`.
+  - `set_updated_at` trigger on `chat_session`.
+  - New index `chat_message(session_id, created_at)`.
+- **Lock-down migration** `supabase/migrations/<ts+1>_chat_sessions_lock.sql` (run only after one clean deploy on the first migration):
+  - `alter table chat_message alter column session_id set not null`.
+  - `drop index chat_message_user_created_idx`.
+
+Files touched:
+
+- `supabase/migrations/` — two new files per above.
+- `src/libs/supabase/types.ts` — regenerated via `npm run migration:up`.
+- `src/features/chat/storage/chat-message-store.ts` — rewire `loadMessages` / `appendMessages` / `clearMessages` to `(sessionId)`.
+- `src/features/chat/storage/chat-session-store.ts` (new) — `listSessions(userId)`, `getOrCreateDefaultSession(userId)`, `createSession`, `renameSession`, `deleteSession`, `setLastActiveSession`, `generateAndSaveSessionTitle` (called from `after()`).
+- `src/libs/ai/resumable-stream.ts` — `getChatStreamId(sessionId)`.
+- `src/app/api/chat/route.ts` — body becomes `{ sessionId, messages }`; ownership check; persist scoped to session; GET reads `sessionId` from query; first-turn title generation via `after()`.
+- `src/app/(app)/dashboard/page.tsx` — read `?session=<id>` (via `nuqs/server`), resolve through `getOrCreateDefaultSession`, call `loadMessages(sessionId)`, pass both id and messages to the chat panel.
+- `src/features/chat/components/chat-panel.tsx` — `useChat` `id` becomes the active session id; reconnect URL appends `?sessionId=` so GET resume targets the same session.
+- `src/features/chat/components/session-rail.tsx` (new) — collapsible left rail inside the chat panel with new/rename/delete; ~220 px when open, icon strip when collapsed. The same shape Phase 5 will lift into the page-level layout, so no rework when that lands.
+- `src/components/ui/dialog.tsx` (new) — installed via `npx shadcn@latest add dialog`, used by the delete-session confirm.
+- `src/libs/ai/chat-model.ts` — add `getTitleModel()` alongside `getChatModel()`. Reads `OPENAI_TITLE_MODEL` (default `gpt-4o-mini`).
+- `src/features/chat/actions/session-actions.ts` (new) — safe-actions backing the session-list UI.
+- `src/features/chat/system-prompt.ts` — no content change in Phase 3.
+
+Out of scope for Phase 3 (carried forward):
+
+- `ChatContext` type + synthetic context system message — Phase 4.
+- `last_previewed_kind` / `last_previewed_ref_id` columns — Phase 4.
+- Cross-session quoting, clear-history affordance — Phase 8.
+- Title regeneration UI — polish track.
+
+Clarifications (decisions resolving sub-issues found while pressure-testing the prep):
+
+- **Active session id lives in the URL via `nuqs`.** `?session=<id>` on `/dashboard`. Matches the project rule "Use `nuqs` for type-safe search params". Session switching is a `router.push('/dashboard?session=<id>')` — the server component re-renders with the new `initialMessages`, `useChat`'s `id` prop changes, and the panel cleanly remounts with the new history. No client-side message-fetching path.
+- **`getOrCreateDefaultSession(userId)` handles three states**: `last_active_session_id` null, dangling (FK is `on delete set null`, so the cell can survive a deleted session), or live. It also covers "user has zero sessions" by inserting one. Idempotent and safe to call on every dashboard render.
+- **Resumable stream id format**: `chat:${sessionId}`. The previous `chat:${userId}` form is dropped entirely; there is no per-user fallback.
+- **Title generator runs once per session**, only when `chat_session.title = 'New chat'` (the default) AND the persisted user-message count for the session is exactly 1. Skips on every later turn; never clobbers a user rename.
+- **Title generator prompt**: a fixed system message — "Write a short, neutral title for this conversation in five words or fewer. No quotes, no punctuation, no emojis." — paired with the first user message as the user turn. `maxOutputTokens: 16`, `temperature: 0.2`. On failure or empty output: title = trimmed first 40 chars of the first user message.
+- **Title generator model wiring**: new helper `getTitleModel()` in `src/libs/ai/chat-model.ts` alongside `getChatModel()`. Reads `OPENAI_TITLE_MODEL` (default `gpt-4o-mini`). Independent so swapping the chat model never silently changes the title model.
+- **Where `after()` runs**: the title call is scheduled inside `createUIMessageStream`'s `onFinish` (where assistant messages already persist) and wrapped in `after(...)` from `next/server`. Runs after the SSE response closes; never blocks the user-visible stream.
+- **Session-list refresh**: every session-mutating safe-action (`createSession`, `renameSession`, `deleteSession`, `setLastActiveSession`) calls `revalidatePath('/dashboard')`. The session rail is a server-rendered list fed by `listSessions(userId)`; mutations re-render through `router.refresh()` on the client.
+- **`chat_message` RLS predicate stays `auth.uid() = user_id`.** No new policy. The session join is unnecessary because `user_id` is still on the row. New `chat_session` policy is the standard "owner full access" pattern used by `cv_preferences`.
+- **Existing chat migration is frozen.** Do not edit `supabase/migrations/20260515112237_chat.sql`; the comment block on lines 7–9 already anticipates this work. All new column adds and constraints land in the two new migrations.
+- **Both new migrations can ship in one go** for this single-developer project. The split into "first" and "lock-down" is documented for the deploy-safety rule but is not enforced — local `npm run migration:up` applies them in order.
+- **Delete-session UX**: the new shadcn `dialog` confirms ("Delete this chat? This cannot be undone."), then the safe-action deletes the row, the FK cascade clears its messages, the rail re-renders, and the client navigates to the most-recent remaining session or to a freshly created one if none remain.
+- **Session-rail UI for Phase 3**: collapsible left rail inside the existing chat panel, ~220 px when open, icon strip when collapsed, toggle in the panel header. Items show title + relative time; per-row dropdown with Rename / Delete. The page-level layout reshuffle (preview left, chat right, rail in its final home) remains Phase 5 work; the rail itself is reused there with no API changes.
 
 ### Phase 4 — Tailored CV artefact
 
