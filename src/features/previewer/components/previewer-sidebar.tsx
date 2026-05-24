@@ -69,7 +69,7 @@ export function PreviewerSidebar({
           <ScrollArea className='h-full'>
             <div className='flex flex-col gap-4 p-4'>
               <Section title='CV library'>
-                <CvLibraryPanel library={cvLibrary} activeSessionId={activeSessionId} />
+                <CvLibraryPanel library={cvLibrary} />
               </Section>
 
               <Separator />

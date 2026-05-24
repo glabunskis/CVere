@@ -103,10 +103,7 @@ export function ChatPanel({
             return {
               sessionId: activeSessionId,
               context: {
-                previewing:
-                  currentPreviewing.kind === 'master'
-                    ? { kind: 'master' as const }
-                    : { kind: 'tailored_cv' as const, refId: currentPreviewing.refId },
+                previewing: currentPreviewing,
               },
             };
           },
@@ -119,16 +116,29 @@ export function ChatPanel({
         // overload — passing them to the hook is silently ignored once an
         // external Chat instance is provided.
         onData: (dataPart) => {
+          if (dataPart.type === 'data-session-title') {
+            setSessionList((current) =>
+              current.map((session) =>
+                session.id === dataPart.data.sessionId
+                  ? { ...session, title: dataPart.data.title }
+                  : session,
+              ),
+            );
+            return;
+          }
           if (dataPart.type === 'data-preview-switch') {
-            setPreviewTarget(fromPreviewTargetData(dataPart.data));
-            router.refresh();
+            const next = fromPreviewTargetData(dataPart.data);
+            setPreviewTarget(next);
+            if (next.kind === 'tailored_cv') {
+              router.refresh();
+            }
             return;
           }
           if (dataPart.type === 'data-preview-dirty') {
             const current = usePreviewStore.getState().previewTarget;
             const shouldRefresh = isPreviewTargetMatch({
               current,
-              incoming: { kind: dataPart.data.kind, refId: dataPart.data.refId },
+              incoming: dataPart.data,
             });
             if (!shouldRefresh) return;
             void usePreviewStore.getState().markPreviewDirty();

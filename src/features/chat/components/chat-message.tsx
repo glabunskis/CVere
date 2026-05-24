@@ -133,6 +133,11 @@ export function ChatMessage({ message, isStreamingLastAssistant = false }: Props
             return null;
           }
 
+          if (part.type === 'data-session-title') {
+            // Side-channel: async session title update for the rail.
+            return null;
+          }
+
           if (isToolPart(part)) {
             const toolPart = part as ToolPart;
             const toolName = getToolName(toolPart);

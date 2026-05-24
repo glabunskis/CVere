@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { deleteTailoredCv, renameTailoredCv } from '@/features/chat/services/tailored-content-service';
@@ -23,7 +22,6 @@ export const renameTailoredCvAction = authActionClient
       tailoredCvId: parsedInput.tailoredCvId,
       title: parsedInput.title,
     });
-    revalidatePath('/dashboard');
     return {
       ok: true as const,
       tailoredCv: {
@@ -39,6 +37,5 @@ export const deleteTailoredCvAction = authActionClient
   .inputSchema(deleteTailoredCvSchema)
   .action(async ({ parsedInput, ctx }) => {
     await deleteTailoredCv({ user: ctx.user, tailoredCvId: parsedInput.tailoredCvId });
-    revalidatePath('/dashboard');
     return { ok: true as const };
   });

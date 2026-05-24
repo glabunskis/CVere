@@ -575,22 +575,32 @@ export const deleteTailoredCvInputSchema = z.object({
 
 /**
  * Sent on the SSE stream after a mutating turn finishes, signalling the
- * client to re-sign the master CV preview URL via `usePreviewStore`.
+ * client to re-sign the active preview target URL via `usePreviewStore`.
  */
-export const previewDirtyDataSchema = z.object({
-  kind: z.enum(['master', 'tailored_cv']),
-  refId: z.string().min(1),
-  renderedAt: z.iso.datetime(),
-});
+export const previewDirtyDataSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('master'), renderedAt: z.iso.datetime() }),
+  z.object({
+    kind: z.literal('tailored_cv'),
+    refId: z.uuid(),
+    renderedAt: z.iso.datetime(),
+  }),
+]);
 
 export type PreviewDirtyData = z.infer<typeof previewDirtyDataSchema>;
 
-export const previewSwitchDataSchema = z.object({
-  kind: z.enum(['master', 'tailored_cv']),
-  refId: z.string().min(1),
-});
+export const previewSwitchDataSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('master') }),
+  z.object({ kind: z.literal('tailored_cv'), refId: z.uuid() }),
+]);
 
 export type PreviewSwitchData = z.infer<typeof previewSwitchDataSchema>;
+
+export const sessionTitleDataSchema = z.object({
+  sessionId: z.uuid(),
+  title: z.string().min(1).max(80),
+});
+
+export type SessionTitleData = z.infer<typeof sessionTitleDataSchema>;
 
 // =============================================================================
 // Chat message persistence

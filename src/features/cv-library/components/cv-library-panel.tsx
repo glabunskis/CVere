@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,7 +22,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { buildCreateTailoredPrefill } from '@/features/chat/handoff';
 import {
   deleteTailoredCvAction,
   renameTailoredCvAction,
@@ -37,40 +36,24 @@ import { CvRow } from './cv-row';
 
 type Props = {
   library: CvLibraryData;
-  activeSessionId: string;
 };
 
-export function CvLibraryPanel({ library, activeSessionId }: Props) {
+export function CvLibraryPanel({ library }: Props) {
+  const router = useRouter();
   const previewTarget = usePreviewStore((s) => s.previewTarget);
   const setPreviewTarget = usePreviewStore((s) => s.setPreviewTarget);
-  const [tailoredRows, setTailoredRows] = useState(library.tailored);
+  const tailoredRows = library.tailored;
   const [pendingRename, setPendingRename] = useState<TailoredCvSummary | null>(null);
   const [pendingDelete, setPendingDelete] = useState<TailoredCvSummary | null>(null);
   const [renameTitle, setRenameTitle] = useState('');
-
-  const createHref = useMemo(() => {
-    const prefill = encodeURIComponent(buildCreateTailoredPrefill());
-    return `/dashboard?session=${encodeURIComponent(activeSessionId)}&prefill=${prefill}`;
-  }, [activeSessionId]);
 
   const { execute: rename, isExecuting: renaming } = useAction(renameTailoredCvAction, {
     onSuccess: ({ data }) => {
       const row = data?.tailoredCv;
       if (!row) return;
-      setTailoredRows((current) =>
-        current.map((item) =>
-          item.id === row.id
-            ? {
-                ...item,
-                title: row.title,
-                updatedAt: row.updatedAt,
-                jobDescriptionId: row.jobDescriptionId,
-              }
-            : item,
-        ),
-      );
       setPendingRename(null);
       setRenameTitle('');
+      router.refresh();
       toast.success('Tailored CV renamed.');
     },
     onError: ({ error }) => {
@@ -82,11 +65,11 @@ export function CvLibraryPanel({ library, activeSessionId }: Props) {
     onSuccess: () => {
       if (!pendingDelete) return;
       const deletedId = pendingDelete.id;
-      setTailoredRows((current) => current.filter((item) => item.id !== deletedId));
       setPendingDelete(null);
       if (previewTarget.kind === 'tailored_cv' && previewTarget.refId === deletedId) {
         setPreviewTarget({ kind: 'master' });
       }
+      router.refresh();
       toast.success('Tailored CV deleted.');
     },
     onError: ({ error }) => {
@@ -97,12 +80,7 @@ export function CvLibraryPanel({ library, activeSessionId }: Props) {
   return (
     <>
       <div className='flex flex-col gap-2'>
-        <div className='flex items-center justify-between gap-2'>
-          <h4 className='text-sm font-medium text-foreground'>CVs</h4>
-          <Button size='sm' variant='outline' render={<Link href={createHref} />}>
-            Create tailored CV
-          </Button>
-        </div>
+        <h4 className='text-sm font-medium text-foreground'>CVs</h4>
 
         <CvRow
           title={library.master.title}

@@ -18,7 +18,7 @@ export class ChatModelNotConfiguredError extends Error {
 function readOpenAiEnv() {
   const apiKey = process.env.OPENAI_API_KEY?.trim() || undefined;
   const chatModel = process.env.OPENAI_CHAT_MODEL?.trim() || undefined;
-  const titleModel = process.env.OPENAI_TITLE_MODEL?.trim() || 'gpt-4o-mini';
+  const titleModel = process.env.OPENAI_TITLE_MODEL?.trim() || 'gpt-5.4-mini';
   const baseURL = process.env.OPENAI_BASE_URL?.trim() || undefined;
   return { apiKey, chatModel, titleModel, baseURL };
 }

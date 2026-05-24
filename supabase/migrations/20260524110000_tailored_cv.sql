@@ -2,7 +2,7 @@
 -- Phase 4: tailored CV artefact
 -- =============================================================================
 
-create table tailored_cv (
+create table if not exists tailored_cv (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users on delete cascade,
   job_description_id uuid null references job_description(id) on delete set null,
@@ -17,8 +17,11 @@ create table tailored_cv (
   updated_at timestamptz not null default now()
 );
 
-create index tailored_cv_user_updated_idx
+create index if not exists tailored_cv_user_updated_idx
   on tailored_cv(user_id, updated_at desc);
+
+create index if not exists tailored_cv_user_jd_idx
+  on tailored_cv(user_id, job_description_id);
 
 alter table tailored_cv enable row level security;
 

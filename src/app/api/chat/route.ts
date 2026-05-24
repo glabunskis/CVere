@@ -1,4 +1,3 @@
-import { after } from 'next/server';
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -140,6 +139,7 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   const previewingTarget = parsePreviewingTarget(parsed.data.context?.previewing ?? null);
+  const firstUserMessageText = getFirstUserMessageText(incomingMessages);
 
   // Tracks exactly which artefacts were mutated this turn. End-of-turn render
   // runs once per target and emits one `data-preview-dirty` part for each.
@@ -152,10 +152,11 @@ export async function POST(req: Request): Promise<Response> {
   // streamText produced and persist only the new (assistant) messages.
   const persistedIds = new Set([...existingIds, ...newClientMessages.map((m) => m.id)]);
 
-  const syntheticContextMessage = buildSyntheticContextMessage(previewingTarget);
-  const modelMessages = await convertToModelMessages(
-    syntheticContextMessage ? [...incomingMessages, syntheticContextMessage] : incomingMessages,
-  );
+  const previewingContext = buildPreviewingSystemContext(previewingTarget);
+  const modelMessages = await convertToModelMessages(incomingMessages);
+  const systemPrompt = previewingContext
+    ? `${CHAT_SYSTEM_PROMPT}\n\n${previewingContext}`
+    : CHAT_SYSTEM_PROMPT;
 
   const stream = createUIMessageStream({
     originalMessages: incomingMessages,
@@ -185,7 +186,7 @@ export async function POST(req: Request): Promise<Response> {
 
       const result = streamText({
         model: getChatModel(),
-        system: CHAT_SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: modelMessages,
         tools,
         stopWhen: stepCountIs(20),
@@ -215,26 +216,44 @@ export async function POST(req: Request): Promise<Response> {
         onFinish: async () => {
           // End-of-turn render. Runs after generation but before stream close,
           // so data parts arrive in-band.
-          if (dirtyTargets.size === 0) return;
-          for (const target of dirtyTargets.values()) {
-            try {
-              await renderAndUploadCv({ user, target });
+          if (dirtyTargets.size > 0) {
+            for (const target of dirtyTargets.values()) {
+              try {
+                await renderAndUploadCv({ user, target });
+                writer.write({
+                  type: 'data-preview-dirty',
+                  data: {
+                    ...toPreviewTargetData(target),
+                    renderedAt: new Date().toISOString(),
+                  },
+                });
+                logger.info(
+                  { userId: user.id, targetKind: target.kind },
+                  'chat-route preview re-rendered',
+                );
+              } catch (err) {
+                logger.error(
+                  { err, userId: user.id, targetKind: target.kind },
+                  'chat-route end-of-turn render failed',
+                );
+              }
+            }
+          }
+
+          if (firstUserMessageText) {
+            const generatedTitle = await generateAndSaveSessionTitle({
+              userId: user.id,
+              sessionId,
+              firstUserMessage: firstUserMessageText,
+            });
+            if (generatedTitle) {
               writer.write({
-                type: 'data-preview-dirty',
+                type: 'data-session-title',
                 data: {
-                  ...toPreviewTargetData(target),
-                  renderedAt: new Date().toISOString(),
+                  sessionId,
+                  title: generatedTitle,
                 },
               });
-              logger.info(
-                { userId: user.id, targetKind: target.kind },
-                'chat-route preview re-rendered',
-              );
-            } catch (err) {
-              logger.error(
-                { err, userId: user.id, targetKind: target.kind },
-                'chat-route end-of-turn render failed',
-              );
             }
           }
         },
@@ -252,18 +271,6 @@ export async function POST(req: Request): Promise<Response> {
           await appendMessages(sessionId, user.id, newMessages);
         }
 
-        const firstUserMessageText = getFirstUserMessageText(incomingMessages);
-        if (firstUserMessageText) {
-          // `after()` runs outside the request lifetime, so auth-cookie writes
-          // from supabase-ssr are ignored; this task only does DB reads/writes.
-          after(async () => {
-            await generateAndSaveSessionTitle({
-              userId: user.id,
-              sessionId,
-              firstUserMessage: firstUserMessageText,
-            });
-          });
-        }
       } catch (err) {
         // Stream is already done client-side; log and swallow.
         logger.error(
@@ -399,17 +406,11 @@ function parsePreviewingTarget(
   return { kind: 'tailored_cv', refId: previewing.refId };
 }
 
-function buildSyntheticContextMessage(previewing: PreviewTarget | null): UIMessage | null {
+function buildPreviewingSystemContext(previewing: PreviewTarget | null): string | null {
   if (!previewing) return null;
-  const text =
-    previewing.kind === 'master'
-      ? 'Context: the user is currently previewing the master CV.'
-      : `Context: the user is currently previewing tailored CV ${previewing.refId}.`;
-  return {
-    id: `ctx-preview-${Date.now()}`,
-    role: 'system',
-    parts: [{ type: 'text', text }],
-  };
+  return previewing.kind === 'master'
+    ? 'Context: the user is currently previewing the master CV.'
+    : `Context: the user is currently previewing tailored CV ${previewing.refId}.`;
 }
 
 function getMutatedTargetFromToolCall(

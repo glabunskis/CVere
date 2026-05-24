@@ -32,7 +32,17 @@ export const usePreviewStore = create<PreviewState>((set, get) => ({
   previewTarget: { kind: 'master' },
   signedUrl: null,
   isRefreshing: false,
-  setPreviewTarget: (previewTarget) => set({ previewTarget }),
+  setPreviewTarget: (previewTarget) =>
+    set((state) => {
+      const current = state.previewTarget;
+      if (current.kind === previewTarget.kind) {
+        if (current.kind === 'master') return state;
+        if (previewTarget.kind === 'tailored_cv' && current.refId === previewTarget.refId) {
+          return state;
+        }
+      }
+      return { previewTarget };
+    }),
   setSignedUrl: (signedUrl) => set({ signedUrl }),
   setRefresher: (fn) => {
     refresherRef.current = fn;

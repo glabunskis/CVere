@@ -172,11 +172,10 @@ export const CONTENT_TOOL_NAMES = [
 ] as const;
 
 /**
- * Tool names that mutate the user's CV. Used by the route to decide whether
- * to re-render the master PDF at the end of a turn (`onStepFinish` flips the
- * `dirty` flag when any of these are called). Read-only tools (`readProfile`,
- * `listPendingAchievements`, `listVacancies`, `readVacancy`) and the
- * `dismissAchievement` housekeeping tool are intentionally excluded.
+ * Tool names that mutate CV data. The chat route uses this set to mark which
+ * preview targets became dirty during a turn, then re-renders those targets
+ * once at stream finish. Read-only and housekeeping tools are intentionally
+ * excluded.
  *
  * Kept flat (single set) on purpose — sessions are generic in Phase 3+, so
  * every tool registers on every session and tool gating belongs in the tool

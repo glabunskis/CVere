@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { authActionClient } from '@/libs/safe-action';
@@ -43,6 +42,5 @@ export const setLastPreviewed = authActionClient
       throw new Error(error.message);
     }
 
-    revalidatePath('/dashboard');
     return { ok: true as const };
   });

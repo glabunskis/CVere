@@ -216,10 +216,10 @@ export async function generateAndSaveSessionTitle({
   userId: string;
   sessionId: string;
   firstUserMessage: string;
-}): Promise<void> {
+}): Promise<string | null> {
   try {
     const base = firstUserMessage.trim();
-    if (!base) return;
+    if (!base) return null;
 
     const supabase = await createSupabaseServerClient();
 
@@ -229,8 +229,8 @@ export async function generateAndSaveSessionTitle({
       .eq('id', sessionId)
       .eq('user_id', userId)
       .maybeSingle();
-    if (sessionError || !session) return;
-    if (session.title !== DEFAULT_SESSION_TITLE) return;
+    if (sessionError || !session) return null;
+    if (session.title !== DEFAULT_SESSION_TITLE) return null;
 
     // Supabase query builders cannot express a subquery guard inside UPDATE;
     // this separate count check keeps title generation best-effort and cheap.
@@ -240,8 +240,8 @@ export async function generateAndSaveSessionTitle({
       .eq('session_id', sessionId)
       .eq('user_id', userId)
       .eq('role', 'user');
-    if (countError) return;
-    if (count !== 1) return;
+    if (countError) return null;
+    if (count !== 1) return null;
 
     const fallback = fallbackTitleFromMessage(base);
     let title = fallback;
@@ -252,7 +252,6 @@ export async function generateAndSaveSessionTitle({
         system: TITLE_SYSTEM_PROMPT,
         prompt: base,
         maxOutputTokens: 16,
-        temperature: 0.2,
         abortSignal: AbortSignal.timeout(3000),
       });
       const cleaned = cleanGeneratedTitle(result.text);
@@ -264,19 +263,24 @@ export async function generateAndSaveSessionTitle({
       );
     }
 
-    const { error: updateError } = await supabase
+    const { data: updatedSession, error: updateError } = await supabase
       .from('chat_session')
       .update({ title })
       .eq('id', sessionId)
       .eq('user_id', userId)
-      .eq('title', DEFAULT_SESSION_TITLE);
+      .eq('title', DEFAULT_SESSION_TITLE)
+      .select('title')
+      .maybeSingle();
     if (updateError) {
       logger.warn(
         { err: updateError, userId, sessionId },
         'chat-session title update failed',
       );
+      return null;
     }
+    return updatedSession?.title ?? null;
   } catch (err) {
     logger.warn({ err, userId, sessionId }, 'chat-session title generation crashed');
+    return null;
   }
 }

@@ -1,4 +1,4 @@
-import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
+import { getProfile } from '@/features/profile/controllers/get-profile';
 import { getProfileChildren } from '@/features/profile/controllers/get-profile-children';
 import { logger } from '@/libs/logger';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
@@ -221,9 +221,11 @@ export async function createTailoredCv({
   title: string;
   jobDescriptionId?: string;
 }): Promise<TailoredCvRow> {
-  const profile = await getOrCreateProfile();
+  const profile = await getProfile();
   if (!profile) {
-    throw new TailoredContentError('Profile not available.');
+    throw new TailoredContentError(
+      'Profile not found. Open Profile and save your base CV before creating a tailored CV.',
+    );
   }
 
   if (jobDescriptionId) {
@@ -272,6 +274,22 @@ export async function createTailoredCv({
   if (error || !data) {
     throw new TailoredContentError(error?.message ?? 'Failed to create tailored CV.');
   }
+
+  const { error: preferencesError } = await supabase.from('cv_preferences').upsert(
+    {
+      user_id: user.id,
+      last_previewed_kind: 'tailored_cv',
+      last_previewed_ref_id: data.id,
+    },
+    { onConflict: 'user_id' },
+  );
+  if (preferencesError) {
+    logger.warn(
+      { err: preferencesError, userId: user.id, tailoredCvId: data.id },
+      'tailored-content failed to persist last previewed target',
+    );
+  }
+
   return data;
 }
 
