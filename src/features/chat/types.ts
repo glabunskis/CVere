@@ -1,6 +1,6 @@
 import type { UIMessage } from 'ai';
 
-import type { PreviewDirtyData } from './schemas';
+import type { PreviewDirtyData, PreviewSwitchData } from './schemas';
 
 /**
  * Custom UI message type for the chat. Adds the `preview-dirty` data part so
@@ -10,6 +10,7 @@ import type { PreviewDirtyData } from './schemas';
  */
 export type ChatUIDataParts = {
   'preview-dirty': PreviewDirtyData;
+  'preview-switch': PreviewSwitchData;
 };
 
 export type ChatUIMessage = UIMessage<never, ChatUIDataParts>;

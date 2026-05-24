@@ -1,10 +1,17 @@
 import Link from 'next/link';
 
+import { getSession } from '@/features/account/controllers/get-session';
+import { buildVacancyTailorPrefill } from '@/features/chat/handoff';
+import { getOrCreateDefaultSession } from '@/features/chat/storage/chat-session-store';
 import { JdForm } from '@/features/jobs/components/jd-form';
 import { listJobs } from '@/features/jobs/controllers/get-jobs';
 
 export default async function VacanciesPage() {
-  const jobs = await listJobs();
+  const user = await getSession();
+  const [jobs, activeSession] = await Promise.all([
+    listJobs(),
+    user ? getOrCreateDefaultSession(user.id) : Promise.resolve(null),
+  ]);
 
   return (
     <section className='flex flex-col gap-6'>
@@ -27,16 +34,33 @@ export default async function VacanciesPage() {
           <ul className='flex flex-col gap-2'>
             {jobs.map((job) => (
               <li key={job.id} className='rounded-xl border bg-card p-4'>
-                <Link href={`/vacancies/${job.id}`} className='flex items-baseline justify-between gap-2'>
+                <div className='flex items-start justify-between gap-3'>
                   <div>
-                    <p className='text-sm font-semibold'>
+                    <Link href={`/vacancies/${job.id}`} className='text-sm font-semibold hover:underline'>
                       {job.role ?? '[MISSING] role'}
-                      {job.company ? <span className='text-muted-foreground'> at {job.company}</span> : null}
-                    </p>
+                      {job.company ? (
+                        <span className='text-muted-foreground'> at {job.company}</span>
+                      ) : null}
+                    </Link>
                     <p className='text-xs text-muted-foreground'>{new Date(job.created_at).toLocaleString()}</p>
                   </div>
-                  <span className='text-xs text-primary underline'>Open</span>
-                </Link>
+                  <div className='flex items-center gap-2'>
+                    <Link href={`/vacancies/${job.id}`} className='text-xs text-primary underline'>
+                      Open
+                    </Link>
+                    <Link
+                      href={buildTailorHref({
+                        sessionId: activeSession?.id ?? null,
+                        vacancyId: job.id,
+                        role: job.role,
+                        company: job.company,
+                      })}
+                      className='text-xs text-primary underline'
+                    >
+                      Tailor in chat
+                    </Link>
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
@@ -44,4 +68,26 @@ export default async function VacanciesPage() {
       </div>
     </section>
   );
+}
+
+function buildTailorHref({
+  sessionId,
+  vacancyId,
+  role,
+  company,
+}: {
+  sessionId: string | null;
+  vacancyId: string;
+  role: string | null;
+  company: string | null;
+}): string {
+  const prefill = encodeURIComponent(
+    buildVacancyTailorPrefill({
+      vacancyId,
+      role,
+      company,
+    }),
+  );
+  if (!sessionId) return `/dashboard?prefill=${prefill}`;
+  return `/dashboard?session=${encodeURIComponent(sessionId)}&prefill=${prefill}`;
 }

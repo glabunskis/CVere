@@ -191,6 +191,8 @@ export type Database = {
           education_date_format: Database["public"]["Enums"]["cv_date_format"]
           id: string
           last_active_session_id: string | null
+          last_previewed_kind: string | null
+          last_previewed_ref_id: string | null
           master_pdf_path: string | null
           template: Database["public"]["Enums"]["cv_template"]
           updated_at: string
@@ -203,6 +205,8 @@ export type Database = {
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
           id?: string
           last_active_session_id?: string | null
+          last_previewed_kind?: string | null
+          last_previewed_ref_id?: string | null
           master_pdf_path?: string | null
           template?: Database["public"]["Enums"]["cv_template"]
           updated_at?: string
@@ -215,6 +219,8 @@ export type Database = {
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
           id?: string
           last_active_session_id?: string | null
+          last_previewed_kind?: string | null
+          last_previewed_ref_id?: string | null
           master_pdf_path?: string | null
           template?: Database["public"]["Enums"]["cv_template"]
           updated_at?: string
@@ -696,6 +702,59 @@ export type Database = {
             columns: ["price_id"]
             isOneToOne: false
             referencedRelation: "prices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tailored_cv: {
+        Row: {
+          accent_hex: string | null
+          created_at: string
+          id: string
+          job_description_id: string | null
+          pdf_path: string | null
+          sections: Json
+          source_profile_snapshot: Json
+          summary: string | null
+          template: Database["public"]["Enums"]["cv_template"] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accent_hex?: string | null
+          created_at?: string
+          id?: string
+          job_description_id?: string | null
+          pdf_path?: string | null
+          sections?: Json
+          source_profile_snapshot: Json
+          summary?: string | null
+          template?: Database["public"]["Enums"]["cv_template"] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accent_hex?: string | null
+          created_at?: string
+          id?: string
+          job_description_id?: string | null
+          pdf_path?: string | null
+          sections?: Json
+          source_profile_snapshot?: Json
+          summary?: string | null
+          template?: Database["public"]["Enums"]["cv_template"] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tailored_cv_job_description_id_fkey"
+            columns: ["job_description_id"]
+            isOneToOne: false
+            referencedRelation: "job_description"
             referencedColumns: ["id"]
           },
         ]

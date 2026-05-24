@@ -62,6 +62,21 @@ const TOOL_LABELS: Record<string, string> = {
   // Vacancies
   listVacancies: 'List vacancies',
   readVacancy: 'Read vacancy',
+  // Tailored CVs
+  listTailoredCvs: 'List tailored CVs',
+  createTailoredCv: 'Create tailored CV',
+  readTailoredCv: 'Read tailored CV',
+  rewriteTailoredSummary: 'Rewrite tailored summary',
+  editTailoredExperienceBullet: 'Edit tailored experience bullet',
+  addTailoredExperienceBullet: 'Add tailored experience bullet',
+  removeTailoredExperienceBullet: 'Remove tailored experience bullet',
+  editTailoredProjectBullet: 'Edit tailored project bullet',
+  addTailoredProjectBullet: 'Add tailored project bullet',
+  removeTailoredProjectBullet: 'Remove tailored project bullet',
+  setTailoredAccentHex: 'Set tailored accent',
+  setTailoredTemplate: 'Set tailored template',
+  renameTailoredCv: 'Rename tailored CV',
+  deleteTailoredCv: 'Delete tailored CV',
   // Style
   setTemplate: 'Set template',
   setAccentHex: 'Set accent color',

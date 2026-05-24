@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddAchievementForm } from '@/features/achievements/components/add-achievement-form';
 import { ChatPanel } from '@/features/chat/components/chat-panel';
 import type { ChatSessionListItem, ChatUIMessage } from '@/features/chat/types';
+import { CvLibraryPanel } from '@/features/cv-library/components/cv-library-panel';
+import type { CvLibraryData } from '@/features/cv-library/controllers/list-cvs';
 import type { CvDateFormat } from '@/utils/format-date';
 
 import type { CvTemplate } from '../schemas';
@@ -26,6 +28,8 @@ type Props = {
   activeSessionId: string;
   sessions: ChatSessionListItem[];
   initialChatMessages: ChatUIMessage[];
+  initialPrefill: string | null;
+  cvLibrary: CvLibraryData;
 };
 
 export function PreviewerSidebar({
@@ -37,6 +41,8 @@ export function PreviewerSidebar({
   activeSessionId,
   sessions,
   initialChatMessages,
+  initialPrefill,
+  cvLibrary,
 }: Props) {
   const links: SidebarLink[] = [
     {
@@ -62,6 +68,12 @@ export function PreviewerSidebar({
         <TabsContent value='library' keepMounted className='min-h-0 flex-1'>
           <ScrollArea className='h-full'>
             <div className='flex flex-col gap-4 p-4'>
+              <Section title='CV library'>
+                <CvLibraryPanel library={cvLibrary} activeSessionId={activeSessionId} />
+              </Section>
+
+              <Separator />
+
               <Section title='Style'>
                 <TemplatePicker
                   template={template}
@@ -109,6 +121,7 @@ export function PreviewerSidebar({
             initialActiveSessionId={activeSessionId}
             sessions={sessions}
             initialMessages={initialChatMessages}
+            initialPrefill={initialPrefill}
           />
         </TabsContent>
       </Tabs>

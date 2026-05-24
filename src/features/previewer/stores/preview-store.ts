@@ -1,10 +1,14 @@
 import { create } from 'zustand';
 
+import type { PreviewTarget } from '../preview-target';
+
 type Refresher = () => Promise<string | null>;
 
 type PreviewState = {
+  previewTarget: PreviewTarget;
   signedUrl: string | null;
   isRefreshing: boolean;
+  setPreviewTarget: (target: PreviewTarget) => void;
   /**
    * Replace the cached signed URL. Used by the provider to hydrate from the
    * server-rendered initial value, and by `markPreviewDirty` after a refresh.
@@ -25,8 +29,10 @@ type PreviewState = {
 const noopRefresher: Refresher = async () => null;
 
 export const usePreviewStore = create<PreviewState>((set, get) => ({
+  previewTarget: { kind: 'master' },
   signedUrl: null,
   isRefreshing: false,
+  setPreviewTarget: (previewTarget) => set({ previewTarget }),
   setSignedUrl: (signedUrl) => set({ signedUrl }),
   setRefresher: (fn) => {
     refresherRef.current = fn;

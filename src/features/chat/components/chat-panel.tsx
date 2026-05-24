@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { DefaultChatTransport } from 'ai';
 import { MessageSquareIcon } from 'lucide-react';
@@ -18,6 +19,11 @@ import {
   loadChatSessionMessages,
   setActiveChatSession,
 } from '@/features/chat/actions/session-actions';
+import {
+  fromPreviewTargetData,
+  isPreviewTargetMatch,
+  toPreviewTargetData,
+} from '@/features/previewer/preview-target';
 import { usePreviewStore } from '@/features/previewer/stores/preview-store';
 import { Chat, useChat } from '@ai-sdk/react';
 
@@ -31,6 +37,7 @@ type Props = {
   initialActiveSessionId: string;
   sessions: ChatSessionListItem[];
   initialMessages: ChatUIMessage[];
+  initialPrefill: string | null;
 };
 
 /**
@@ -44,10 +51,13 @@ export function ChatPanel({
   initialActiveSessionId,
   sessions,
   initialMessages,
+  initialPrefill,
 }: Props) {
   const [activeSessionId, setActiveSessionId] = useState(initialActiveSessionId);
   const [activeSessionMessages, setActiveSessionMessages] = useState(initialMessages);
   const [sessionList, setSessionList] = useState(sessions);
+  const [prefillText, setPrefillText] = useState<string | null>(initialPrefill);
+  const router = useRouter();
   const contentRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   const activeSessionIdRef = useRef(initialActiveSessionId);
@@ -57,6 +67,7 @@ export function ChatPanel({
   const messagesCacheRef = useRef<Record<string, ChatUIMessage[]>>({
     [initialActiveSessionId]: initialMessages,
   });
+  const setPreviewTarget = usePreviewStore((s) => s.setPreviewTarget);
 
   useEffect(() => {
     activeSessionIdRef.current = activeSessionId;
@@ -71,6 +82,15 @@ export function ChatPanel({
     setActiveSessionMessages(initialMessages);
   }, [initialActiveSessionId, initialMessages]);
 
+  useEffect(() => {
+    setPrefillText(initialPrefill);
+    if (!initialPrefill) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('prefill')) return;
+    url.searchParams.delete('prefill');
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [initialPrefill]);
+
   const chat = useMemo(
     () =>
       new Chat<ChatUIMessage>({
@@ -78,7 +98,18 @@ export function ChatPanel({
         messages: activeSessionMessages,
         transport: new DefaultChatTransport({
           api: `/api/chat?sessionId=${encodeURIComponent(activeSessionId)}`,
-          body: { sessionId: activeSessionId },
+          body: () => {
+            const currentPreviewing = toPreviewTargetData(usePreviewStore.getState().previewTarget);
+            return {
+              sessionId: activeSessionId,
+              context: {
+                previewing:
+                  currentPreviewing.kind === 'master'
+                    ? { kind: 'master' as const }
+                    : { kind: 'tailored_cv' as const, refId: currentPreviewing.refId },
+              },
+            };
+          },
           // The default reconnect URL is `${api}/${chatId}/stream`. We keep
           // reconnects on the same URL and let the route read `sessionId` from
           // the query string.
@@ -88,7 +119,18 @@ export function ChatPanel({
         // overload — passing them to the hook is silently ignored once an
         // external Chat instance is provided.
         onData: (dataPart) => {
+          if (dataPart.type === 'data-preview-switch') {
+            setPreviewTarget(fromPreviewTargetData(dataPart.data));
+            router.refresh();
+            return;
+          }
           if (dataPart.type === 'data-preview-dirty') {
+            const current = usePreviewStore.getState().previewTarget;
+            const shouldRefresh = isPreviewTargetMatch({
+              current,
+              incoming: { kind: dataPart.data.kind, refId: dataPart.data.refId },
+            });
+            if (!shouldRefresh) return;
             void usePreviewStore.getState().markPreviewDirty();
           }
         },
@@ -96,7 +138,7 @@ export function ChatPanel({
           toast.error(err?.message ?? 'Chat request failed');
         },
       }),
-    [activeSessionId, activeSessionMessages],
+    [activeSessionId, activeSessionMessages, router, setPreviewTarget],
   );
 
   const { messages, sendMessage, status, stop, error, setMessages } = useChat<ChatUIMessage>({
@@ -266,11 +308,13 @@ export function ChatPanel({
         </ScrollArea>
 
         <ChatInput
+          key={prefillText ?? 'chat-input'}
           status={status}
           onSend={(text) => {
             void sendMessage({ text });
           }}
           onStop={() => stop()}
+          prefillText={prefillText}
         />
       </div>
     </div>

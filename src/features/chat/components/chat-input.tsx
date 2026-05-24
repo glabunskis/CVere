@@ -1,6 +1,6 @@
 'use client';
 
-import { type KeyboardEvent,useState } from 'react';
+import { type KeyboardEvent, useState } from 'react';
 import { ArrowUpIcon, SquareIcon } from 'lucide-react';
 
 import {
@@ -16,10 +16,17 @@ type Props = {
   onSend: (text: string) => void;
   onStop: () => void;
   disabled?: boolean;
+  prefillText?: string | null;
 };
 
-export function ChatInput({ status, onSend, onStop, disabled = false }: Props) {
-  const [value, setValue] = useState('');
+export function ChatInput({
+  status,
+  onSend,
+  onStop,
+  disabled = false,
+  prefillText = null,
+}: Props) {
+  const [value, setValue] = useState(prefillText ?? '');
   const isBusy = status === 'submitted' || status === 'streaming';
   const canSend = !isBusy && !disabled && value.trim().length > 0;
 

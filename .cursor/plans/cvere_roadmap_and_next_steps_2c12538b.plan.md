@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: phase-4
     content: "Tailored CV artefact: schema, chat tools, library/picker view, parametric preview, per-CV PDF render"
-    status: pending
+    status: completed
   - id: phase-5
     content: "Chat as primary workspace: two-column layout, session list, CV library, handoffs, current-context hint"
     status: pending
@@ -568,6 +568,17 @@ Vacancy handoff:
 
 Chat panel ChatContext wiring:
 - `src/features/chat/components/chat-panel.tsx`: subscribe to `usePreviewStore.previewTarget`, include it in each POST via the `DefaultChatTransport` `body` factory (a function so the body recomputes each send rather than capturing a stale target). Add a `'preview-switch'` branch in `onData` that calls `usePreviewStore.getState().setPreviewTarget(...)`. Filter `data-preview-dirty` by current target before triggering the refresher.
+
+Handoff notes:
+
+- **Migration + generated types:** added `supabase/migrations/20260524110000_tailored_cv.sql`, then ran `npm run migration:up` (which also ran `npm run generate-types`). This re-created `tailored_cv`, added `cv_preferences.last_previewed_kind` / `last_previewed_ref_id`, backfilled preview kind to `master`, and regenerated `src/libs/supabase/types.ts`.
+- **Snapshot + tailored persistence layer:** added `src/features/chat/tailored-snapshot.ts` (versioned `source_profile_snapshot`, override merge via `applySectionsToSnapshot`) and `src/features/chat/services/tailored-content-service.ts` (create/read/list tailored CVs, summary + experience/project bullet mutations, style overrides, rename, delete with PDF blob cleanup and preview fallback).
+- **Chat tools + route wiring:** added `src/features/chat/tools/tailored-tools.ts`; extended `src/features/chat/schemas.ts` with tailored tool schemas + `context` payload + `preview-switch`/targeted `preview-dirty` data parts; extended `src/features/chat/types.ts`; updated `src/features/chat/tools/content-tools.ts` mutating tool set; updated `src/app/api/chat/route.ts` to parse `context.previewing`, append a synthetic non-persisted context system message, register tailored tools, emit `data-preview-switch`, track `dirtyTargets`, render per target, emit targeted `data-preview-dirty`, and bump stop condition to `stepCountIs(20)`.
+- **Preview target architecture:** added `src/features/previewer/preview-target.ts`; generalized `src/features/previewer/render.tsx` to `renderAndUploadCv` + `ensureCvPdfPath` with wrappers kept; added `src/features/previewer/actions/set-last-previewed.ts`; extended `src/features/previewer/actions/sign-pdf-url.ts` with `createSignedPreviewUrl`; extended `src/features/previewer/actions/render-master-cv.ts` with `renderCv`; updated `PreviewStoreProvider`/store to hold `previewTarget`, re-sign per target, and persist target changes.
+- **Dashboard + library + handoffs:** added `src/features/cv-library/controllers/list-cvs.ts`, `src/features/cv-library/actions/tailored-actions.ts`, `src/features/cv-library/components/cv-library-panel.tsx`, and `src/features/cv-library/components/cv-row.tsx`; slotted library into `src/features/previewer/components/previewer-sidebar.tsx`; updated dashboard page/layout to resolve initial preview target + pass prefill; added `src/features/chat/handoff.ts`; wired vacancy list/detail "Tailor in chat" links (`/dashboard?session=<id>&prefill=...`) and chat input prefill handling/URL cleanup.
+- **Prompt + UI behavior:** updated `src/features/chat/system-prompt.ts` with tailored tool guidance, preview-context pronoun defaults, and `deleteTailoredCv` confirmation rule; `ChatPanel` now sends `context.previewing` on POST, handles `preview-switch`, and only refreshes preview URL when dirty target matches current preview.
+- **Verification:** `npm run lint` passes and `npm run build` passes on Next 16.2.6 + TypeScript strict.
+- **Intentional deltas from prep notes:** no separate `chat-content-validation.ts` extraction in this pass (validation remains inside the new tailored service); tool naming uses explicit `*TailoredExperienceBullet`/`*TailoredProjectBullet` names instead of a generic `editTailoredBullet` alias.
 
 Out of scope for Phase 4 (carried forward):
 

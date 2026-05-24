@@ -10,6 +10,7 @@ import {
   setLastActiveSession,
 } from '@/features/chat/storage/chat-session-store';
 import type { ChatUIMessage } from '@/features/chat/types';
+import { listCvs } from '@/features/cv-library/controllers/list-cvs';
 import { PreviewerSidebar } from '@/features/previewer/components/previewer-sidebar';
 import { getOrCreateCvPreferences } from '@/features/previewer/controllers/get-cv-preferences';
 
@@ -21,6 +22,7 @@ type DashboardPageProps = {
 
 const loadDashboardSearchParams = createLoader({
   session: parseAsString,
+  prefill: parseAsString,
 });
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -43,7 +45,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   }
 
   const resolvedSearchParams = await searchParams;
-  const { session: requestedSessionId } = loadDashboardSearchParams(resolvedSearchParams);
+  const { session: requestedSessionId, prefill } = loadDashboardSearchParams(resolvedSearchParams);
 
   const requestedSession = requestedSessionId
     ? await getSessionById(user.id, requestedSessionId)
@@ -53,10 +55,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     await setLastActiveSession(user.id, requestedSession.id);
   }
 
-  const [achievements, sessions, chatMessages] = await Promise.all([
+  const [achievements, sessions, chatMessages, cvLibrary] = await Promise.all([
     listAchievements({ status: 'pending' }),
     listSessions(user.id),
     loadMessages(activeSession.id),
+    listCvs(),
   ]);
   const initialChatMessages = chatMessages as ChatUIMessage[];
 
@@ -70,6 +73,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       activeSessionId={activeSession.id}
       sessions={sessions}
       initialChatMessages={initialChatMessages}
+      initialPrefill={prefill ?? null}
+      cvLibrary={cvLibrary}
     />
   );
 }

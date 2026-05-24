@@ -5,14 +5,15 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 
-import { renderMasterCv } from '../actions/render-master-cv';
+import { renderCv } from '../actions/render-master-cv';
 import { usePreviewStore } from '../stores/preview-store';
 
 export function PreviewerPane() {
   const signedUrl = usePreviewStore((s) => s.signedUrl);
   const markPreviewDirty = usePreviewStore((s) => s.markPreviewDirty);
+  const previewTarget = usePreviewStore((s) => s.previewTarget);
 
-  const { execute: rerender, isExecuting: rerendering } = useAction(renderMasterCv, {
+  const { execute: rerender, isExecuting: rerendering } = useAction(renderCv, {
     onSuccess: () => {
       toast.success('Preview refreshed');
       void markPreviewDirty();
@@ -20,14 +21,24 @@ export function PreviewerPane() {
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to refresh preview'),
   });
 
+  const targetLabel =
+    previewTarget.kind === 'master' ? 'Master CV' : `Tailored CV (${previewTarget.refId.slice(0, 8)})`;
+
   return (
     <div className='flex h-full flex-col rounded-xl border bg-muted/30'>
       <div className='flex items-center justify-between gap-2 border-b bg-background px-3 py-2'>
         <div className='flex items-center gap-2 text-sm'>
-          <span className='font-medium'>Master CV</span>
+          <span className='font-medium'>{targetLabel}</span>
         </div>
         <div className='flex items-center gap-2'>
-          <Button size='sm' variant='outline' disabled={rerendering} onClick={() => rerender()}>
+          <Button
+            size='sm'
+            variant='outline'
+            disabled={rerendering}
+            onClick={() =>
+              rerender(previewTarget.kind === 'master' ? { kind: 'master' } : previewTarget)
+            }
+          >
             {rerendering ? 'Rendering...' : 'Refresh'}
           </Button>
           {signedUrl ? (
@@ -51,7 +62,7 @@ export function PreviewerPane() {
           />
         ) : (
           <div className='flex h-full items-center justify-center text-sm text-muted-foreground'>
-            No preview yet. Press Refresh to render.
+            No preview yet for this target. Press Refresh to render.
           </div>
         )}
       </div>
