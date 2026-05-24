@@ -458,6 +458,149 @@ System prompt additions: the model is told (a) tailored edits never invent facts
 
 Done when: in any session, the user can say "tailor my CV for vacancy X", the preview swaps to the new tailored CV, follow-up "rewrite the summary to emphasise X" edits the right artefact without re-prompting, and the variant shows up in the CV library afterwards.
 
+#### Phase 4 prep — decisions and handoff plan
+
+Decisions on the gaps surfaced while pressure-testing the prep:
+
+1. **`source_profile_snapshot` is frozen and fully self-describing.** Stored as a versioned wrapper: `{ schemaVersion: 1, identity: { fullName, contact: ProfileContact }, profile: AiProfile }`. Identity + contact are snapshotted alongside profile content so the variant doesn't drift when the user later edits master. Type and builder live in a new `src/features/chat/tailored-snapshot.ts`; `applySectionsToSnapshot(snapshot, sections)` does the merge for the renderer. Version field is there for future migrations and is asserted on read.
+
+2. **`sections` shape stays narrow in Phase 4.** Only summary override + per-experience/project bullet arrays mutate. Stack, dates, company, role, location, and the entire skills/education/cert/lang block are frozen from the snapshot. Concrete shape: `{ summary?: string | null, experience?: Array<{ id, bullets, summary? }>, projects?: Array<{ id, bullets }> }`. Reordering and child-section overrides are deferred to Phase 9. Keeps the tool list short and the model's choice space small.
+
+3. **`tailored_cv` carries its own style.** `accent_hex` and `template` are nullable; null = inherit user-level `cv_preferences`, non-null = override. Mirrors the existing accent-hex regex constraint on `cv_preferences`.
+
+4. **Render path generalises in-place.** `src/features/previewer/render.tsx` grows a `renderAndUploadCv({ user, target })` where `target` is the discriminated union `{ kind: 'master' } | { kind: 'tailored_cv', refId }`. Each branch knows how to build the React node, the storage path, and the destination column (`cv_preferences.master_pdf_path` vs `tailored_cv.pdf_path`). The existing `renderAndUploadMasterCv` + `ensureMasterPdfPath` stay as thin wrappers so the dashboard layout, manual refresh action, and chat-route call sites migrate incrementally.
+
+5. **Storage paths.** Master keeps `pdf/{userId}/master.pdf`. Tailored writes to `pdf/{userId}/tailored/{tailoredCvId}.pdf`. The existing path-prefix RLS on the `pdf` bucket already scopes both — no policy changes. Row deletion service calls `supabase.storage.from('pdf').remove([path])` so blobs don't leak; storage failures log but don't block the row delete.
+
+6. **Sign URL helper needs no change.** `createSignedDownload({ path })` already accepts an arbitrary path and validates the `{userId}/` prefix. Phase 4 work is purely caller-side (the store and provider learn to sign different paths over time).
+
+7. **`ChatContext` lands now (deferred from Phase 3).** Request body becomes `{ sessionId, messages, context? }`. `context.previewing` is `{ kind: 'master' } | { kind: 'tailored_cv', refId: string } | null`. `context.workspace` and `context.recentVacancyId` are reserved in the type union but unused in Phase 4 — Phase 6 / Phase 7 will add discriminants without rewriting the schema. The route turns `context.previewing` into a one-line synthetic system message appended to `CHAT_SYSTEM_PROMPT`; the synthetic message is never persisted to `chat_message`, only rebuilt per request from the body.
+
+8. **Preview target lives in the preview store, mirrored to `cv_preferences`.** New store state: `previewTarget: { kind: 'master' } | { kind: 'tailored_cv', refId: string }`. `setPreviewTarget(target)` updates the store, re-registers the refresher to sign the right path, and fires a safe-action to persist `cv_preferences.last_previewed_kind` + `last_previewed_ref_id`. On dashboard mount, the layout reads these columns and seeds the store before the first render.
+
+9. **Two SSE data parts cover the preview side-channel:**
+   - `data-preview-dirty` payload extends from `{ renderedAt }` to `{ kind, refId, renderedAt }`. Client only triggers `markPreviewDirty()` if the dirty target matches what the preview pane is currently showing — prevents background mutations from yanking the visible iframe.
+   - New `data-preview-switch` part carries `{ kind, refId }`. `createTailoredCv` emits it after the row inserts and before the end-of-turn render, so the client calls `setPreviewTarget(...)` and the subsequent `data-preview-dirty` for the new tailored target lands on the right iframe.
+
+10. **End-of-turn render becomes target-aware.** The route's `dirty: boolean` becomes `dirtyTargets: Set<TargetKey>` (key = `master` or `tailored:{id}`). `onStepFinish` inspects the tool name and its `tailoredCvId` argument (if present) to compute which target was mutated. After the stream, the route awaits one render per dirty target sequentially (keeps Supabase storage writes serialised) and emits one `data-preview-dirty` per target. Mutating tools that touch tailored CVs include `tailoredCvId` in their input; the route reads it without any per-tool registration table.
+
+11. **Tailored content service mirrors profile content service.** New `src/features/chat/services/tailored-content-service.ts` with `updateTailoredSummary`, `add/edit/remove/moveTailoredExperienceBullet`, `add/edit/remove/moveTailoredProjectBullet`, `applyTailoredStylePatch`, `renameTailoredCv`, `deleteTailoredCv`. Same caps as profile (`MAX_BULLETS = 50`, `MAX_SUMMARY_LENGTH = 2000`, `MAX_BULLET_LENGTH = 500`). Shared validation helpers (text trim, cap check, nullable-clear) extract into `src/features/chat/services/chat-content-validation.ts` so the profile service can borrow them without circular imports. All writes scoped by `(id, user_id)`; RLS is the backstop.
+
+12. **Tool naming convention.** Tailored tools take `tailoredCvId` as the first argument and use `Tailored` in the name (`editTailoredExperienceBullet`, `rewriteTailoredSummary`, …). Mirroring master tool names plus the `Tailored` infix means the model never confuses which artefact a call targets. Tool descriptions explicitly tell the model to default to `context.previewing` and only call `listTailoredCvs` when the user names an artefact the context hint doesn't already point at.
+
+13. **`MUTATING_TOOLS` extension.** New tailored tool names join the set in `content-tools.ts` (single source of truth). Set membership stays informational — the route uses tool arguments to choose the target. Including the names preserves `dirty` semantics for the master-only path that still uses the helper.
+
+14. **`stepCountIs(8)` bump to `stepCountIs(20)`.** A realistic tailoring turn is `readProfile` + `readVacancy` + `createTailoredCv` + 6–12 bullet edits + `rewriteTailoredSummary`. The cap is a runaway-cost ceiling, not a budget; 20 buys headroom without changing typical-case cost.
+
+15. **CV library scope for Phase 4.** Lands inside the existing tabbed sidebar's `Library` tab. A new "CVs" group sits at the top of the panel and lists master + tailored rows with title, source-vacancy chip if linked, last-updated, per-row Open / Rename / Delete. The existing Style / Capture / Quick links / Import stack stays underneath (final layout move is Phase 5). Master is always present, can't be renamed or deleted. Creation stays chat-only per the architecture rule — no `createTailoredCv` safe-action; the library only mutates via `renameTailoredCvAction` and `deleteTailoredCvAction`.
+
+16. **Handoffs in Phase 4 are limited to two prefill buttons.** "Create tailored CV" inside the library panel and "Tailor my CV for this" on each vacancy row in `/vacancies`. Both prefill the active session's chat input via a small URL contract (`/dashboard?session=<id>&prefill=<urlencoded>`); the dashboard reads `prefill` once on mount and seeds the chat input then clears it from the URL. The wider per-section handoff matrix (achievements, profile editor) lands in Phase 5.
+
+17. **Render concurrency.** No per-user lock yet (Phase 10). Phase 4 trusts that one user runs one chat at a time. The `dirtyTargets` set is per-request, so multiple targets dirtied in the same turn render sequentially in `onFinish` and emit their dirty parts one after the other. Concurrent requests on different sessions can race for the same `tailored_cv.pdf_path`, but the storage upload is `upsert: true` and the row update is a single SQL statement — worst case the cached path lags one render. Acceptable.
+
+18. **Delete cleanup.** `deleteTailoredCv` issues `supabase.storage.from('pdf').remove([path])` then deletes the row. Storage failures log and don't block the row delete (orphaned blobs are tolerable; orphaned rows aren't). If the user was previewing the deleted CV, the route emits a `data-preview-switch` to master before stream close.
+
+19. **Title generation stays unchanged.** `generateAndSaveSessionTitle` fires on the first user message of a session regardless of whether that session ends up about a tailored CV; we don't try to re-title after the artefact appears.
+
+20. **Manual "Refresh" preview button generalises.** The existing `renderMasterCv` safe-action splits into a parametric `renderCv({ kind, refId })` that the previewer-pane calls with the store's `previewTarget`. Existing call sites that need explicitly-master rendering keep the master-only thin wrapper.
+
+Migration plan (one new file):
+
+- `supabase/migrations/<ts>_tailored_cv.sql`:
+  - Re-create `tailored_cv` (dropped in `20260521120000_drop_ai_features.sql`). Columns: `id uuid pk default gen_random_uuid()`, `user_id uuid not null references auth.users on delete cascade`, `job_description_id uuid null references job_description(id) on delete set null`, `title text not null`, `source_profile_snapshot jsonb not null`, `summary text`, `sections jsonb not null default '{}'`, `accent_hex text` with `~ '^#[0-9A-Fa-f]{6}$'` check (mirror `cv_preferences`), `template cv_template`, `pdf_path text`, `created_at`, `updated_at`. Index `(user_id, updated_at desc)`.
+  - Owner full-access RLS using the `(select auth.uid()) = user_id` idiom that `chat_session` already uses.
+  - `set_updated_at` trigger.
+  - `alter table cv_preferences add column last_previewed_kind text check (last_previewed_kind in ('master','tailored_cv'))`.
+  - `alter table cv_preferences add column last_previewed_ref_id uuid` — no FK because the refId is per-kind and null for master; the service is responsible for clearing the row if a referenced tailored CV is deleted.
+  - Backfill `last_previewed_kind = 'master'` for every existing `cv_preferences` row.
+  - `npm run migration:up` applies and regenerates `src/libs/supabase/types.ts`.
+
+Files touched:
+
+Schema + types:
+- `supabase/migrations/<ts>_tailored_cv.sql` (new)
+- `src/libs/supabase/types.ts` (regenerated)
+
+Snapshot + render:
+- `src/features/chat/tailored-snapshot.ts` (new): versioned `TailoredSnapshot` type, `buildTailoredSnapshot`, `applySectionsToSnapshot`, `readTailoredSnapshot` (asserts `schemaVersion`).
+- `src/features/previewer/render.tsx`: rename + generalise into `renderAndUploadCv({ user, target })`; keep `renderAndUploadMasterCv` + `ensureMasterPdfPath` as thin wrappers; add `renderAndUploadTailoredCv`, `ensureTailoredPdfPath`.
+
+Services:
+- `src/features/chat/services/tailored-content-service.ts` (new): full CRUD + bullet ops + style overrides + delete-with-storage-cleanup. On delete, also nulls `cv_preferences.last_previewed_ref_id` where it equals the deleted id.
+- `src/features/chat/services/chat-content-validation.ts` (new, small extraction): text trim, cap check, nullable-clear. Profile service migrates to it as part of the same PR.
+
+Schemas + chat types:
+- `src/features/chat/schemas.ts`: add input schemas for every new tailored tool; extend `chatPostBodySchema` with a `context: ChatContextSchema.optional()`; add `previewSwitchDataSchema`; extend `previewDirtyDataSchema` with `{ kind, refId }`.
+- `src/features/chat/types.ts`: extend `ChatUIDataParts` with `'preview-switch'`.
+
+Tools:
+- `src/features/chat/tools/tailored-tools.ts` (new): `listTailoredCvs`, `createTailoredCv`, `readTailoredCv`, `rewriteTailoredSummary`, `editTailoredBullet`, `addTailoredBullet`, `removeTailoredBullet`, `editTailoredProjectBullet`, `addTailoredProjectBullet`, `removeTailoredProjectBullet`, `setTailoredAccentHex`, `setTailoredTemplate`, `renameTailoredCv`, `deleteTailoredCv`.
+- `src/features/chat/tools/content-tools.ts`: append the new tool names to `MUTATING_TOOLS`.
+
+Route:
+- `src/app/api/chat/route.ts`: parse `context` from body; build and prepend the synthetic preview-context system message; replace `dirty` boolean with `dirtyTargets: Set<TargetKey>`; per-target render in `onFinish`; per-target `data-preview-dirty` emission; `stepCountIs(20)`; register `buildTailoredTools(user)`. The `createTailoredCv` tool implementation writes a `data-preview-switch` part to the writer before returning so the client swaps target before the dirty event for the new tailored CV arrives.
+
+System prompt:
+- `src/features/chat/system-prompt.ts`: add the tailored-CV tool group; "do not invent facts beyond `source_profile_snapshot`"; "when previewing a tailored CV, pronouns default to that CV"; "explain what changed vs the snapshot when finishing a tailoring turn"; explicit confirmation rule for `deleteTailoredCv`; clarify that `createTailoredCv` should re-use the active session, not assume a new one.
+
+Preview store + provider:
+- `src/features/previewer/stores/preview-store.ts`: add `previewTarget` state, `setPreviewTarget(target)`. Refresher becomes target-aware (path is derived from target server-side or via a small client lookup); module-scoped refresher ref keeps subscribers from re-rendering on swap.
+- `src/features/previewer/components/preview-store-provider.tsx`: takes `initialPreviewTarget`, registers the parametric refresher. Persists target swaps via the new `set-last-previewed` safe-action.
+- `src/features/previewer/actions/set-last-previewed.ts` (new): authenticated safe-action that writes `cv_preferences.last_previewed_kind` + `last_previewed_ref_id` and revalidates `/dashboard`.
+
+Previewer pane:
+- `src/features/previewer/components/previewer-pane.tsx`: header shows current target name ("Master CV" / `Tailored: {title}`). Refresh action calls the parametric `renderCv` (new) instead of `renderMasterCv` directly. Empty state copy adjusts to the active target.
+- `src/features/previewer/actions/render-master-cv.ts` → adds `renderCv({ kind, refId })`; the master-only export stays for the manual refresh path until the previewer-pane migrates.
+
+CV library feature (new folder):
+- `src/features/cv-library/controllers/list-cvs.ts` (new): returns `{ master: MasterCvSummary, tailored: TailoredCvSummary[] }`. Master summary is `{ title: 'Master CV', updatedAt }`; tailored summary is `{ id, title, jobDescriptionId, jobDescriptionLabel, updatedAt }`.
+- `src/features/cv-library/actions/tailored-actions.ts` (new): `renameTailoredCvAction`, `deleteTailoredCvAction`. Both revalidate `/dashboard`. Creation stays chat-only.
+- `src/features/cv-library/components/cv-library-panel.tsx` (new): renders the master + tailored list with Open / Rename / Delete (dialog-confirmed) and a "Create tailored CV" prefill button.
+- `src/features/cv-library/components/cv-row.tsx` (new): single row with kind-aware actions.
+
+Sidebar + dashboard wiring:
+- `src/features/previewer/components/previewer-sidebar.tsx`: drop nothing — slot `cv-library-panel` above the existing Style / Capture / Quick links / Import groups inside the Library tab. Pass the new `previewTarget` (server-resolved from `cv_preferences.last_previewed_*` or default master) and the library data down. The final layout reshuffle is Phase 5.
+- `src/app/(app)/dashboard/page.tsx`: resolve `previewTarget` from preferences (with master fallback when `last_previewed_ref_id` dangles after a delete), pass it to the layout provider. Read `?prefill=...` once, feed it to the chat input, then strip from the URL via `history.replaceState`.
+- `src/app/(app)/dashboard/layout.tsx`: hand `initialPreviewTarget` to `PreviewStoreProvider` and use the parametric `ensureCvPdfPath(user, target)` to pick the right initial signed URL.
+
+Vacancy handoff:
+- `src/app/(app)/vacancies/...` (one button): per-row "Tailor my CV for this" links to `/dashboard?session=<active>&prefill=Tailor%20my%20CV%20for%20vacancy%20<id>`. The dashboard's prefill-reader does the rest.
+
+Chat panel ChatContext wiring:
+- `src/features/chat/components/chat-panel.tsx`: subscribe to `usePreviewStore.previewTarget`, include it in each POST via the `DefaultChatTransport` `body` factory (a function so the body recomputes each send rather than capturing a stale target). Add a `'preview-switch'` branch in `onData` that calls `usePreviewStore.getState().setPreviewTarget(...)`. Filter `data-preview-dirty` by current target before triggering the refresher.
+
+Out of scope for Phase 4 (carried forward):
+
+- Tailored skill / education / certification / language overrides → Phase 9.
+- Tailored reorder (experience / project ordering) → Phase 9.
+- "Diff against master" view on the preview → Phase 9.
+- `/cvs` standalone route + thumbnail strip → Phase 5.
+- Per-section handoffs from `/profile` and `/achievements` → Phase 5.
+- Per-user render lock → Phase 10.
+- Background `after()` render → Phase 10.
+- Undo on `deleteTailoredCv` / destructive tailored mutations → Phase 9.
+
+Open questions to resolve before coding (none blocking):
+
+- `readTailoredCv` payload shape: pure merged snapshot vs merged snapshot + a flat `overrides` map so the model can compare against master. Default: include overrides; drop in a follow-up if unused.
+- Sign-URL TTL stays 60 s; two preview swaps in quick succession may re-sign twice. Acceptable for Phase 4.
+- Handoff URL contract is currently inline (`?prefill=...`); pulling it into a shared `src/features/chat/handoff.ts` keeps Phase 5's additional handoffs a one-line change. Worth doing during Phase 4's PR 3.
+
+Polish gate (Done when):
+
+- A user opens the dashboard, sees the master CV previewed by default, types "tailor my CV for the vacancy I just pasted", and watches the preview swap to the new tailored CV mid-turn.
+- Tool-call cards show the tailored mutations as they happen, with the right `tailoredCvId` and the resulting one-line summaries.
+- Switching back to master in the library swaps the preview without changing the chat session; saying "rewrite the summary" now edits master again.
+- Reloading the page restores the same preview target and the same active session.
+- Deleting a tailored CV removes the row and the storage blob; the preview falls back to master and `cv_preferences.last_previewed_ref_id` clears.
+- `chat_message` row count grows only with persisted user/assistant turns; the synthetic context system message is never written.
+
+Suggested PR split:
+
+1. **PR 1 — data plane.** Migration + types regen + `tailored-snapshot.ts` + `renderAndUploadCv` refactor + `tailored-content-service.ts` + `chat-content-validation.ts` extraction + parametric `renderCv` action + store/provider target awareness (no UI changes yet). Verified by a one-off scratch script or curl against the new safe-actions; preview still shows master.
+2. **PR 2 — chat surface.** `tailored-tools.ts` + schema/type extensions + route changes (`context`, `dirtyTargets`, per-target render emission, `data-preview-switch`, `stepCountIs(20)`) + system-prompt additions + chat-panel `body` factory + `onData` branches. End-of-PR demo: in chat, "create a tailored CV called test" inserts a row, emits switch + dirty, route renders tailored PDF visible.
+3. **PR 3 — library + handoff.** `cv-library` feature folder + sidebar slot + previewer-pane header + `set-last-previewed` + `?prefill=` reader + vacancy "Tailor my CV for this" button. End-of-PR demo: full Phase 4 flow as in the polish gate.
+
 ### Phase 5 — Chat as primary workspace (layout + handoffs)
 
 With Phase 3 + Phase 4 in hand, restructure the dashboard.
