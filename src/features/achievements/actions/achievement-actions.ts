@@ -6,6 +6,7 @@ import {
   dismissAchievementById,
   integrateAchievementById,
 } from '@/features/achievements/services/achievement-service';
+import { renderAndUploadCv } from '@/features/previewer/render';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 
@@ -51,6 +52,7 @@ export const integrateAchievement = authActionClient
       achievementId: parsedInput.id,
       targetSectionOverride: parsedInput.targetSection,
     });
+    await renderAndUploadCv({ user: ctx.user, cvId: result.cvId });
 
     revalidatePath('/achievements');
     revalidatePath('/profile');

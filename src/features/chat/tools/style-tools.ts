@@ -1,6 +1,11 @@
 import { tool } from 'ai';
 
-import { applyCvPreferencesPatch } from '@/features/chat/services/cv-preferences-service';
+import {
+  getSelectedCv,
+  setAccentHex,
+  setDateFormat,
+  setTemplate,
+} from '@/features/cv/services/cv-service';
 import { logger } from '@/libs/logger';
 import type { User } from '@supabase/supabase-js';
 
@@ -25,11 +30,12 @@ export function buildStyleTools(user: User) {
   return {
     setTemplate: tool({
       description:
-        'Switch the master CV template. "single-column" is the standard layout. ' +
+        'Switch the selected CV template. "single-column" is the standard layout. ' +
         '"two-column" puts skills, education, and certifications in a sidebar.',
       inputSchema: setTemplateInputSchema,
       execute: async ({ template }) => {
-        await applyCvPreferencesPatch(user, { template });
+        const cv = await getSelectedCv(user.id);
+        await setTemplate({ userId: user.id, cvId: cv.id, template });
         logger.info({ userId: user.id, template }, 'chat-tool setTemplate');
         return `Set template to ${template}.`;
       },
@@ -37,11 +43,12 @@ export function buildStyleTools(user: User) {
 
     setAccentHex: tool({
       description:
-        'Set the master CV accent color. Accepts a 6-digit hex like "#0066CC". ' +
+        'Set the selected CV accent color. Accepts a 6-digit hex like "#0066CC". ' +
         'Used for headings and dividers.',
       inputSchema: setAccentHexInputSchema,
       execute: async ({ hex }) => {
-        await applyCvPreferencesPatch(user, { accentHex: hex });
+        const cv = await getSelectedCv(user.id);
+        await setAccentHex({ userId: user.id, cvId: cv.id, accentHex: hex });
         logger.info({ userId: user.id, accentHex: hex }, 'chat-tool setAccentHex');
         return `Set accent color to ${hex}.`;
       },
@@ -53,7 +60,13 @@ export function buildStyleTools(user: User) {
         '"mon_yyyy", or "mon_d_yyyy".',
       inputSchema: setEducationDateFormatInputSchema,
       execute: async ({ format }) => {
-        await applyCvPreferencesPatch(user, { educationDateFormat: format });
+        const cv = await getSelectedCv(user.id);
+        await setDateFormat({
+          userId: user.id,
+          cvId: cv.id,
+          section: 'education',
+          format,
+        });
         logger.info(
           { userId: user.id, educationDateFormat: format },
           'chat-tool setEducationDateFormat',
@@ -68,7 +81,13 @@ export function buildStyleTools(user: User) {
         '"mon_yyyy", or "mon_d_yyyy".',
       inputSchema: setCertificationDateFormatInputSchema,
       execute: async ({ format }) => {
-        await applyCvPreferencesPatch(user, { certificationDateFormat: format });
+        const cv = await getSelectedCv(user.id);
+        await setDateFormat({
+          userId: user.id,
+          cvId: cv.id,
+          section: 'certification',
+          format,
+        });
         logger.info(
           { userId: user.id, certificationDateFormat: format },
           'chat-tool setCertificationDateFormat',

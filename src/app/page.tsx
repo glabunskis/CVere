@@ -55,7 +55,7 @@ function PrinciplesSection() {
         />
         <PrincipleCard
           title='Chat-driven editor'
-          description='Ask the agent to rewrite a bullet, switch templates, or change accents. Edits land on your master CV.'
+          description='Ask the agent to rewrite a bullet, switch templates, or change accents. Edits land on your selected CV.'
         />
         <PrincipleCard
           title='No fabrication'
@@ -63,7 +63,7 @@ function PrinciplesSection() {
         />
         <PrincipleCard
           title='Live PDF preview'
-          description='The previewer renders your master CV to PDF and re-signs it after every chat edit.'
+          description='The previewer renders your selected CV to PDF and re-signs it after every chat edit.'
         />
       </div>
     </section>

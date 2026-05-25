@@ -21,8 +21,7 @@ export function PreviewerPane() {
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to refresh preview'),
   });
 
-  const targetLabel =
-    previewTarget.kind === 'master' ? 'Master CV' : `Tailored CV (${previewTarget.refId.slice(0, 8)})`;
+  const targetLabel = `CV ${previewTarget.cvId.slice(0, 8)}`;
 
   return (
     <div className='flex h-full flex-col rounded-xl border bg-muted/30'>
@@ -35,9 +34,7 @@ export function PreviewerPane() {
             size='sm'
             variant='outline'
             disabled={rerendering}
-            onClick={() =>
-              rerender(previewTarget.kind === 'master' ? { kind: 'master' } : previewTarget)
-            }
+            onClick={() => rerender({ cvId: previewTarget.cvId })}
           >
             {rerendering ? 'Rendering...' : 'Refresh'}
           </Button>

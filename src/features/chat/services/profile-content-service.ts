@@ -97,12 +97,12 @@ export async function updateSummary({
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
-    .from('profile')
+    .from('cv')
     .update({ summary })
     .eq('id', profile.id)
     .eq('user_id', user.id)
     .select(
-      'id, user_id, summary, full_name, location, phone, contact_email, linkedin_url, github_url, website_url',
+      'id, user_id, title, summary, full_name, location, phone, contact_email, linkedin_url, github_url, website_url, template, accent_hex, education_date_format, certification_date_format, pdf_path',
     )
     .single();
   if (error || !data) throw new ProfileContentError(error?.message ?? 'Failed to update summary.');
@@ -351,7 +351,7 @@ export async function updateProfileIdentity({
   const profile = await getOrCreateProfile();
   if (!profile) throw new ProfileContentError('Profile not available.');
 
-  const update: TablesUpdate<'profile'> = {};
+  const update: TablesUpdate<'cv'> = {};
   if (patch.fullName !== undefined) update.full_name = normaliseNullableString(patch.fullName);
   if (patch.location !== undefined) update.location = normaliseNullableString(patch.location);
   if (patch.phone !== undefined) update.phone = normaliseNullableString(patch.phone);
@@ -373,12 +373,12 @@ export async function updateProfileIdentity({
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
-    .from('profile')
+    .from('cv')
     .update(update)
     .eq('id', profile.id)
     .eq('user_id', user.id)
     .select(
-      'id, user_id, summary, full_name, location, phone, contact_email, linkedin_url, github_url, website_url',
+      'id, user_id, title, summary, full_name, location, phone, contact_email, linkedin_url, github_url, website_url, template, accent_hex, education_date_format, certification_date_format, pdf_path',
     )
     .single();
   if (error || !data) {
@@ -467,7 +467,7 @@ export async function addExperience({
 
   const insertable: TablesInsert<'experience'> = {
     user_id: user.id,
-    profile_id: profile.id,
+    cv_id: profile.id,
     position: nextPosition,
     company: payload.company.trim(),
     role: payload.role.trim(),
@@ -611,7 +611,7 @@ export async function addProject({
 
   const insertable: TablesInsert<'project'> = {
     user_id: user.id,
-    profile_id: profile.id,
+    cv_id: profile.id,
     position: nextPosition,
     name: payload.name.trim(),
     description: normaliseNullableString(payload.description ?? null),
@@ -746,7 +746,7 @@ export async function addSkill({
   const supabase = await createSupabaseServerClient();
   const insertable: TablesInsert<'skill'> = {
     user_id: user.id,
-    profile_id: profile.id,
+    cv_id: profile.id,
     position: nextPosition,
     name: payload.name.trim(),
     category: normaliseNullableString(payload.category ?? null),
@@ -848,7 +848,7 @@ export async function addEducation({
   const supabase = await createSupabaseServerClient();
   const insertable: TablesInsert<'education'> = {
     user_id: user.id,
-    profile_id: profile.id,
+    cv_id: profile.id,
     position: nextPosition,
     institution: payload.institution.trim(),
     degree: normaliseNullableString(payload.degree ?? null),
@@ -957,7 +957,7 @@ export async function addCertification({
   const supabase = await createSupabaseServerClient();
   const insertable: TablesInsert<'certification'> = {
     user_id: user.id,
-    profile_id: profile.id,
+    cv_id: profile.id,
     position: nextPosition,
     name: payload.name.trim(),
     issuer: normaliseNullableString(payload.issuer ?? null),
@@ -1058,7 +1058,7 @@ export async function addLanguage({
   const supabase = await createSupabaseServerClient();
   const insertable: TablesInsert<'language'> = {
     user_id: user.id,
-    profile_id: profile.id,
+    cv_id: profile.id,
     position: nextPosition,
     name: payload.name.trim(),
     proficiency: payload.proficiency ?? null,

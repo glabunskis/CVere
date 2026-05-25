@@ -2,7 +2,6 @@
 
 import { z } from 'zod';
 
-import { getOrCreateCvPreferences } from '@/features/previewer/controllers/get-cv-preferences';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 
@@ -11,10 +10,7 @@ import { ensureCvPdfPath } from '../render';
 const STORAGE_BUCKET = 'pdf';
 
 const signedDownloadSchema = z.object({ path: z.string().min(1) });
-const signedPreviewSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('master') }),
-  z.object({ kind: z.literal('tailored_cv'), refId: z.uuid() }),
-]);
+const signedPreviewSchema = z.object({ cvId: z.uuid() });
 
 export const createSignedDownload = authActionClient
   .inputSchema(signedDownloadSchema)
@@ -33,15 +29,18 @@ export const createSignedPreviewUrl = authActionClient
   .inputSchema(signedPreviewSchema)
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
-    const prefs = await getOrCreateCvPreferences();
-
+    const { data: cvRow, error: cvError } = await supabase
+      .from('cv')
+      .select('pdf_path')
+      .eq('id', parsedInput.cvId)
+      .eq('user_id', ctx.user.id)
+      .maybeSingle();
+    if (cvError) throw new Error(cvError.message);
+    if (!cvRow) throw new Error('CV not found.');
     const path = await ensureCvPdfPath({
       user: ctx.user,
-      target:
-        parsedInput.kind === 'master'
-          ? { kind: 'master' }
-          : { kind: 'tailored_cv', refId: parsedInput.refId },
-      existingMasterPath: prefs?.master_pdf_path ?? null,
+      cvId: parsedInput.cvId,
+      existingPath: cvRow.pdf_path ?? null,
     });
 
     const { data, error } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(path, 60);

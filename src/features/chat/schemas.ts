@@ -476,100 +476,6 @@ export const readVacancyInputSchema = z.object({
 });
 
 // =============================================================================
-// Tailored CV tools
-// =============================================================================
-
-const tailoredCvIdSchema = z
-  .uuid()
-  .describe('UUID of the tailored CV. Get this from createTailoredCv or listTailoredCvs.');
-
-export const listTailoredCvsInputSchema = z.object({});
-
-export const createTailoredCvInputSchema = z.object({
-  title: z.string().min(1).max(120).describe('Title for the new tailored CV. Required.'),
-  jobDescriptionId: z
-    .uuid()
-    .optional()
-    .describe('Optional vacancy id to link this tailored CV to.'),
-});
-
-export const readTailoredCvInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-});
-
-export const rewriteTailoredSummaryInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-  text: z
-    .string()
-    .min(1)
-    .max(2000)
-    .describe('New tailored summary text. English. Do not invent facts.'),
-});
-
-export const editTailoredExperienceBulletInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-  experienceId: experienceIdSchema,
-  index: bulletIndexSchema,
-  text: bulletTextSchema,
-});
-
-export const addTailoredExperienceBulletInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-  experienceId: experienceIdSchema,
-  text: bulletTextSchema,
-  index: optionalBulletInsertIndexSchema,
-});
-
-export const removeTailoredExperienceBulletInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-  experienceId: experienceIdSchema,
-  index: bulletIndexSchema,
-});
-
-export const editTailoredProjectBulletInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-  projectId: projectIdSchema,
-  index: bulletIndexSchema,
-  text: bulletTextSchema,
-});
-
-export const addTailoredProjectBulletInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-  projectId: projectIdSchema,
-  text: bulletTextSchema,
-  index: optionalBulletInsertIndexSchema,
-});
-
-export const removeTailoredProjectBulletInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-  projectId: projectIdSchema,
-  index: bulletIndexSchema,
-});
-
-export const setTailoredAccentHexInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-  hex: accentHexSchema
-    .nullable()
-    .describe('Tailored accent override. Pass null to clear and inherit user preference.'),
-});
-
-export const setTailoredTemplateInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-  template: cvTemplateSchema
-    .nullable()
-    .describe('Tailored template override. Pass null to clear and inherit user preference.'),
-});
-
-export const renameTailoredCvInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-  title: z.string().min(1).max(120).describe('New tailored CV title.'),
-});
-
-export const deleteTailoredCvInputSchema = z.object({
-  tailoredCvId: tailoredCvIdSchema,
-});
-
-// =============================================================================
 // Stream data parts
 // =============================================================================
 
@@ -577,21 +483,16 @@ export const deleteTailoredCvInputSchema = z.object({
  * Sent on the SSE stream after a mutating turn finishes, signalling the
  * client to re-sign the active preview target URL via `usePreviewStore`.
  */
-export const previewDirtyDataSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('master'), renderedAt: z.iso.datetime() }),
-  z.object({
-    kind: z.literal('tailored_cv'),
-    refId: z.uuid(),
-    renderedAt: z.iso.datetime(),
-  }),
-]);
+export const previewDirtyDataSchema = z.object({
+  cvId: z.uuid(),
+  renderedAt: z.iso.datetime(),
+});
 
 export type PreviewDirtyData = z.infer<typeof previewDirtyDataSchema>;
 
-export const previewSwitchDataSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('master') }),
-  z.object({ kind: z.literal('tailored_cv'), refId: z.uuid() }),
-]);
+export const previewSwitchDataSchema = z.object({
+  cvId: z.uuid(),
+});
 
 export type PreviewSwitchData = z.infer<typeof previewSwitchDataSchema>;
 
@@ -628,11 +529,10 @@ export const chatPostBodySchema = z.object({
     .min(1),
   context: z
     .object({
-      previewing: z
-        .discriminatedUnion('kind', [
-          z.object({ kind: z.literal('master') }),
-          z.object({ kind: z.literal('tailored_cv'), refId: z.uuid() }),
-        ])
+      cv: z
+        .object({
+          id: z.uuid(),
+        })
         .nullable()
         .optional(),
       workspace: z

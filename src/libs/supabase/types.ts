@@ -59,6 +59,7 @@ export type Database = {
       certification: {
         Row: {
           created_at: string
+          cv_id: string
           expires_at: string | null
           id: string
           issued_at: string | null
@@ -66,12 +67,12 @@ export type Database = {
           link: string | null
           name: string
           position: number
-          profile_id: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          cv_id: string
           expires_at?: string | null
           id?: string
           issued_at?: string | null
@@ -79,12 +80,12 @@ export type Database = {
           link?: string | null
           name: string
           position?: number
-          profile_id: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          cv_id?: string
           expires_at?: string | null
           id?: string
           issued_at?: string | null
@@ -92,16 +93,15 @@ export type Database = {
           link?: string | null
           name?: string
           position?: number
-          profile_id?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "certification_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: "certification_cv_id_fkey"
+            columns: ["cv_id"]
             isOneToOne: false
-            referencedRelation: "profile"
+            referencedRelation: "cv"
             referencedColumns: ["id"]
           },
         ]
@@ -183,46 +183,118 @@ export type Database = {
         }
         Relationships: []
       }
-      cv_preferences: {
+      cv: {
         Row: {
           accent_hex: string
           certification_date_format: Database["public"]["Enums"]["cv_date_format"]
+          contact_email: string | null
           created_at: string
           education_date_format: Database["public"]["Enums"]["cv_date_format"]
+          full_name: string | null
+          github_url: string | null
           id: string
-          last_active_session_id: string | null
-          last_previewed_kind: string | null
-          last_previewed_ref_id: string | null
-          master_pdf_path: string | null
+          is_default: boolean
+          linkedin_url: string | null
+          links: Json
+          location: string | null
+          pdf_path: string | null
+          phone: string | null
+          source_cv_id: string | null
+          source_vacancy_id: string | null
+          summary: string | null
           template: Database["public"]["Enums"]["cv_template"]
+          title: string
           updated_at: string
           user_id: string
+          website_url: string | null
         }
         Insert: {
           accent_hex?: string
           certification_date_format?: Database["public"]["Enums"]["cv_date_format"]
+          contact_email?: string | null
           created_at?: string
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
+          full_name?: string | null
+          github_url?: string | null
           id?: string
-          last_active_session_id?: string | null
-          last_previewed_kind?: string | null
-          last_previewed_ref_id?: string | null
-          master_pdf_path?: string | null
+          is_default?: boolean
+          linkedin_url?: string | null
+          links?: Json
+          location?: string | null
+          pdf_path?: string | null
+          phone?: string | null
+          source_cv_id?: string | null
+          source_vacancy_id?: string | null
+          summary?: string | null
           template?: Database["public"]["Enums"]["cv_template"]
+          title: string
           updated_at?: string
           user_id: string
+          website_url?: string | null
         }
         Update: {
           accent_hex?: string
           certification_date_format?: Database["public"]["Enums"]["cv_date_format"]
+          contact_email?: string | null
           created_at?: string
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
+          full_name?: string | null
+          github_url?: string | null
+          id?: string
+          is_default?: boolean
+          linkedin_url?: string | null
+          links?: Json
+          location?: string | null
+          pdf_path?: string | null
+          phone?: string | null
+          source_cv_id?: string | null
+          source_vacancy_id?: string | null
+          summary?: string | null
+          template?: Database["public"]["Enums"]["cv_template"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cv_source_cv_id_fkey"
+            columns: ["source_cv_id"]
+            isOneToOne: false
+            referencedRelation: "cv"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cv_source_vacancy_id_fkey"
+            columns: ["source_vacancy_id"]
+            isOneToOne: false
+            referencedRelation: "job_description"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cv_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          last_active_session_id: string | null
+          selected_cv_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
           id?: string
           last_active_session_id?: string | null
-          last_previewed_kind?: string | null
-          last_previewed_ref_id?: string | null
-          master_pdf_path?: string | null
-          template?: Database["public"]["Enums"]["cv_template"]
+          selected_cv_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_active_session_id?: string | null
+          selected_cv_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -234,18 +306,25 @@ export type Database = {
             referencedRelation: "chat_session"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cv_preferences_selected_cv_id_fkey"
+            columns: ["selected_cv_id"]
+            isOneToOne: false
+            referencedRelation: "cv"
+            referencedColumns: ["id"]
+          },
         ]
       }
       education: {
         Row: {
           created_at: string
+          cv_id: string
           degree: string | null
           end_date: string | null
           field: string | null
           id: string
           institution: string
           position: number
-          profile_id: string
           start_date: string | null
           summary: string | null
           updated_at: string
@@ -253,13 +332,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          cv_id: string
           degree?: string | null
           end_date?: string | null
           field?: string | null
           id?: string
           institution: string
           position?: number
-          profile_id: string
           start_date?: string | null
           summary?: string | null
           updated_at?: string
@@ -267,13 +346,13 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          cv_id?: string
           degree?: string | null
           end_date?: string | null
           field?: string | null
           id?: string
           institution?: string
           position?: number
-          profile_id?: string
           start_date?: string | null
           summary?: string | null
           updated_at?: string
@@ -281,10 +360,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "education_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: "education_cv_id_fkey"
+            columns: ["cv_id"]
             isOneToOne: false
-            referencedRelation: "profile"
+            referencedRelation: "cv"
             referencedColumns: ["id"]
           },
         ]
@@ -294,12 +373,12 @@ export type Database = {
           bullets: Json
           company: string
           created_at: string
+          cv_id: string
           end_date: string | null
           id: string
           is_current: boolean
           location: string | null
           position: number
-          profile_id: string
           role: string
           stack: Json
           start_date: string | null
@@ -311,12 +390,12 @@ export type Database = {
           bullets?: Json
           company: string
           created_at?: string
+          cv_id: string
           end_date?: string | null
           id?: string
           is_current?: boolean
           location?: string | null
           position?: number
-          profile_id: string
           role: string
           stack?: Json
           start_date?: string | null
@@ -328,12 +407,12 @@ export type Database = {
           bullets?: Json
           company?: string
           created_at?: string
+          cv_id?: string
           end_date?: string | null
           id?: string
           is_current?: boolean
           location?: string | null
           position?: number
-          profile_id?: string
           role?: string
           stack?: Json
           start_date?: string | null
@@ -343,10 +422,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "experience_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: "experience_cv_id_fkey"
+            columns: ["cv_id"]
             isOneToOne: false
-            referencedRelation: "profile"
+            referencedRelation: "cv"
             referencedColumns: ["id"]
           },
         ]
@@ -384,46 +463,46 @@ export type Database = {
       language: {
         Row: {
           created_at: string
+          cv_id: string
           id: string
           name: string
           position: number
           proficiency:
             | Database["public"]["Enums"]["language_proficiency"]
             | null
-          profile_id: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          cv_id: string
           id?: string
           name: string
           position?: number
           proficiency?:
             | Database["public"]["Enums"]["language_proficiency"]
             | null
-          profile_id: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          cv_id?: string
           id?: string
           name?: string
           position?: number
           proficiency?:
             | Database["public"]["Enums"]["language_proficiency"]
             | null
-          profile_id?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "language_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: "language_cv_id_fkey"
+            columns: ["cv_id"]
             isOneToOne: false
-            referencedRelation: "profile"
+            referencedRelation: "cv"
             referencedColumns: ["id"]
           },
         ]
@@ -505,61 +584,16 @@ export type Database = {
         }
         Relationships: []
       }
-      profile: {
-        Row: {
-          contact_email: string | null
-          created_at: string
-          full_name: string | null
-          github_url: string | null
-          id: string
-          linkedin_url: string | null
-          location: string | null
-          phone: string | null
-          summary: string | null
-          updated_at: string
-          user_id: string
-          website_url: string | null
-        }
-        Insert: {
-          contact_email?: string | null
-          created_at?: string
-          full_name?: string | null
-          github_url?: string | null
-          id?: string
-          linkedin_url?: string | null
-          location?: string | null
-          phone?: string | null
-          summary?: string | null
-          updated_at?: string
-          user_id: string
-          website_url?: string | null
-        }
-        Update: {
-          contact_email?: string | null
-          created_at?: string
-          full_name?: string | null
-          github_url?: string | null
-          id?: string
-          linkedin_url?: string | null
-          location?: string | null
-          phone?: string | null
-          summary?: string | null
-          updated_at?: string
-          user_id?: string
-          website_url?: string | null
-        }
-        Relationships: []
-      }
       project: {
         Row: {
           bullets: Json
           created_at: string
+          cv_id: string
           description: string | null
           id: string
           link: string | null
           name: string
           position: number
-          profile_id: string
           stack: Json
           updated_at: string
           user_id: string
@@ -567,12 +601,12 @@ export type Database = {
         Insert: {
           bullets?: Json
           created_at?: string
+          cv_id: string
           description?: string | null
           id?: string
           link?: string | null
           name: string
           position?: number
-          profile_id: string
           stack?: Json
           updated_at?: string
           user_id: string
@@ -580,22 +614,22 @@ export type Database = {
         Update: {
           bullets?: Json
           created_at?: string
+          cv_id?: string
           description?: string | null
           id?: string
           link?: string | null
           name?: string
           position?: number
-          profile_id?: string
           stack?: Json
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "project_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: "project_cv_id_fkey"
+            columns: ["cv_id"]
             isOneToOne: false
-            referencedRelation: "profile"
+            referencedRelation: "cv"
             referencedColumns: ["id"]
           },
         ]
@@ -604,42 +638,42 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string
+          cv_id: string
           id: string
           level: Database["public"]["Enums"]["skill_level"] | null
           name: string
           position: number
-          profile_id: string
           updated_at: string
           user_id: string
         }
         Insert: {
           category?: string | null
           created_at?: string
+          cv_id: string
           id?: string
           level?: Database["public"]["Enums"]["skill_level"] | null
           name: string
           position?: number
-          profile_id: string
           updated_at?: string
           user_id: string
         }
         Update: {
           category?: string | null
           created_at?: string
+          cv_id?: string
           id?: string
           level?: Database["public"]["Enums"]["skill_level"] | null
           name?: string
           position?: number
-          profile_id?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "skill_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: "skill_cv_id_fkey"
+            columns: ["cv_id"]
             isOneToOne: false
-            referencedRelation: "profile"
+            referencedRelation: "cv"
             referencedColumns: ["id"]
           },
         ]
@@ -702,59 +736,6 @@ export type Database = {
             columns: ["price_id"]
             isOneToOne: false
             referencedRelation: "prices"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tailored_cv: {
-        Row: {
-          accent_hex: string | null
-          created_at: string
-          id: string
-          job_description_id: string | null
-          pdf_path: string | null
-          sections: Json
-          source_profile_snapshot: Json
-          summary: string | null
-          template: Database["public"]["Enums"]["cv_template"] | null
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          accent_hex?: string | null
-          created_at?: string
-          id?: string
-          job_description_id?: string | null
-          pdf_path?: string | null
-          sections?: Json
-          source_profile_snapshot: Json
-          summary?: string | null
-          template?: Database["public"]["Enums"]["cv_template"] | null
-          title: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          accent_hex?: string | null
-          created_at?: string
-          id?: string
-          job_description_id?: string | null
-          pdf_path?: string | null
-          sections?: Json
-          source_profile_snapshot?: Json
-          summary?: string | null
-          template?: Database["public"]["Enums"]["cv_template"] | null
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tailored_cv_job_description_id_fkey"
-            columns: ["job_description_id"]
-            isOneToOne: false
-            referencedRelation: "job_description"
             referencedColumns: ["id"]
           },
         ]

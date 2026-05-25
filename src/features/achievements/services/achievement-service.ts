@@ -21,6 +21,7 @@ export type IntegrateResult = {
   alreadyIntegrated: boolean;
   targetSection: AchievementSection;
   entryText: string;
+  cvId: string;
 };
 
 /**
@@ -59,19 +60,19 @@ export async function integrateAchievementById({
       'No target section set on this achievement. Pass targetSection explicitly.',
     );
   }
-  if (entry.status === 'integrated') {
-    return { alreadyIntegrated: true, targetSection, entryText: entry.raw_text };
-  }
-
   const profile = await getOrCreateProfile();
   if (!profile) throw new AchievementError('Profile not available.');
+
+  if (entry.status === 'integrated') {
+    return { alreadyIntegrated: true, targetSection, entryText: entry.raw_text, cvId: profile.id };
+  }
 
   const text = (entry.normalized_text ?? entry.raw_text).trim();
 
   if (targetSection === 'summary') {
     const next = [profile.summary?.trim(), text].filter(Boolean).join('\n\n');
     const { error } = await supabase
-      .from('profile')
+      .from('cv')
       .update({ summary: next })
       .eq('id', profile.id)
       .eq('user_id', user.id);
@@ -79,7 +80,7 @@ export async function integrateAchievementById({
   } else if (targetSection === 'experience') {
     const { error } = await supabase.from('experience').insert({
       user_id: user.id,
-      profile_id: profile.id,
+      cv_id: profile.id,
       position: 0,
       company: '[MISSING] company',
       role: '[MISSING] role',
@@ -90,7 +91,7 @@ export async function integrateAchievementById({
   } else if (targetSection === 'project') {
     const { error } = await supabase.from('project').insert({
       user_id: user.id,
-      profile_id: profile.id,
+      cv_id: profile.id,
       position: 0,
       name: text.slice(0, 60),
       description: text,
@@ -101,7 +102,7 @@ export async function integrateAchievementById({
   } else if (targetSection === 'skill') {
     const { error } = await supabase.from('skill').insert({
       user_id: user.id,
-      profile_id: profile.id,
+      cv_id: profile.id,
       position: 0,
       name: text.slice(0, 80),
     });
@@ -109,7 +110,7 @@ export async function integrateAchievementById({
   } else if (targetSection === 'education') {
     const { error } = await supabase.from('education').insert({
       user_id: user.id,
-      profile_id: profile.id,
+      cv_id: profile.id,
       position: 0,
       institution: '[MISSING] institution',
       summary: text,
@@ -118,7 +119,7 @@ export async function integrateAchievementById({
   } else if (targetSection === 'certification') {
     const { error } = await supabase.from('certification').insert({
       user_id: user.id,
-      profile_id: profile.id,
+      cv_id: profile.id,
       position: 0,
       name: text.slice(0, 200),
     });
@@ -126,7 +127,7 @@ export async function integrateAchievementById({
   } else if (targetSection === 'language') {
     const { error } = await supabase.from('language').insert({
       user_id: user.id,
-      profile_id: profile.id,
+      cv_id: profile.id,
       position: 0,
       name: text.slice(0, 80),
     });
@@ -144,7 +145,7 @@ export async function integrateAchievementById({
     .eq('user_id', user.id);
   if (updateError) throw new AchievementError(updateError.message);
 
-  return { alreadyIntegrated: false, targetSection, entryText: text };
+  return { alreadyIntegrated: false, targetSection, entryText: text, cvId: profile.id };
 }
 
 export async function dismissAchievementById({

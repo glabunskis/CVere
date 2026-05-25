@@ -29,18 +29,13 @@ type PreviewState = {
 const noopRefresher: Refresher = async () => null;
 
 export const usePreviewStore = create<PreviewState>((set, get) => ({
-  previewTarget: { kind: 'master' },
+  previewTarget: { cvId: '' },
   signedUrl: null,
   isRefreshing: false,
   setPreviewTarget: (previewTarget) =>
     set((state) => {
       const current = state.previewTarget;
-      if (current.kind === previewTarget.kind) {
-        if (current.kind === 'master') return state;
-        if (previewTarget.kind === 'tailored_cv' && current.refId === previewTarget.refId) {
-          return state;
-        }
-      }
+      if (current.cvId === previewTarget.cvId) return state;
       return { previewTarget };
     }),
   setSignedUrl: (signedUrl) => set({ signedUrl }),

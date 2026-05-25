@@ -19,20 +19,20 @@ export type ProfileChildren = {
   language: LanguageRow[];
 };
 
-export async function getProfileChildren(profileId: string): Promise<ProfileChildren> {
+export async function getProfileChildren(cvId: string): Promise<ProfileChildren> {
   const supabase = await createSupabaseServerClient();
 
   const [experience, project, skill, education, certification, language] = await Promise.all([
-    supabase.from('experience').select('*').eq('profile_id', profileId).order('position', { ascending: true }),
-    supabase.from('project').select('*').eq('profile_id', profileId).order('position', { ascending: true }),
-    supabase.from('skill').select('*').eq('profile_id', profileId).order('position', { ascending: true }),
-    supabase.from('education').select('*').eq('profile_id', profileId).order('position', { ascending: true }),
+    supabase.from('experience').select('*').eq('cv_id', cvId).order('position', { ascending: true }),
+    supabase.from('project').select('*').eq('cv_id', cvId).order('position', { ascending: true }),
+    supabase.from('skill').select('*').eq('cv_id', cvId).order('position', { ascending: true }),
+    supabase.from('education').select('*').eq('cv_id', cvId).order('position', { ascending: true }),
     supabase
       .from('certification')
       .select('*')
-      .eq('profile_id', profileId)
+      .eq('cv_id', cvId)
       .order('position', { ascending: true }),
-    supabase.from('language').select('*').eq('profile_id', profileId).order('position', { ascending: true }),
+    supabase.from('language').select('*').eq('cv_id', cvId).order('position', { ascending: true }),
   ]);
 
   return {

@@ -11,12 +11,10 @@ import 'server-only';
 const MAX_VACANCY_TEXT = 20_000;
 
 /**
- * Vacancy-aware reading tools. Until tailored CVs ship (Phase 4), the chat
- * reads vacancy text and edits the master CV in place; afterwards the model
- * should switch to `createTailoredCv` instead of editing master.
+ * Vacancy-aware reading tools. Read-only — saved vacancies are managed
+ * manually on `/vacancies`.
  *
- * These are read-only — no insert/update/delete from chat. Saved vacancies
- * are manually CRUD'd on `/vacancies`.
+ * If a lookup fails, tools throw and let the assistant recover naturally.
  */
 export function buildVacancyTools(user: User) {
   return {
@@ -33,7 +31,9 @@ export function buildVacancyTools(user: User) {
           .select('id, company, role, created_at, raw_text')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
-        if (error) throw new Error(error.message);
+        if (error) {
+          throw new Error(error.message);
+        }
         const rows = data ?? [];
         logger.info({ userId: user.id, count: rows.length }, 'chat-tool listVacancies');
         return rows.map((row) => ({
@@ -48,8 +48,8 @@ export function buildVacancyTools(user: User) {
 
     readVacancy: tool({
       description:
-        'Read the full saved vacancy text by id. Use the returned text to inform edits to the ' +
-        'master CV. Do not invent details the vacancy does not contain.',
+        'Read the full saved vacancy text by id. Use the returned text to inform tailoring. ' +
+        'Do not invent details the vacancy does not contain.',
       inputSchema: readVacancyInputSchema,
       execute: async ({ vacancyId }) => {
         const supabase = await createSupabaseServerClient();
@@ -59,8 +59,12 @@ export function buildVacancyTools(user: User) {
           .eq('id', vacancyId)
           .eq('user_id', user.id)
           .maybeSingle();
-        if (error) throw new Error(error.message);
-        if (!data) throw new Error(`Vacancy ${vacancyId} not found.`);
+        if (error) {
+          throw new Error(error.message);
+        }
+        if (!data) {
+          throw new Error(`Vacancy ${vacancyId} not found.`);
+        }
         logger.info({ userId: user.id, vacancyId }, 'chat-tool readVacancy');
         return {
           id: data.id,

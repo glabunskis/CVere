@@ -1,13 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 
-import { deleteJobDescription } from '../actions/job-actions';
+import { deleteJobDescription, startVacancyTailor } from '../actions/job-actions';
 
 export function JdActions({ jobId, tailorHref }: { jobId: string; tailorHref?: string }) {
   const router = useRouter();
@@ -20,11 +19,24 @@ export function JdActions({ jobId, tailorHref }: { jobId: string; tailorHref?: s
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to delete'),
   });
 
+  const { execute: startTailor, isExecuting: startingTailor } = useAction(startVacancyTailor, {
+    onSuccess: () => {
+      if (!tailorHref) return;
+      router.push(tailorHref);
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Failed to start tailoring'),
+  });
+
   return (
     <div className='flex flex-wrap items-center gap-2'>
       {tailorHref ? (
-        <Button size='sm' variant='outline' render={<Link href={tailorHref} />}>
-          Tailor in chat
+        <Button
+          size='sm'
+          variant='outline'
+          disabled={startingTailor}
+          onClick={() => startTailor({ jobId })}
+        >
+          {startingTailor ? 'Preparing...' : 'Tailor in chat'}
         </Button>
       ) : null}
       <Button size='sm' variant='destructive' disabled={deleting} onClick={() => del({ id: jobId })}>

@@ -53,7 +53,7 @@ export function buildSectionTools(user: User) {
     // ---------- Skills ----------
     addSkill: tool({
       description:
-        'Append a new skill to the master CV. Use `readProfile` first if the user might ' +
+        'Append a new skill to the selected CV. Use `readProfile` first if the user might ' +
         'already have a similar skill to avoid duplicates.',
       inputSchema: addSkillInputSchema,
       execute: async ({ name, category, level }) => {
@@ -74,7 +74,7 @@ export function buildSectionTools(user: User) {
     }),
 
     removeSkill: tool({
-      description: 'Remove a skill from the master CV. Get the id from `readProfile`.',
+      description: 'Remove a skill from the selected CV. Get the id from `readProfile`.',
       inputSchema: removeSkillInputSchema,
       execute: async ({ skillId }) => {
         await removeSkill({ user, skillId });
@@ -97,7 +97,7 @@ export function buildSectionTools(user: User) {
 
     // ---------- Education ----------
     addEducation: tool({
-      description: 'Append a new education entry to the master CV.',
+      description: 'Append a new education entry to the selected CV.',
       inputSchema: addEducationInputSchema,
       execute: async ({ institution, degree, field, startDate, endDate, summary }) => {
         const row = await addEducation({
@@ -147,7 +147,7 @@ export function buildSectionTools(user: User) {
 
     // ---------- Certifications ----------
     addCertification: tool({
-      description: 'Append a new certification to the master CV.',
+      description: 'Append a new certification to the selected CV.',
       inputSchema: addCertificationInputSchema,
       execute: async ({ name, issuer, issuedAt, expiresAt, link }) => {
         const row = await addCertification({
@@ -203,7 +203,7 @@ export function buildSectionTools(user: User) {
 
     // ---------- Languages ----------
     addLanguage: tool({
-      description: 'Append a new language to the master CV.',
+      description: 'Append a new language to the selected CV.',
       inputSchema: addLanguageInputSchema,
       execute: async ({ name, proficiency }) => {
         const row = await addLanguage({ user, payload: { name, proficiency } });

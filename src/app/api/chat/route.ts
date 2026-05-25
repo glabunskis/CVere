@@ -23,12 +23,8 @@ import { buildEntryTools } from '@/features/chat/tools/entry-tools';
 import { buildIdentityTools } from '@/features/chat/tools/identity-tools';
 import { buildSectionTools } from '@/features/chat/tools/section-tools';
 import { buildStyleTools } from '@/features/chat/tools/style-tools';
-import { buildTailoredTools } from '@/features/chat/tools/tailored-tools';
 import { buildVacancyTools } from '@/features/chat/tools/vacancy-tools';
-import {
-  type PreviewTarget,
-  toPreviewTargetData,
-} from '@/features/previewer/preview-target';
+import { getSelectedCv } from '@/features/cv/services/cv-service';
 import { renderAndUploadCv } from '@/features/previewer/render';
 import { getChatModel } from '@/libs/ai/chat-model';
 import {
@@ -44,25 +40,11 @@ type ChatRequestBody = {
   sessionId?: string;
   messages?: UIMessage[];
   context?: {
-    previewing?: { kind: 'master' } | { kind: 'tailored_cv'; refId: string } | null;
+    cv?: { id: string } | null;
     workspace?: { kind: 'interview'; refId: string } | null;
     recentVacancyId?: string;
   };
 };
-
-const MASTER_MUTATING_TARGET: PreviewTarget = { kind: 'master' };
-const TAILORED_MUTATING_TOOLS = new Set([
-  'rewriteTailoredSummary',
-  'editTailoredExperienceBullet',
-  'addTailoredExperienceBullet',
-  'removeTailoredExperienceBullet',
-  'editTailoredProjectBullet',
-  'addTailoredProjectBullet',
-  'removeTailoredProjectBullet',
-  'setTailoredAccentHex',
-  'setTailoredTemplate',
-  'renameTailoredCv',
-]);
 
 export async function POST(req: Request): Promise<Response> {
   // 1. Auth — using getUser() directly so we can return 401 cleanly.
@@ -138,25 +120,22 @@ export async function POST(req: Request): Promise<Response> {
     }
   }
 
-  const previewingTarget = parsePreviewingTarget(parsed.data.context?.previewing ?? null);
+  const contextCvId = parsed.data.context?.cv?.id ?? null;
+  const selectedCv = await getSelectedCv(user.id);
+  const activeCvId = contextCvId ?? selectedCv.id;
   const firstUserMessageText = getFirstUserMessageText(incomingMessages);
 
-  // Tracks exactly which artefacts were mutated this turn. End-of-turn render
-  // runs once per target and emits one `data-preview-dirty` part for each.
-  const dirtyTargets = new Map<string, PreviewTarget>();
-  const markDirtyTarget = (target: PreviewTarget) => {
-    dirtyTargets.set(previewTargetKey(target), target);
+  const dirtyCvIds = new Set<string>();
+  const markDirtyCv = (cvId: string) => {
+    dirtyCvIds.add(cvId);
   };
 
   // Snapshot of message ids already in the DB, used in onFinish to diff what
   // streamText produced and persist only the new (assistant) messages.
   const persistedIds = new Set([...existingIds, ...newClientMessages.map((m) => m.id)]);
 
-  const previewingContext = buildPreviewingSystemContext(previewingTarget);
   const modelMessages = await convertToModelMessages(incomingMessages);
-  const systemPrompt = previewingContext
-    ? `${CHAT_SYSTEM_PROMPT}\n\n${previewingContext}`
-    : CHAT_SYSTEM_PROMPT;
+  const systemPrompt = `${CHAT_SYSTEM_PROMPT}\n\nContext: selected CV id is ${activeCvId}.`;
 
   const stream = createUIMessageStream({
     originalMessages: incomingMessages,
@@ -170,18 +149,6 @@ export async function POST(req: Request): Promise<Response> {
         ...buildIdentityTools(user),
         ...buildAchievementTools(user),
         ...buildVacancyTools(user),
-        ...buildTailoredTools(user, {
-          previewing: previewingTarget,
-          onCreatedTailoredCv: (tailoredCvId) => {
-            markDirtyTarget({ kind: 'tailored_cv', refId: tailoredCvId });
-          },
-          onPreviewSwitch: (target) => {
-            writer.write({
-              type: 'data-preview-switch',
-              data: toPreviewTargetData(target),
-            });
-          },
-        }),
       };
 
       const result = streamText({
@@ -199,7 +166,7 @@ export async function POST(req: Request): Promise<Response> {
           functionId: 'chat-route',
           metadata: { userId: user.id, sessionId },
         },
-        onStepFinish: ({ toolCalls }) => {
+        onStepFinish: ({ toolCalls, toolResults }) => {
           for (const call of toolCalls ?? []) {
             const toolName = (call as { toolName?: string }).toolName;
             if (toolName) {
@@ -207,33 +174,40 @@ export async function POST(req: Request): Promise<Response> {
                 { userId: user.id, tool: toolName, toolCallId: call.toolCallId },
                 'chat-route tool call',
               );
-              if (!MUTATING_TOOLS.has(toolName)) continue;
-              const target = getMutatedTargetFromToolCall(toolName, call);
-              if (target) markDirtyTarget(target);
             }
+          }
+          // Only treat a tool as having mutated the CV if its execute
+          // resolved (no throw). Failed mutations — including those blocked
+          // by the turn guard after a tailoring lookup failure — must not
+          // trigger a re-render of an artefact that wasn't actually touched.
+          for (const result of toolResults ?? []) {
+            const toolName = (result as { toolName?: string }).toolName;
+            if (!toolName || !MUTATING_TOOLS.has(toolName)) continue;
+            const cvId = readCvIdFromToolCall(result.input) ?? activeCvId;
+            markDirtyCv(cvId);
           }
         },
         onFinish: async () => {
           // End-of-turn render. Runs after generation but before stream close,
           // so data parts arrive in-band.
-          if (dirtyTargets.size > 0) {
-            for (const target of dirtyTargets.values()) {
+          if (dirtyCvIds.size > 0) {
+            for (const cvId of dirtyCvIds) {
               try {
-                await renderAndUploadCv({ user, target });
+                await renderAndUploadCv({ user, cvId });
                 writer.write({
                   type: 'data-preview-dirty',
                   data: {
-                    ...toPreviewTargetData(target),
+                    cvId,
                     renderedAt: new Date().toISOString(),
                   },
                 });
                 logger.info(
-                  { userId: user.id, targetKind: target.kind },
+                  { userId: user.id, cvId },
                   'chat-route preview re-rendered',
                 );
               } catch (err) {
                 logger.error(
-                  { err, userId: user.id, targetKind: target.kind },
+                  { err, userId: user.id, cvId },
                   'chat-route end-of-turn render failed',
                 );
               }
@@ -394,42 +368,8 @@ function getTextFromParts(parts: UIMessage['parts']): string {
   return chunks.join(' ');
 }
 
-function previewTargetKey(target: PreviewTarget): string {
-  return target.kind === 'master' ? 'master' : `tailored:${target.refId}`;
-}
-
-function parsePreviewingTarget(
-  previewing: { kind: 'master' } | { kind: 'tailored_cv'; refId: string } | null,
-): PreviewTarget | null {
-  if (!previewing) return null;
-  if (previewing.kind === 'master') return { kind: 'master' };
-  return { kind: 'tailored_cv', refId: previewing.refId };
-}
-
-function buildPreviewingSystemContext(previewing: PreviewTarget | null): string | null {
-  if (!previewing) return null;
-  return previewing.kind === 'master'
-    ? 'Context: the user is currently previewing the master CV.'
-    : `Context: the user is currently previewing tailored CV ${previewing.refId}.`;
-}
-
-function getMutatedTargetFromToolCall(
-  toolName: string,
-  call: { input?: unknown },
-): PreviewTarget | null {
-  if (toolName === 'createTailoredCv' || toolName === 'deleteTailoredCv') {
-    return null;
-  }
-  if (TAILORED_MUTATING_TOOLS.has(toolName)) {
-    const tailoredCvId = readTailoredCvId(call.input);
-    if (!tailoredCvId) return null;
-    return { kind: 'tailored_cv', refId: tailoredCvId };
-  }
-  return MASTER_MUTATING_TARGET;
-}
-
-function readTailoredCvId(input: unknown): string | null {
+function readCvIdFromToolCall(input: unknown): string | null {
   if (typeof input !== 'object' || input === null) return null;
-  const candidate = (input as { tailoredCvId?: unknown }).tailoredCvId;
+  const candidate = (input as { cvId?: unknown }).cvId;
   return typeof candidate === 'string' && candidate.length > 0 ? candidate : null;
 }

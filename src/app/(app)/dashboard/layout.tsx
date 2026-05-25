@@ -7,6 +7,7 @@ import { getOrCreateCvPreferences } from '@/features/previewer/controllers/get-c
 import { resolveInitialPreviewTarget } from '@/features/previewer/controllers/resolve-preview-target';
 import { signPdfUrl } from '@/features/previewer/controllers/sign-master-url';
 import { ensureCvPdfPath } from '@/features/previewer/render';
+import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 
 export default async function DashboardLayout({ children }: PropsWithChildren) {
   const user = await getSession();
@@ -19,10 +20,17 @@ export default async function DashboardLayout({ children }: PropsWithChildren) {
     userId: user.id,
     preferences: prefs,
   });
+  const supabase = await createSupabaseServerClient();
+  const { data: cvRow } = await supabase
+    .from('cv')
+    .select('pdf_path')
+    .eq('id', initialPreviewTarget.cvId)
+    .eq('user_id', user.id)
+    .maybeSingle();
   const pdfPath = await ensureCvPdfPath({
     user,
-    target: initialPreviewTarget,
-    existingMasterPath: prefs?.master_pdf_path ?? null,
+    cvId: initialPreviewTarget.cvId,
+    existingPath: cvRow?.pdf_path ?? null,
   });
   const signedUrl = await signPdfUrl(pdfPath);
 

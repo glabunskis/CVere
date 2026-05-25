@@ -13,20 +13,25 @@ export async function resolveInitialPreviewTarget({
   userId: string;
   preferences: CvPreferencesRow | null;
 }): Promise<PreviewTarget> {
-  if (
-    preferences?.last_previewed_kind === 'tailored_cv' &&
-    preferences.last_previewed_ref_id
-  ) {
-    const supabase = await createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
+
+  if (preferences?.selected_cv_id) {
     const { data, error } = await supabase
-      .from('tailored_cv')
+      .from('cv')
       .select('id')
-      .eq('id', preferences.last_previewed_ref_id)
+      .eq('id', preferences.selected_cv_id)
       .eq('user_id', userId)
       .maybeSingle();
-    if (!error && data) {
-      return { kind: 'tailored_cv', refId: data.id };
-    }
+    if (!error && data) return { cvId: data.id };
   }
-  return { kind: 'master' };
+
+  const { data: fallback, error: fallbackError } = await supabase
+    .from('cv')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('is_default', true)
+    .maybeSingle();
+  if (fallbackError) throw new Error(fallbackError.message);
+  if (!fallback) throw new Error('Default CV not found.');
+  return { cvId: fallback.id };
 }

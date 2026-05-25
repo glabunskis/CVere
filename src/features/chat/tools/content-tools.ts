@@ -232,17 +232,5 @@ export const MUTATING_TOOLS: ReadonlySet<string> = new Set([
   'setAccentHex',
   'setEducationDateFormat',
   'setCertificationDateFormat',
-  // Tailored CV (tailored-tools)
-  'createTailoredCv',
-  'rewriteTailoredSummary',
-  'editTailoredExperienceBullet',
-  'addTailoredExperienceBullet',
-  'removeTailoredExperienceBullet',
-  'editTailoredProjectBullet',
-  'addTailoredProjectBullet',
-  'removeTailoredProjectBullet',
-  'setTailoredAccentHex',
-  'setTailoredTemplate',
-  'renameTailoredCv',
-  'deleteTailoredCv',
+
 ]);

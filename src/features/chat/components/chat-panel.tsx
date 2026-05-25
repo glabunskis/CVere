@@ -103,7 +103,7 @@ export function ChatPanel({
             return {
               sessionId: activeSessionId,
               context: {
-                previewing: currentPreviewing,
+                cv: { id: currentPreviewing.cvId },
               },
             };
           },
@@ -129,9 +129,7 @@ export function ChatPanel({
           if (dataPart.type === 'data-preview-switch') {
             const next = fromPreviewTargetData(dataPart.data);
             setPreviewTarget(next);
-            if (next.kind === 'tailored_cv') {
-              router.refresh();
-            }
+            router.refresh();
             return;
           }
           if (dataPart.type === 'data-preview-dirty') {
@@ -295,7 +293,7 @@ export function ChatPanel({
                   <EmptyTitle>Edit your CV in chat</EmptyTitle>
                   <EmptyDescription>
                     Ask the assistant to read your profile, rewrite a summary, tweak a
-                    bullet, or change the template. Edits land in your master CV and
+                    bullet, or change the template. Edits land in the selected CV and
                     the preview refreshes automatically.
                   </EmptyDescription>
                 </EmptyHeader>

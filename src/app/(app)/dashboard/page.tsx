@@ -62,13 +62,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     listCvs(),
   ]);
   const initialChatMessages = chatMessages as ChatUIMessage[];
+  const selectedCv =
+    cvLibrary.items.find((item) => item.id === cvLibrary.selectedCvId) ?? cvLibrary.items[0];
+  if (!selectedCv) {
+    return (
+      <section className='py-10 text-center text-sm text-muted-foreground'>
+        No CV found. Create one from Profile.
+      </section>
+    );
+  }
 
   return (
     <PreviewerSidebar
-      template={prefs.template}
-      accentHex={prefs.accent_hex}
-      educationDateFormat={prefs.education_date_format}
-      certificationDateFormat={prefs.certification_date_format}
+      template={selectedCv.template}
+      accentHex={selectedCv.accentHex}
+      educationDateFormat={selectedCv.educationDateFormat}
+      certificationDateFormat={selectedCv.certificationDateFormat}
       pendingAchievements={achievements.length}
       activeSessionId={activeSession.id}
       sessions={sessions}

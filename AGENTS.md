@@ -2,7 +2,7 @@
 
 CV operating system built with Next.js 16 (App Router), React 19, Supabase, Stripe, Tailwind CSS 4, and shadcn/ui (Base Nova). TypeScript 6 strict mode.
 
-The user owns one master CV (a normalized profile + sections). The chat agent at `POST /api/chat` is the only AI surface — it edits the master CV in place via tools and re-renders the PDF preview. Every other feature (achievements, vacancies, profile editor) is manual CRUD.
+The user owns one or more CVs (normalized `cv` + section rows). The chat agent at `POST /api/chat` is the only AI surface — it edits the selected CV in place via tools and re-renders the PDF preview. Every other feature (achievements, vacancies, profile editor) is manual CRUD.
 
 ## Next.js Documentation
 
@@ -53,14 +53,15 @@ src/
 │   ├── account/                  # Auth + Stripe customer/subscription controllers
 │   ├── achievements/             # Manual CRUD inbox of wins
 │   ├── chat/                     # Chat agent: tools, schemas, services, storage
-│   │   ├── tools/                # style-tools, content-tools (CV mutations)
-│   │   ├── services/             # profile-content-service, cv-preferences-service
+│   │   ├── tools/                # CV mutation + read tools
+│   │   ├── services/             # profile-content-service (selected CV scoped)
 │   │   ├── storage/              # chat_message persistence
 │   │   ├── profile-snapshot.ts   # AiProfile schema + buildProfileSnapshot
 │   │   └── system-prompt.ts
+│   ├── cv/                       # Unified CV actions + services
 │   ├── emails/                   # React Email templates
 │   ├── jobs/                     # Vacancies (raw text + delete)
-│   ├── previewer/                # Master CV renderer + sidebar + preview store
+│   ├── previewer/                # Selected-CV renderer + sidebar + preview store
 │   └── profile/                  # Fact-base editor controllers + components
 ├── components/ui/                # shadcn/ui (Base Nova, Base UI primitives)
 ├── libs/
@@ -81,10 +82,8 @@ Path alias: `@/*` → `./src/*`
 ### Chat is the only AI surface
 
 - All AI calls go through `src/app/api/chat/route.ts`. It uses the AI SDK with the model from `src/libs/ai/chat-model.ts` and exposes tools defined in `src/features/chat/tools/`.
-- Tools split into two groups:
-  - **content-tools.ts** — `readProfile`, `rewriteSummary`, and `add`/`edit`/`remove` bullet ops on experience and project entries. Mutating tools call helpers in `src/features/chat/services/profile-content-service.ts`.
-  - **style-tools.ts** — template, accent, date-format edits via `cv-preferences-service.ts`.
-- Tool call sets that mutate the CV trigger `renderAndUploadMasterCv` (re-render the master PDF) at the end of the assistant turn. The chat stream emits a `data-preview-dirty` event so the previewer iframe re-signs the storage URL.
+- Chat tools mutate the selected CV's normalized rows (`cv`, `experience`, `project`, `skill`, `education`, `certification`, `language`).
+- Tool call sets that mutate the CV trigger `renderAndUploadCv` at the end of the assistant turn. The chat stream emits a `data-preview-dirty` event keyed by `cvId` so the previewer iframe re-signs the storage URL.
 - `chat_message` rows persist the conversation per user. `loadMessages` hydrates the panel on dashboard load.
 - **Do not add new AI entry points.** Achievements and vacancies are intentionally manual.
 
@@ -115,9 +114,9 @@ Path alias: `@/*` → `./src/*`
 
 ### PDF Previewer
 
-- The dashboard renders the master CV through `MasterCv` (`src/pdf/render-master-cv.tsx`) using templates in `src/pdf/templates/`.
+- The dashboard renders the selected CV through `Cv` (`src/pdf/Cv.tsx`) using templates in `src/pdf/templates/`.
 - The signed URL refresher lives in `src/features/previewer/actions/sign-pdf-url.ts` and is wired through `PreviewStoreProvider`. Anything client-side that needs to invalidate the preview should call `usePreviewStore().markPreviewDirty()`.
-- `cv_preferences` (1 row per user) stores template, accent, and per-section date formats. `applyCvPreferencesPatch` (in `src/features/chat/services/cv-preferences-service.ts`) is the single write path used by both chat tools and safe-actions.
+- `cv_preferences` (1 row per user) stores global UI state (`selected_cv_id`, `last_active_session_id`). Style settings and `pdf_path` now live on `cv`.
 
 ## Database & Supabase
 
@@ -133,14 +132,14 @@ Path alias: `@/*` → `./src/*`
 | `products` | Stripe products (synced via webhooks) | Public read-only |
 | `prices` | Stripe prices (synced via webhooks) | Public read-only |
 | `subscriptions` | Stripe subscriptions (synced via webhooks) | Users read own rows |
-| `profile` | Master CV root (1 per user, summary + identity/contact) | Owner |
-| `experience`, `project`, `skill`, `education`, `certification`, `language` | Ordered profile children | Owner |
+| `cv` | CV roots (default + user-created variants) | Owner |
+| `experience`, `project`, `skill`, `education`, `certification`, `language` | Ordered section rows keyed by `cv_id` | Owner |
 | `achievement_log_entry` | Append-only inbox; integrate into a section to apply | Owner |
 | `job_description` | Saved vacancy raw text (no AI extraction) | Owner |
-| `cv_preferences` | Template, accent, date formats, cached `master_pdf_path` | Owner |
+| `cv_preferences` | Selected CV + last active chat session | Owner |
 | `chat_message` | Persisted chat history per user | Owner |
 
-Storage: a private `pdf` bucket holds rendered master CVs at `pdf/{user_id}/master.pdf`. Owner-scoped policies are enforced by path prefix.
+Storage: a private `pdf` bucket holds rendered CVs at `pdf/{user_id}/cv/{cv_id}.pdf`. Owner-scoped policies are enforced by path prefix.
 
 ## Stripe & Payments
 

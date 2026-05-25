@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { updateSummary } from '@/features/chat/services/profile-content-service';
-import { renderAndUploadMasterCv } from '@/features/previewer/render';
+import { renderAndUploadCv } from '@/features/previewer/render';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 
@@ -19,19 +19,12 @@ export const updateProfileSection = authActionClient
       throw new Error('Profile not available');
     }
 
-    // Branches that change what the rendered master CV looks like flip this
-    // so the PDF is re-rendered and /dashboard is revalidated below. Other
-    // branches (contact, skill, education, certification, language) only
-    // revalidate /profile, matching their previous behavior.
-    let shouldRefreshPreview = false;
-
     if (parsedInput.section === 'summary') {
       await updateSummary({ user: ctx.user, summary: parsedInput.payload.summary ?? null });
-      shouldRefreshPreview = true;
     } else if (parsedInput.section === 'contact') {
       const payload = parsedInput.payload;
       const { error } = await supabase
-        .from('profile')
+        .from('cv')
         .update({
           full_name: payload.fullName,
           location: payload.location,
@@ -48,7 +41,7 @@ export const updateProfileSection = authActionClient
       const payload = parsedInput.payload;
       const insertable = {
         user_id: ctx.user.id,
-        profile_id: profile.id,
+        cv_id: profile.id,
         position: payload.position,
         company: payload.company,
         role: payload.role,
@@ -67,12 +60,11 @@ export const updateProfileSection = authActionClient
         const { error } = await supabase.from('experience').insert(insertable);
         if (error) throw new Error(error.message);
       }
-      shouldRefreshPreview = true;
     } else if (parsedInput.section === 'project') {
       const payload = parsedInput.payload;
       const insertable = {
         user_id: ctx.user.id,
-        profile_id: profile.id,
+        cv_id: profile.id,
         position: payload.position,
         name: payload.name,
         description: payload.description ?? null,
@@ -87,12 +79,11 @@ export const updateProfileSection = authActionClient
         const { error } = await supabase.from('project').insert(insertable);
         if (error) throw new Error(error.message);
       }
-      shouldRefreshPreview = true;
     } else if (parsedInput.section === 'skill') {
       const payload = parsedInput.payload;
       const insertable = {
         user_id: ctx.user.id,
-        profile_id: profile.id,
+        cv_id: profile.id,
         position: payload.position,
         name: payload.name,
         category: payload.category ?? null,
@@ -109,7 +100,7 @@ export const updateProfileSection = authActionClient
       const payload = parsedInput.payload;
       const insertable = {
         user_id: ctx.user.id,
-        profile_id: profile.id,
+        cv_id: profile.id,
         position: payload.position,
         institution: payload.institution,
         degree: payload.degree ?? null,
@@ -129,7 +120,7 @@ export const updateProfileSection = authActionClient
       const payload = parsedInput.payload;
       const insertable = {
         user_id: ctx.user.id,
-        profile_id: profile.id,
+        cv_id: profile.id,
         position: payload.position,
         name: payload.name,
         issuer: payload.issuer ?? null,
@@ -148,7 +139,7 @@ export const updateProfileSection = authActionClient
       const payload = parsedInput.payload;
       const insertable = {
         user_id: ctx.user.id,
-        profile_id: profile.id,
+        cv_id: profile.id,
         position: payload.position,
         name: payload.name,
         proficiency: payload.proficiency ?? null,
@@ -162,10 +153,8 @@ export const updateProfileSection = authActionClient
       }
     }
 
-    if (shouldRefreshPreview) {
-      await renderAndUploadMasterCv(ctx.user);
-      revalidatePath('/dashboard');
-    }
+    await renderAndUploadCv({ user: ctx.user, cvId: profile.id });
+    revalidatePath('/dashboard');
     revalidatePath('/profile');
     return { ok: true as const };
   });
@@ -194,6 +183,11 @@ export const deleteProfileChild = authActionClient
     } else if (section === 'language') {
       const { error } = await supabase.from('language').delete().eq('id', id).eq('user_id', ctx.user.id);
       if (error) throw new Error(error.message);
+    }
+    const profile = await getOrCreateProfile();
+    if (profile) {
+      await renderAndUploadCv({ user: ctx.user, cvId: profile.id });
+      revalidatePath('/dashboard');
     }
     revalidatePath('/profile');
     return { ok: true as const };

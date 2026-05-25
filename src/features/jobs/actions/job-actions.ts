@@ -1,7 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
+import { createCv, setSelectedCv } from '@/features/cv/services/cv-service';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 
@@ -40,4 +42,35 @@ export const deleteJobDescription = authActionClient
     if (error) throw new Error(error.message);
     revalidatePath('/vacancies');
     return { ok: true as const };
+  });
+
+const startVacancyTailorSchema = z.object({
+  jobId: z.uuid(),
+});
+
+export const startVacancyTailor = authActionClient
+  .inputSchema(startVacancyTailorSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const supabase = await createSupabaseServerClient();
+    const { data: job, error: jobError } = await supabase
+      .from('job_description')
+      .select('id, role, company')
+      .eq('id', parsedInput.jobId)
+      .eq('user_id', ctx.user.id)
+      .maybeSingle();
+    if (jobError) throw new Error(jobError.message);
+    if (!job) throw new Error('Vacancy not found.');
+
+    const title = [job.role, job.company].filter(Boolean).join(' at ').trim();
+    const cv = await createCv({
+      userId: ctx.user.id,
+      title: title.length > 0 ? title.slice(0, 120) : 'Vacancy CV',
+      sourceVacancyId: job.id,
+    });
+    await setSelectedCv(ctx.user.id, cv.id);
+
+    revalidatePath('/dashboard');
+    revalidatePath('/profile');
+    revalidatePath('/vacancies');
+    return { ok: true as const, cvId: cv.id };
   });

@@ -5,7 +5,7 @@ type VacancyHandoffInput = {
 };
 
 export function buildCreateTailoredPrefill(): string {
-  return 'Create a tailored CV for the vacancy I am targeting.';
+  return 'Create a new CV for the vacancy I am targeting.';
 }
 
 export function buildVacancyTailorPrefill({

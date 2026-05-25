@@ -1,4 +1,3 @@
-import { getOrCreateCvPreferences } from '@/features/previewer/controllers/get-cv-preferences';
 import { FactEditor } from '@/features/profile/components/fact-editor';
 import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
 import { getProfileChildren } from '@/features/profile/controllers/get-profile-children';
@@ -20,10 +19,7 @@ export default async function ProfilePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [sections, prefs] = await Promise.all([
-    getProfileChildren(profile.id),
-    getOrCreateCvPreferences(),
-  ]);
+  const sections = await getProfileChildren(profile.id);
 
   const userMetadata = (user?.user_metadata ?? {}) as { full_name?: string };
 
@@ -31,9 +27,7 @@ export default async function ProfilePage() {
     <section className='flex flex-col gap-6'>
       <header>
         <h1 className='text-2xl font-semibold tracking-tight'>Profile</h1>
-        <p className='text-sm text-muted-foreground'>
-          Canonical fact base. The only place facts are written.
-        </p>
+        <p className='text-sm text-muted-foreground'>Editing: {profile.title}</p>
       </header>
       <FactEditor
         summary={profile.summary}
@@ -41,8 +35,8 @@ export default async function ProfilePage() {
         fallbackEmail={user?.email ?? null}
         fallbackFullName={userMetadata.full_name ?? null}
         sections={sections}
-        educationDateFormat={prefs?.education_date_format ?? DEFAULT_CV_DATE_FORMAT}
-        certificationDateFormat={prefs?.certification_date_format ?? DEFAULT_CV_DATE_FORMAT}
+        educationDateFormat={profile.education_date_format ?? DEFAULT_CV_DATE_FORMAT}
+        certificationDateFormat={profile.certification_date_format ?? DEFAULT_CV_DATE_FORMAT}
       />
     </section>
   );

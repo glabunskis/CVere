@@ -23,13 +23,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
-  deleteTailoredCvAction,
-  renameTailoredCvAction,
-} from '@/features/cv-library/actions/tailored-actions';
-import type {
-  CvLibraryData,
-  TailoredCvSummary,
-} from '@/features/cv-library/controllers/list-cvs';
+  deleteCvAction,
+  renameCvAction,
+  setSelectedCvAction,
+} from '@/features/cv/actions/cv-actions';
+import type { CvLibraryData, CvLibraryItem } from '@/features/cv-library/controllers/list-cvs';
 import { usePreviewStore } from '@/features/previewer/stores/preview-store';
 
 import { CvRow } from './cv-row';
@@ -42,38 +40,46 @@ export function CvLibraryPanel({ library }: Props) {
   const router = useRouter();
   const previewTarget = usePreviewStore((s) => s.previewTarget);
   const setPreviewTarget = usePreviewStore((s) => s.setPreviewTarget);
-  const tailoredRows = library.tailored;
-  const [pendingRename, setPendingRename] = useState<TailoredCvSummary | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<TailoredCvSummary | null>(null);
+  const markPreviewDirty = usePreviewStore((s) => s.markPreviewDirty);
+  const [pendingRename, setPendingRename] = useState<CvLibraryItem | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<CvLibraryItem | null>(null);
   const [renameTitle, setRenameTitle] = useState('');
 
-  const { execute: rename, isExecuting: renaming } = useAction(renameTailoredCvAction, {
+  const { execute: rename, isExecuting: renaming } = useAction(renameCvAction, {
     onSuccess: ({ data }) => {
-      const row = data?.tailoredCv;
+      const row = data?.cv;
       if (!row) return;
       setPendingRename(null);
       setRenameTitle('');
       router.refresh();
-      toast.success('Tailored CV renamed.');
+      toast.success('CV renamed.');
     },
     onError: ({ error }) => {
-      toast.error(error.serverError ?? 'Failed to rename tailored CV.');
+      toast.error(error.serverError ?? 'Failed to rename CV.');
     },
   });
 
-  const { execute: remove, isExecuting: deleting } = useAction(deleteTailoredCvAction, {
+  const { execute: remove, isExecuting: deleting } = useAction(deleteCvAction, {
     onSuccess: () => {
       if (!pendingDelete) return;
-      const deletedId = pendingDelete.id;
       setPendingDelete(null);
-      if (previewTarget.kind === 'tailored_cv' && previewTarget.refId === deletedId) {
-        setPreviewTarget({ kind: 'master' });
-      }
       router.refresh();
-      toast.success('Tailored CV deleted.');
+      toast.success('CV deleted.');
     },
     onError: ({ error }) => {
-      toast.error(error.serverError ?? 'Failed to delete tailored CV.');
+      toast.error(error.serverError ?? 'Failed to delete CV.');
+    },
+  });
+
+  const { execute: selectCv } = useAction(setSelectedCvAction, {
+    onSuccess: ({ data }) => {
+      if (!data?.cvId) return;
+      setPreviewTarget({ cvId: data.cvId });
+      void markPreviewDirty();
+      router.refresh();
+    },
+    onError: ({ error }) => {
+      toast.error(error.serverError ?? 'Failed to switch CV.');
     },
   });
 
@@ -81,28 +87,20 @@ export function CvLibraryPanel({ library }: Props) {
     <>
       <div className='flex flex-col gap-2'>
         <h4 className='text-sm font-medium text-foreground'>CVs</h4>
-
-        <CvRow
-          title={library.master.title}
-          updatedAt={library.master.updatedAt}
-          isActive={previewTarget.kind === 'master'}
-          onOpen={() => setPreviewTarget({ kind: 'master' })}
-        />
-
-        {tailoredRows.length === 0 ? (
+        {library.items.length === 0 ? (
           <p className='rounded-md border border-dashed px-3 py-3 text-xs text-muted-foreground'>
-            No tailored CVs yet. Ask chat to create one from a vacancy.
+            No CVs yet.
           </p>
         ) : (
           <div className='flex flex-col gap-1.5'>
-            {tailoredRows.map((row) => (
+            {library.items.map((row) => (
               <CvRow
                 key={row.id}
                 title={row.title}
                 meta={row.jobDescriptionLabel}
                 updatedAt={row.updatedAt}
-                isActive={previewTarget.kind === 'tailored_cv' && previewTarget.refId === row.id}
-                onOpen={() => setPreviewTarget({ kind: 'tailored_cv', refId: row.id })}
+                isActive={previewTarget.cvId === row.id || library.selectedCvId === row.id}
+                onOpen={() => selectCv({ cvId: row.id })}
                 actions={
                   <DropdownMenu>
                     <DropdownMenuTrigger
@@ -121,7 +119,11 @@ export function CvLibraryPanel({ library }: Props) {
                         <PencilIcon />
                         Rename
                       </DropdownMenuItem>
-                      <DropdownMenuItem variant='destructive' onClick={() => setPendingDelete(row)}>
+                      <DropdownMenuItem
+                        variant='destructive'
+                        disabled={row.isDefault}
+                        onClick={() => setPendingDelete(row)}
+                      >
                         <Trash2Icon />
                         Delete
                       </DropdownMenuItem>
@@ -145,7 +147,7 @@ export function CvLibraryPanel({ library }: Props) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename tailored CV</DialogTitle>
+            <DialogTitle>Rename CV</DialogTitle>
             <DialogDescription>Use a short, descriptive title.</DialogDescription>
           </DialogHeader>
           <form
@@ -155,7 +157,7 @@ export function CvLibraryPanel({ library }: Props) {
               if (!pendingRename) return;
               const next = renameTitle.trim();
               if (next.length === 0) return;
-              rename({ tailoredCvId: pendingRename.id, title: next });
+              rename({ cvId: pendingRename.id, title: next });
             }}
           >
             <Input
@@ -164,7 +166,7 @@ export function CvLibraryPanel({ library }: Props) {
               onChange={(event) => setRenameTitle(event.target.value)}
               maxLength={120}
               minLength={1}
-              placeholder='Tailored CV title'
+              placeholder='CV title'
             />
             <DialogFooter>
               <Button
@@ -196,9 +198,9 @@ export function CvLibraryPanel({ library }: Props) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete tailored CV?</DialogTitle>
+            <DialogTitle>Delete CV?</DialogTitle>
             <DialogDescription>
-              This removes the tailored CV and its cached PDF preview.
+              This removes the CV and its cached PDF preview.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -211,7 +213,7 @@ export function CvLibraryPanel({ library }: Props) {
               disabled={deleting || pendingDelete == null}
               onClick={() => {
                 if (!pendingDelete) return;
-                remove({ tailoredCvId: pendingDelete.id });
+                remove({ cvId: pendingDelete.id });
               }}
             >
               {deleting ? 'Deleting...' : 'Delete'}

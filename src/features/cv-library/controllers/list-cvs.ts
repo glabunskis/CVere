@@ -2,24 +2,22 @@ import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-clie
 
 import 'server-only';
 
-export type MasterCvSummary = {
-  kind: 'master';
-  title: 'Master CV';
-  updatedAt: string | null;
-};
-
-export type TailoredCvSummary = {
-  kind: 'tailored_cv';
+export type CvLibraryItem = {
   id: string;
   title: string;
-  jobDescriptionId: string | null;
+  isDefault: boolean;
+  sourceVacancyId: string | null;
   jobDescriptionLabel: string | null;
+  template: 'single-column' | 'two-column';
+  accentHex: string;
+  educationDateFormat: 'year' | 'mm_yyyy' | 'mon_yyyy' | 'mon_d_yyyy';
+  certificationDateFormat: 'year' | 'mm_yyyy' | 'mon_yyyy' | 'mon_d_yyyy';
   updatedAt: string;
 };
 
 export type CvLibraryData = {
-  master: MasterCvSummary;
-  tailored: TailoredCvSummary[];
+  selectedCvId: string | null;
+  items: CvLibraryItem[];
 };
 
 function toVacancyLabel({ role, company }: { role: string | null; company: string | null }): string | null {
@@ -36,27 +34,31 @@ export async function listCvs(): Promise<CvLibraryData> {
   } = await supabase.auth.getUser();
   if (!user) {
     return {
-      master: { kind: 'master', title: 'Master CV', updatedAt: null },
-      tailored: [],
+      selectedCvId: null,
+      items: [],
     };
   }
 
-  const [{ data: profile }, { data: tailoredRows, error: tailoredError }] = await Promise.all([
-    supabase.from('profile').select('updated_at').eq('user_id', user.id).maybeSingle(),
+  const [{ data: prefs }, { data: cvRows, error: cvError }] = await Promise.all([
+    supabase.from('cv_preferences').select('selected_cv_id').eq('user_id', user.id).maybeSingle(),
     supabase
-      .from('tailored_cv')
-      .select('id, title, job_description_id, updated_at')
+      .from('cv')
+      .select(
+        'id, title, is_default, source_vacancy_id, template, accent_hex, education_date_format, certification_date_format, updated_at',
+      )
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false }),
   ]);
 
-  if (tailoredError) {
-    throw new Error(tailoredError.message);
+  if (cvError) {
+    throw new Error(cvError.message);
   }
 
-  const tailored = tailoredRows ?? [];
-  const jobIds = tailored
-    .map((row) => row.job_description_id)
+  const rows = cvRows ?? [];
+  const selectedCvId =
+    prefs?.selected_cv_id ?? rows.find((row) => row.is_default)?.id ?? rows[0]?.id ?? null;
+  const jobIds = rows
+    .map((row) => row.source_vacancy_id)
     .filter((id): id is string => typeof id === 'string');
 
   const vacancyLabelById = new Map<string, string | null>();
@@ -74,19 +76,19 @@ export async function listCvs(): Promise<CvLibraryData> {
   }
 
   return {
-    master: {
-      kind: 'master',
-      title: 'Master CV',
-      updatedAt: profile?.updated_at ?? null,
-    },
-    tailored: tailored.map((row) => ({
-      kind: 'tailored_cv',
+    selectedCvId,
+    items: rows.map((row) => ({
       id: row.id,
       title: row.title,
-      jobDescriptionId: row.job_description_id,
-      jobDescriptionLabel: row.job_description_id
-        ? vacancyLabelById.get(row.job_description_id) ?? null
+      isDefault: row.is_default,
+      sourceVacancyId: row.source_vacancy_id,
+      jobDescriptionLabel: row.source_vacancy_id
+        ? vacancyLabelById.get(row.source_vacancy_id) ?? null
         : null,
+      template: row.template,
+      accentHex: row.accent_hex,
+      educationDateFormat: row.education_date_format,
+      certificationDateFormat: row.certification_date_format,
       updatedAt: row.updated_at,
     })),
   };

@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 
-import { setLastPreviewed } from '@/features/previewer/actions/set-last-previewed';
 import { createSignedPreviewUrl } from '@/features/previewer/actions/sign-pdf-url';
 import type { PreviewTarget } from '@/features/previewer/preview-target';
 
@@ -15,12 +14,6 @@ type Props = {
   children: React.ReactNode;
 };
 
-function isSamePreviewTarget(a: PreviewTarget, b: PreviewTarget): boolean {
-  if (a.kind === 'master' && b.kind === 'master') return true;
-  if (a.kind === 'tailored_cv' && b.kind === 'tailored_cv') return a.refId === b.refId;
-  return false;
-}
-
 /**
  * Hydrates {@link usePreviewStore} on mount and registers a refresher that
  * re-signs the currently selected preview target's storage path. The refresher is the seam through
@@ -31,7 +24,6 @@ export function PreviewStoreProvider({ initialSignedUrl, initialPreviewTarget, c
   const setRefresher = usePreviewStore((s) => s.setRefresher);
   const hasHydratedRef = useRef(false);
   const { executeAsync: signPreview } = useAction(createSignedPreviewUrl);
-  const { executeAsync: persistLastPreviewed } = useAction(setLastPreviewed);
 
   if (!hasHydratedRef.current) {
     usePreviewStore.setState({
@@ -44,22 +36,10 @@ export function PreviewStoreProvider({ initialSignedUrl, initialPreviewTarget, c
   useEffect(() => {
     setRefresher(async () => {
       const current = usePreviewStore.getState().previewTarget;
-      const result = await signPreview(current.kind === 'master' ? { kind: 'master' } : current);
+      const result = await signPreview({ cvId: current.cvId });
       return result?.data?.url ?? null;
     });
   }, [setRefresher, signPreview]);
-
-  useEffect(
-    () =>
-      usePreviewStore.subscribe((state, prevState) => {
-        if (!hasHydratedRef.current) return;
-        const next = state.previewTarget;
-        const prev = prevState.previewTarget;
-        if (isSamePreviewTarget(next, prev)) return;
-        void persistLastPreviewed(next.kind === 'master' ? { kind: 'master' } : next);
-      }),
-    [persistLastPreviewed],
-  );
 
   return <>{children}</>;
 }
