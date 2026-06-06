@@ -6,6 +6,8 @@ import type { User } from '@supabase/supabase-js';
 
 import { listVacanciesInputSchema, readVacancyInputSchema } from '../schemas';
 
+import type { ActiveCvRef } from './active-cv';
+
 import 'server-only';
 
 const MAX_VACANCY_TEXT = 20_000;
@@ -16,7 +18,7 @@ const MAX_VACANCY_TEXT = 20_000;
  *
  * If a lookup fails, tools throw and let the assistant recover naturally.
  */
-export function buildVacancyTools(user: User, _activeCvId: string) {
+export function buildVacancyTools(user: User, _activeCv: ActiveCvRef) {
   return {
     listVacancies: tool({
       description:

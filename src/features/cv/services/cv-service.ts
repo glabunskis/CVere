@@ -602,7 +602,7 @@ async function persistProjectBullets({
   return data;
 }
 
-export async function listCvs(userId: string): Promise<CvRow[]> {
+export async function listCvRows(userId: string): Promise<CvRow[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('cv')
@@ -707,16 +707,6 @@ export async function createCv({
   }
 
   return data;
-}
-
-export async function duplicateCv(userId: string, cvId: string): Promise<CvRow> {
-  const row = await getOwnedCv(userId, cvId);
-  return createCv({
-    userId,
-    sourceCvId: row.id,
-    title: `${row.title} Copy`,
-    sourceVacancyId: row.source_vacancy_id,
-  });
 }
 
 export async function renameCv(userId: string, cvId: string, title: string): Promise<CvRow> {
@@ -964,17 +954,25 @@ export async function editExperienceBullet({
   experienceId,
   index,
   text,
+  expectedText,
 }: {
   user: User;
   cvId: string;
   experienceId: string;
   index: number;
   text: string;
+  expectedText?: string;
 }): Promise<ExperienceRow> {
   await assertOwnedCv(user, cvId);
   validateBulletText(text);
   const row = await loadExperience({ user, cvId, experienceId });
-  const bullets = spliceReplace(toBulletArray(row.bullets), index, text);
+  const arr = toBulletArray(row.bullets);
+  if (expectedText !== undefined && arr[index] !== expectedText) {
+    throw new ProfileContentError(
+      `Bullet mismatch: expected "${expectedText}" but found "${arr[index] ?? 'nothing'}" at index ${index}.`,
+    );
+  }
+  const bullets = spliceReplace(arr, index, text);
   return persistExperienceBullets({ user, cvId, experienceId, bullets });
 }
 
@@ -1003,15 +1001,23 @@ export async function removeExperienceBullet({
   cvId,
   experienceId,
   index,
+  expectedText,
 }: {
   user: User;
   cvId: string;
   experienceId: string;
   index: number;
+  expectedText?: string;
 }): Promise<ExperienceRow> {
   await assertOwnedCv(user, cvId);
   const row = await loadExperience({ user, cvId, experienceId });
-  const bullets = spliceRemove(toBulletArray(row.bullets), index);
+  const arr = toBulletArray(row.bullets);
+  if (expectedText !== undefined && arr[index] !== expectedText) {
+    throw new ProfileContentError(
+      `Bullet mismatch: expected "${expectedText}" but found "${arr[index] ?? 'nothing'}" at index ${index}.`,
+    );
+  }
+  const bullets = spliceRemove(arr, index);
   return persistExperienceBullets({ user, cvId, experienceId, bullets });
 }
 
@@ -1021,17 +1027,25 @@ export async function editProjectBullet({
   projectId,
   index,
   text,
+  expectedText,
 }: {
   user: User;
   cvId: string;
   projectId: string;
   index: number;
   text: string;
+  expectedText?: string;
 }): Promise<ProjectRow> {
   await assertOwnedCv(user, cvId);
   validateBulletText(text);
   const row = await loadProject({ user, cvId, projectId });
-  const bullets = spliceReplace(toBulletArray(row.bullets), index, text);
+  const arr = toBulletArray(row.bullets);
+  if (expectedText !== undefined && arr[index] !== expectedText) {
+    throw new ProfileContentError(
+      `Bullet mismatch: expected "${expectedText}" but found "${arr[index] ?? 'nothing'}" at index ${index}.`,
+    );
+  }
+  const bullets = spliceReplace(arr, index, text);
   return persistProjectBullets({ user, cvId, projectId, bullets });
 }
 
@@ -1060,15 +1074,23 @@ export async function removeProjectBullet({
   cvId,
   projectId,
   index,
+  expectedText,
 }: {
   user: User;
   cvId: string;
   projectId: string;
   index: number;
+  expectedText?: string;
 }): Promise<ProjectRow> {
   await assertOwnedCv(user, cvId);
   const row = await loadProject({ user, cvId, projectId });
-  const bullets = spliceRemove(toBulletArray(row.bullets), index);
+  const arr = toBulletArray(row.bullets);
+  if (expectedText !== undefined && arr[index] !== expectedText) {
+    throw new ProfileContentError(
+      `Bullet mismatch: expected "${expectedText}" but found "${arr[index] ?? 'nothing'}" at index ${index}.`,
+    );
+  }
+  const bullets = spliceRemove(arr, index);
   return persistProjectBullets({ user, cvId, projectId, bullets });
 }
 

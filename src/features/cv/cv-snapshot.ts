@@ -1,10 +1,28 @@
 import { z } from 'zod';
 
 import type { ProfileChildren } from '@/features/cv/controllers/get-cv-children';
+import type { CvRow } from '@/features/cv/services/cv-service';
 import { jsonToStringArray } from '@/features/profile/utils';
 
 export const aiProfileSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
   summary: z.string().nullable().optional(),
+  identity: z.object({
+    fullName: z.string().nullable().optional(),
+    location: z.string().nullable().optional(),
+    phone: z.string().nullable().optional(),
+    contactEmail: z.string().nullable().optional(),
+    linkedinUrl: z.string().nullable().optional(),
+    githubUrl: z.string().nullable().optional(),
+    websiteUrl: z.string().nullable().optional(),
+  }),
+  style: z.object({
+    template: z.string(),
+    accentHex: z.string(),
+    educationDateFormat: z.string(),
+    certificationDateFormat: z.string(),
+  }),
   experience: z
     .array(
       z.object({
@@ -81,9 +99,26 @@ export const aiProfileSchema = z.object({
 
 export type AiProfile = z.infer<typeof aiProfileSchema>;
 
-export function buildCvSnapshot(summary: string | null, children: ProfileChildren): AiProfile {
+export function buildCvSnapshot(cv: CvRow, children: ProfileChildren): AiProfile {
   return {
-    summary,
+    id: cv.id,
+    title: cv.title,
+    summary: cv.summary,
+    identity: {
+      fullName: cv.full_name,
+      location: cv.location,
+      phone: cv.phone,
+      contactEmail: cv.contact_email,
+      linkedinUrl: cv.linkedin_url,
+      githubUrl: cv.github_url,
+      websiteUrl: cv.website_url,
+    },
+    style: {
+      template: cv.template,
+      accentHex: cv.accent_hex,
+      educationDateFormat: cv.education_date_format,
+      certificationDateFormat: cv.certification_date_format,
+    },
     experience: children.experience.map((row) => ({
       id: row.id,
       company: row.company,

@@ -1,6 +1,11 @@
 import type { UIMessage } from 'ai';
 
-import type { PreviewDirtyData, SessionTitleData } from './schemas';
+import type {
+  CvCreatedData,
+  PreviewDirtyData,
+  PreviewErrorData,
+  SessionTitleData,
+} from './schemas';
 
 /**
  * Custom UI message type for the chat. Adds the `preview-dirty` data part so
@@ -10,7 +15,9 @@ import type { PreviewDirtyData, SessionTitleData } from './schemas';
  */
 export type ChatUIDataParts = {
   'preview-dirty': PreviewDirtyData;
+  'preview-error': PreviewErrorData;
   'session-title': SessionTitleData;
+  'cv-created': CvCreatedData;
 };
 
 export type ChatUIMessage = UIMessage<never, ChatUIDataParts>;

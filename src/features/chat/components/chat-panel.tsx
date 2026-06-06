@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { DefaultChatTransport } from 'ai';
 import { MessageSquareIcon } from 'lucide-react';
@@ -52,6 +53,7 @@ export function ChatPanel({
   initialMessages,
   initialPrefill,
 }: Props) {
+  const router = useRouter();
   const [activeSessionId, setActiveSessionId] = useState(initialActiveSessionId);
   const [activeSessionMessages, setActiveSessionMessages] = useState(initialMessages);
   const [sessionList, setSessionList] = useState(sessions);
@@ -123,6 +125,15 @@ export function ChatPanel({
             );
             return;
           }
+          if (dataPart.type === 'data-cv-created') {
+            // The agent created a new CV (e.g. a tailoring copy) and made it
+            // selected server-side. Point the previewer at it so the
+            // end-of-turn render is visible, and refresh server-rendered CV
+            // lists (library, selection highlight).
+            usePreviewStore.getState().setPreviewTarget({ cvId: dataPart.data.cvId });
+            router.refresh();
+            return;
+          }
           if (dataPart.type === 'data-preview-dirty') {
             const current = usePreviewStore.getState().previewTarget ?? { cvId: initialCvId };
             const shouldRefresh = isPreviewTargetMatch({
@@ -131,13 +142,18 @@ export function ChatPanel({
             });
             if (!shouldRefresh) return;
             void usePreviewStore.getState().markPreviewDirty();
+            return;
+          }
+          if (dataPart.type === 'data-preview-error') {
+            toast.error(`Rendering failed: ${dataPart.data.message}`);
+            return;
           }
         },
         onError: (err) => {
           toast.error(err?.message ?? 'Chat request failed');
         },
       }),
-    [activeSessionId, activeSessionMessages, initialCvId],
+    [activeSessionId, activeSessionMessages, initialCvId, router],
   );
 
   const { messages, sendMessage, status, stop, error, setMessages } = useChat<ChatUIMessage>({

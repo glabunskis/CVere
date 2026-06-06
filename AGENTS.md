@@ -52,9 +52,8 @@ src/
 ├── features/
 │   ├── account/                  # Auth + Stripe customer/subscription controllers
 │   ├── achievements/             # Manual CRUD inbox of wins
-│   ├── chat/                     # Chat agent: tools, schemas, services, storage
-│   │   ├── tools/                # CV mutation + read tools
-│   │   ├── services/             # profile-content-service (selected CV scoped)
+│   ├── chat/                     # Chat agent: tools, schemas, storage
+│   │   ├── tools/                # CV mutation, read, & metadata tools
 │   │   ├── storage/              # chat_message persistence
 │   │   └── system-prompt.ts
 │   ├── cv/                       # Unified CV actions, controllers, services, snapshots
@@ -85,7 +84,9 @@ Path alias: `@/*` → `./src/*`
 ### Chat is the only AI surface
 
 - All AI calls go through `src/app/api/chat/route.ts`. It uses the AI SDK with the model from `src/libs/ai/chat-model.ts` and exposes tools defined in `src/features/chat/tools/`.
-- Chat tools mutate the selected CV's normalized rows (`cv`, `experience`, `project`, `skill`, `education`, `certification`, `language`).
+- All CV read, scope, and mutation logic lives in `src/features/cv/services/cv-service.ts` and `src/features/cv/cv-snapshot.ts`.
+- The streaming chat agent discovers available CV variants using the `listCvs` metadata tool (defined in `src/features/chat/tools/cv-meta-tools.ts`), and can inspect or edit a specific CV by passing a `cvId` argument to the corresponding tools.
+- Chat tools mutate CV normalized rows (`cv`, `experience`, `project`, `skill`, `education`, `certification`, `language`).
 - Tool call sets that mutate the CV trigger `renderAndUploadCv` at the end of the assistant turn. The chat stream emits a `data-preview-dirty` event keyed by `cvId` so the previewer iframe re-signs the storage URL.
 - `chat_message` rows persist the conversation per user. `loadMessages` hydrates the panel on dashboard load.
 - **Do not add new AI entry points.** Achievements and vacancies are intentionally manual.

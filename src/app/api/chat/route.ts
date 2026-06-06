@@ -19,6 +19,7 @@ import { generateAndSaveSessionTitle } from '@/features/chat/storage/chat-sessio
 import { CHAT_SYSTEM_PROMPT } from '@/features/chat/system-prompt';
 import { buildAchievementTools } from '@/features/chat/tools/achievement-tools';
 import { buildContentTools } from '@/features/chat/tools/content-tools';
+import { buildCvMetaTools } from '@/features/chat/tools/cv-meta-tools';
 import { buildEntryTools } from '@/features/chat/tools/entry-tools';
 import { buildIdentityTools } from '@/features/chat/tools/identity-tools';
 import { MUTATING_TOOLS } from '@/features/chat/tools/mutating-tools';
@@ -129,6 +130,14 @@ export async function POST(req: Request): Promise<Response> {
     dirtyCvIds.add(cvId);
   };
 
+  // Mutable target for the turn. The createCv tool flips this to a freshly
+  // created copy so later tool calls (and the dirty-CV fallback) land on the
+  // new CV without the model threading the id through every call.
+  const activeCvRef = { current: activeCvId };
+  // Drained in onStepFinish: signals the client to switch the previewer to a
+  // CV the agent created mid-turn.
+  const createdCvEvents: { cvId: string; title: string }[] = [];
+
   // Snapshot of message ids already in the DB, used in onFinish to diff what
   // streamText produced and persist only the new (assistant) messages.
   const persistedIds = new Set([...existingIds, ...newClientMessages.map((m) => m.id)]);
@@ -141,13 +150,16 @@ export async function POST(req: Request): Promise<Response> {
     execute: ({ writer }) => {
       // Kept as one flat object — tools are never gated by session kind.
       const tools = {
-        ...buildStyleTools(user, activeCvId),
-        ...buildContentTools(user, activeCvId),
-        ...buildEntryTools(user, activeCvId),
-        ...buildSectionTools(user, activeCvId),
-        ...buildIdentityTools(user, activeCvId),
-        ...buildAchievementTools(user, activeCvId),
-        ...buildVacancyTools(user, activeCvId),
+        ...buildStyleTools(user, activeCvRef),
+        ...buildCvMetaTools(user, activeCvRef, (info) => {
+          createdCvEvents.push(info);
+        }),
+        ...buildContentTools(user, activeCvRef),
+        ...buildEntryTools(user, activeCvRef),
+        ...buildSectionTools(user, activeCvRef),
+        ...buildIdentityTools(user, activeCvRef),
+        ...buildAchievementTools(user, activeCvRef),
+        ...buildVacancyTools(user, activeCvRef),
       };
 
       const result = streamText({
@@ -182,8 +194,18 @@ export async function POST(req: Request): Promise<Response> {
           for (const result of toolResults ?? []) {
             const toolName = (result as { toolName?: string }).toolName;
             if (!toolName || !MUTATING_TOOLS.has(toolName)) continue;
-            const cvId = readCvIdFromToolCall(result.input) ?? activeCvId;
+            const cvId = readCvIdFromToolCall(result.input) ?? activeCvRef.current;
             markDirtyCv(cvId);
+          }
+
+          // A new CV was created this step (e.g. a tailoring copy). Render it
+          // and tell the client to switch the previewer to it.
+          while (createdCvEvents.length > 0) {
+            const event = createdCvEvents.shift();
+            if (!event) break;
+            markDirtyCv(event.cvId);
+            writer.write({ type: 'data-cv-created', data: event });
+            logger.info({ userId: user.id, cvId: event.cvId }, 'chat-route cv created');
           }
         },
         onFinish: async () => {
@@ -209,6 +231,13 @@ export async function POST(req: Request): Promise<Response> {
                   { err, userId: user.id, cvId },
                   'chat-route end-of-turn render failed',
                 );
+                writer.write({
+                  type: 'data-preview-error',
+                  data: {
+                    cvId,
+                    message: err instanceof Error ? err.message : 'Unknown rendering error',
+                  },
+                });
               }
             }
           }

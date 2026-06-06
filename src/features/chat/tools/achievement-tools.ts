@@ -14,6 +14,8 @@ import {
   listPendingAchievementsInputSchema,
 } from '../schemas';
 
+import type { ActiveCvRef } from './active-cv';
+
 import 'server-only';
 
 const MAX_LIST_PREVIEW = 240;
@@ -24,7 +26,7 @@ const MAX_LIST_PREVIEW = 240;
  * prompt requires an explicit user confirmation before `integrateAchievement`
  * runs — the tool itself just persists.
  */
-export function buildAchievementTools(user: User, activeCvId: string) {
+export function buildAchievementTools(user: User, activeCv: ActiveCvRef) {
   return {
     listPendingAchievements: tool({
       description:
@@ -50,11 +52,12 @@ export function buildAchievementTools(user: User, activeCvId: string) {
       description:
         'Apply a pending achievement to a CV section. Only call this AFTER the user has ' +
         'explicitly confirmed both the achievement id and the target section. Allowed sections: ' +
-        '"summary", "experience", "project", "skill", "education", "certification", "language". ' +
+        '"summary", "project", "skill", "certification", "language". (For "experience" or "education" ' +
+        'sections, do not use this tool; instead, use addExperience/addEducation and then call dismissAchievement). ' +
         'Omit cvId to target the selected CV.',
       inputSchema: integrateAchievementInputSchema,
       execute: async ({ cvId, achievementId, targetSection }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         const result = await integrateAchievementById({
           user,
           cvId: targetCvId,

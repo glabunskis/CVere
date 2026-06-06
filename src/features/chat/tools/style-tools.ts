@@ -15,6 +15,8 @@ import {
   setTemplateInputSchema,
 } from '../schemas';
 
+import type { ActiveCvRef } from './active-cv';
+
 import 'server-only';
 
 /**
@@ -25,7 +27,7 @@ import 'server-only';
  * Outputs are short human-readable strings; the model surfaces them in its
  * end-of-turn summary.
  */
-export function buildStyleTools(user: User, activeCvId: string) {
+export function buildStyleTools(user: User, activeCv: ActiveCvRef) {
   return {
     setTemplate: tool({
       description:
@@ -33,7 +35,7 @@ export function buildStyleTools(user: User, activeCvId: string) {
         'skills, education, and certifications in a sidebar. Omit cvId to target the selected CV.',
       inputSchema: setTemplateInputSchema,
       execute: async ({ cvId, template }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await setTemplate({ userId: user.id, cvId: targetCvId, template });
         logger.info({ userId: user.id, template }, 'chat-tool setTemplate');
         return `Set template to ${template}.`;
@@ -46,7 +48,7 @@ export function buildStyleTools(user: User, activeCvId: string) {
         'and dividers. Omit cvId to target the selected CV.',
       inputSchema: setAccentHexInputSchema,
       execute: async ({ cvId, hex }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await setAccentHex({ userId: user.id, cvId: targetCvId, accentHex: hex });
         logger.info({ userId: user.id, accentHex: hex }, 'chat-tool setAccentHex');
         return `Set accent color to ${hex}.`;
@@ -59,7 +61,7 @@ export function buildStyleTools(user: User, activeCvId: string) {
         '"mon_d_yyyy". Omit cvId to target the selected CV.',
       inputSchema: setEducationDateFormatInputSchema,
       execute: async ({ cvId, format }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await setDateFormat({
           userId: user.id,
           cvId: targetCvId,
@@ -80,7 +82,7 @@ export function buildStyleTools(user: User, activeCvId: string) {
         '"mon_d_yyyy". Omit cvId to target the selected CV.',
       inputSchema: setCertificationDateFormatInputSchema,
       execute: async ({ cvId, format }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await setDateFormat({
           userId: user.id,
           cvId: targetCvId,

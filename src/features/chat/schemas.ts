@@ -67,7 +67,37 @@ export const setCertificationDateFormatInputSchema = z.object({
 // Content tools
 // =============================================================================
 
-export const readProfileInputSchema = z.object({});
+export const listCvsInputSchema = z.object({});
+
+export const createCvInputSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .describe(
+      'Title for the new CV. Use a short, descriptive name, e.g. the target role and ' +
+        'company ("Backend Engineer at Acme") when tailoring to a vacancy.',
+    ),
+  sourceCvId: z
+    .uuid()
+    .optional()
+    .describe(
+      'CV to copy from. Omit to copy the user\'s currently selected CV. The new CV ' +
+        'duplicates the source\'s summary, entries, identity, and style.',
+    ),
+  sourceVacancyId: z
+    .uuid()
+    .optional()
+    .describe(
+      'Optional vacancy id this CV targets. Pass it when creating a copy to tailor to a ' +
+        'specific vacancy so the new CV is linked to that job. Get it from `listVacancies`.',
+    ),
+});
+
+export const readProfileInputSchema = z.object({
+  cvId: optionalCvIdSchema,
+});
 
 export const rewriteSummaryInputSchema = z.object({
   cvId: optionalCvIdSchema,
@@ -112,11 +142,21 @@ const optionalBulletInsertIndexSchema = z
       'append; values before 0 are clamped.',
   );
 
+const expectedTextSchema = z
+  .string()
+  .optional()
+  .describe(
+    'Optional expected text of the bullet before mutating. Highly recommended ' +
+      'to avoid editing the wrong bullet if ordering has changed. If provided, the service ' +
+      'verifies that the bullet at the index matches this exactly before executing.',
+  );
+
 export const editExperienceBulletInputSchema = z.object({
   cvId: optionalCvIdSchema,
   experienceId: experienceIdSchema,
   index: bulletIndexSchema,
   text: bulletTextSchema,
+  expectedText: expectedTextSchema,
 });
 
 export const addExperienceBulletInputSchema = z.object({
@@ -130,6 +170,7 @@ export const removeExperienceBulletInputSchema = z.object({
   cvId: optionalCvIdSchema,
   experienceId: experienceIdSchema,
   index: bulletIndexSchema,
+  expectedText: expectedTextSchema,
 });
 
 export const editProjectBulletInputSchema = z.object({
@@ -137,6 +178,7 @@ export const editProjectBulletInputSchema = z.object({
   projectId: projectIdSchema,
   index: bulletIndexSchema,
   text: bulletTextSchema,
+  expectedText: expectedTextSchema,
 });
 
 export const addProjectBulletInputSchema = z.object({
@@ -150,6 +192,7 @@ export const removeProjectBulletInputSchema = z.object({
   cvId: optionalCvIdSchema,
   projectId: projectIdSchema,
   index: bulletIndexSchema,
+  expectedText: expectedTextSchema,
 });
 
 const fromIndexSchema = z
@@ -499,10 +542,13 @@ export const integrateAchievementInputSchema = z.object({
   achievementId: z
     .uuid()
     .describe('UUID of the achievement to integrate. Get it from `listPendingAchievements`.'),
-  targetSection: achievementSectionSchema.describe(
-    'Section the achievement should land in: "summary", "experience", "project", "skill", ' +
-      '"education", "certification", or "language". The user must confirm the target before you call this.',
-  ),
+  targetSection: z
+    .enum(['summary', 'project', 'skill', 'certification', 'language'])
+    .describe(
+      'Section the achievement should land in: "summary", "project", "skill", "certification", or "language". ' +
+        'Experience and education sections are not supported directly; instead, add those entries manually using ' +
+        'addExperience or addEducation with the achievement text, then dismiss the achievement.',
+    ),
 });
 
 export const dismissAchievementInputSchema = z.object({
@@ -537,6 +583,25 @@ export const previewDirtyDataSchema = z.object({
 });
 
 export type PreviewDirtyData = z.infer<typeof previewDirtyDataSchema>;
+
+export const previewErrorDataSchema = z.object({
+  cvId: z.uuid(),
+  message: z.string(),
+});
+
+export type PreviewErrorData = z.infer<typeof previewErrorDataSchema>;
+
+/**
+ * Sent on the SSE stream when a chat turn creates a new CV (e.g. a copy made
+ * for vacancy tailoring). The client switches the previewer to the new CV so
+ * the end-of-turn render is visible, and refreshes server-rendered CV lists.
+ */
+export const cvCreatedDataSchema = z.object({
+  cvId: z.uuid(),
+  title: z.string().min(1).max(120),
+});
+
+export type CvCreatedData = z.infer<typeof cvCreatedDataSchema>;
 
 export const sessionTitleDataSchema = z.object({
   sessionId: z.uuid(),

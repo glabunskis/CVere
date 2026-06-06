@@ -10,12 +10,19 @@ import { Select } from '@/components/ui/select';
 import type { AchievementRow } from '@/features/achievements/controllers/list-achievements';
 
 import { dismissAchievement, integrateAchievement } from '../actions/achievement-actions';
-import { achievementSectionSchema } from '../schemas';
+import { integrableSectionSchema } from '../schemas';
 
-const SECTIONS = achievementSectionSchema.options;
+const SECTIONS = integrableSectionSchema.options;
+type IntegrableSection = (typeof SECTIONS)[number];
+
+function defaultSection(suggested: AchievementRow['target_section']): IntegrableSection {
+  return suggested && (SECTIONS as readonly string[]).includes(suggested)
+    ? (suggested as IntegrableSection)
+    : 'summary';
+}
 
 export function AchievementCard({ row }: { row: AchievementRow }) {
-  const [section, setSection] = useState<AchievementRow['target_section']>(row.target_section ?? 'experience');
+  const [section, setSection] = useState<IntegrableSection>(defaultSection(row.target_section));
 
   const { execute: integrate, isExecuting: integrating } = useAction(integrateAchievement, {
     onSuccess: () => toast.success('Integrated into profile'),
@@ -49,8 +56,8 @@ export function AchievementCard({ row }: { row: AchievementRow }) {
       {row.status === 'pending' ? (
         <div className='flex flex-wrap items-center justify-end gap-2'>
           <Select
-            value={section ?? ''}
-            onChange={(event) => setSection(event.target.value as AchievementRow['target_section'])}
+            value={section}
+            onChange={(event) => setSection(event.target.value as IntegrableSection)}
             className='w-auto'
           >
             {SECTIONS.map((value) => (
@@ -69,8 +76,8 @@ export function AchievementCard({ row }: { row: AchievementRow }) {
           </Button>
           <Button
             size='sm'
-            disabled={integrating || !section}
-            onClick={() => integrate({ id: row.id, targetSection: section ?? undefined })}
+            disabled={integrating}
+            onClick={() => integrate({ id: row.id, targetSection: section })}
           >
             {integrating ? 'Integrating...' : 'Integrate'}
           </Button>

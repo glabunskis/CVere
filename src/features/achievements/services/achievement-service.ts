@@ -1,7 +1,10 @@
 import type { z } from 'zod';
 
 import type { AchievementRow } from '@/features/achievements/controllers/list-achievements';
-import type { achievementSectionSchema } from '@/features/achievements/schemas';
+import type {
+  achievementSectionSchema,
+  integrableSectionSchema,
+} from '@/features/achievements/schemas';
 import { getCv, getSelectedCv } from '@/features/cv/services/cv-service';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 import type { User } from '@supabase/supabase-js';
@@ -9,6 +12,7 @@ import type { User } from '@supabase/supabase-js';
 import 'server-only';
 
 export type AchievementSection = z.infer<typeof achievementSectionSchema>;
+export type IntegrableSection = z.infer<typeof integrableSectionSchema>;
 const MAX_SECTION_ROWS = 50;
 
 type OrderedTable = 'experience' | 'project' | 'skill' | 'education' | 'certification' | 'language';
@@ -55,7 +59,7 @@ async function assertCapAndNextPosition({
 
 export type IntegrateResult = {
   alreadyIntegrated: boolean;
-  targetSection: AchievementSection;
+  targetSection: IntegrableSection;
   entryText: string;
   cvId: string;
 };
@@ -65,8 +69,9 @@ export type IntegrateResult = {
  * - the `/achievements` page safe-action (which revalidates affected paths)
  * - the chat `integrateAchievement` tool (route renders PDF at end of turn)
  *
- * Placeholders like "[MISSING] company" survive on `experience`/`education`
- * inserts — they're tracked separately as a polish-track copy fix.
+ * Only the `integrableSectionSchema` sections are supported. `experience` and
+ * `education` are rejected because they require structured fields a free-text
+ * achievement cannot supply — the caller adds those entries manually.
  */
 export async function integrateAchievementById({
   user,
@@ -77,7 +82,7 @@ export async function integrateAchievementById({
   user: User;
   cvId?: string;
   achievementId: string;
-  targetSectionOverride?: AchievementSection;
+  targetSectionOverride?: IntegrableSection;
 }): Promise<IntegrateResult> {
   const supabase = await createSupabaseServerClient();
 
@@ -91,13 +96,20 @@ export async function integrateAchievementById({
     throw new AchievementError(fetchError?.message ?? 'Achievement not found.');
   }
 
-  const targetSection: AchievementSection | null =
+  const resolvedSection: AchievementSection | null =
     targetSectionOverride ?? entry.target_section;
-  if (!targetSection) {
+  if (!resolvedSection) {
     throw new AchievementError(
       'No target section set on this achievement. Pass targetSection explicitly.',
     );
   }
+  if (resolvedSection === 'experience' || resolvedSection === 'education') {
+    throw new AchievementError(
+      `The "${resolvedSection}" section needs structured fields an achievement does not provide. ` +
+        `Add the entry manually (addExperience or addEducation), then dismiss the achievement.`,
+    );
+  }
+  const targetSection: IntegrableSection = resolvedSection;
   const cv = cvId ? await getCv(cvId, user.id) : await getSelectedCv(user.id);
 
   if (entry.status === 'integrated') {
@@ -113,23 +125,6 @@ export async function integrateAchievementById({
       .update({ summary: next })
       .eq('id', cv.id)
       .eq('user_id', user.id);
-    if (error) throw new AchievementError(error.message);
-  } else if (targetSection === 'experience') {
-    const nextPosition = await assertCapAndNextPosition({
-      supabase,
-      userId: user.id,
-      cvId: cv.id,
-      table: 'experience',
-    });
-    const { error } = await supabase.from('experience').insert({
-      user_id: user.id,
-      cv_id: cv.id,
-      position: nextPosition,
-      company: '[MISSING] company',
-      role: '[MISSING] role',
-      bullets: [text],
-      stack: [],
-    });
     if (error) throw new AchievementError(error.message);
   } else if (targetSection === 'project') {
     const nextPosition = await assertCapAndNextPosition({
@@ -160,21 +155,6 @@ export async function integrateAchievementById({
       cv_id: cv.id,
       position: nextPosition,
       name: text.slice(0, 80),
-    });
-    if (error) throw new AchievementError(error.message);
-  } else if (targetSection === 'education') {
-    const nextPosition = await assertCapAndNextPosition({
-      supabase,
-      userId: user.id,
-      cvId: cv.id,
-      table: 'education',
-    });
-    const { error } = await supabase.from('education').insert({
-      user_id: user.id,
-      cv_id: cv.id,
-      position: nextPosition,
-      institution: '[MISSING] institution',
-      summary: text,
     });
     if (error) throw new AchievementError(error.message);
   } else if (targetSection === 'certification') {

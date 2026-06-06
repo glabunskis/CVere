@@ -42,9 +42,7 @@ export async function renderAndUploadCv({
   const supabase = await createSupabaseServerClient();
   const { data: cv, error: cvError } = await supabase
     .from('cv')
-    .select(
-      'id, user_id, summary, full_name, location, phone, contact_email, linkedin_url, github_url, website_url, template, accent_hex, education_date_format, certification_date_format',
-    )
+    .select('*')
     .eq('id', cvId)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -52,7 +50,7 @@ export async function renderAndUploadCv({
   if (!cv) throw new Error(`CV ${cvId} not found.`);
 
   const children = await getCvChildren(cv.id);
-  const snapshot = buildCvSnapshot(cv.summary, children);
+  const snapshot = buildCvSnapshot(cv, children);
 
   const userMetadata = (user.user_metadata ?? {}) as { full_name?: string };
   const identity = cv.full_name ?? userMetadata.full_name ?? user.email ?? '[MISSING] name';

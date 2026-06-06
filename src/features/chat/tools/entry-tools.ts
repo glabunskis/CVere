@@ -28,6 +28,8 @@ import {
   removeProjectInputSchema,
 } from '../schemas';
 
+import type { ActiveCvRef } from './active-cv';
+
 import 'server-only';
 
 /**
@@ -36,7 +38,7 @@ import 'server-only';
  * tools cover the parent entry: create, edit fields, delete, reorder, plus
  * reordering bullets inside an entry.
  */
-export function buildEntryTools(user: User, activeCvId: string) {
+export function buildEntryTools(user: User, activeCv: ActiveCvRef) {
   return {
     // ---------- Experience ----------
     addExperience: tool({
@@ -58,7 +60,7 @@ export function buildEntryTools(user: User, activeCvId: string) {
         bullets,
         stack,
       }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         const row = await addExperience({
           user,
           cvId: targetCvId,
@@ -97,7 +99,7 @@ export function buildEntryTools(user: User, activeCvId: string) {
         summary,
         stack,
       }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         const row = await editExperience({
           user,
           cvId: targetCvId,
@@ -115,7 +117,7 @@ export function buildEntryTools(user: User, activeCvId: string) {
         'Omit cvId to target the selected CV.',
       inputSchema: removeExperienceInputSchema,
       execute: async ({ cvId, experienceId }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await removeExperience({ user, cvId: targetCvId, experienceId });
         logger.info({ userId: user.id, experienceId }, 'chat-tool removeExperience');
         return 'Removed experience entry.';
@@ -128,7 +130,7 @@ export function buildEntryTools(user: User, activeCvId: string) {
         'entry is index 0. Omit cvId to target the selected CV.',
       inputSchema: moveExperienceInputSchema,
       execute: async ({ cvId, experienceId, toIndex }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await moveExperience({ user, cvId: targetCvId, experienceId, toIndex });
         logger.info({ userId: user.id, experienceId, toIndex }, 'chat-tool moveExperience');
         return `Moved experience entry to position ${toIndex + 1}.`;
@@ -141,7 +143,7 @@ export function buildEntryTools(user: User, activeCvId: string) {
         '`readProfile` to see the current order. Omit cvId to target the selected CV.',
       inputSchema: moveExperienceBulletInputSchema,
       execute: async ({ cvId, experienceId, fromIndex, toIndex }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await moveExperienceBullet({ user, cvId: targetCvId, experienceId, fromIndex, toIndex });
         logger.info(
           { userId: user.id, experienceId, fromIndex, toIndex },
@@ -159,7 +161,7 @@ export function buildEntryTools(user: User, activeCvId: string) {
         'Omit cvId to target the selected CV.',
       inputSchema: addProjectInputSchema,
       execute: async ({ cvId, name, description, link, bullets, stack }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         const row = await addProject({
           user,
           cvId: targetCvId,
@@ -177,7 +179,7 @@ export function buildEntryTools(user: User, activeCvId: string) {
         'fields you want to change. Omit cvId to target the selected CV.',
       inputSchema: editProjectInputSchema,
       execute: async ({ cvId, projectId, name, description, link, stack }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         const row = await editProject({
           user,
           cvId: targetCvId,
@@ -195,7 +197,7 @@ export function buildEntryTools(user: User, activeCvId: string) {
         'Omit cvId to target the selected CV.',
       inputSchema: removeProjectInputSchema,
       execute: async ({ cvId, projectId }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await removeProject({ user, cvId: targetCvId, projectId });
         logger.info({ userId: user.id, projectId }, 'chat-tool removeProject');
         return 'Removed project entry.';
@@ -208,7 +210,7 @@ export function buildEntryTools(user: User, activeCvId: string) {
         'the selected CV.',
       inputSchema: moveProjectInputSchema,
       execute: async ({ cvId, projectId, toIndex }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await moveProject({ user, cvId: targetCvId, projectId, toIndex });
         logger.info({ userId: user.id, projectId, toIndex }, 'chat-tool moveProject');
         return `Moved project entry to position ${toIndex + 1}.`;
@@ -221,7 +223,7 @@ export function buildEntryTools(user: User, activeCvId: string) {
         '`readProfile` to see the current order. Omit cvId to target the selected CV.',
       inputSchema: moveProjectBulletInputSchema,
       execute: async ({ cvId, projectId, fromIndex, toIndex }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await moveProjectBullet({ user, cvId: targetCvId, projectId, fromIndex, toIndex });
         logger.info(
           { userId: user.id, projectId, fromIndex, toIndex },

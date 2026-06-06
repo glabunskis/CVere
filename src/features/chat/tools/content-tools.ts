@@ -26,6 +26,8 @@ import {
   rewriteSummaryInputSchema,
 } from '../schemas';
 
+import type { ActiveCvRef } from './active-cv';
+
 import 'server-only';
 
 /**
@@ -37,18 +39,19 @@ import 'server-only';
  * it returns the structured `aiProfileSchema` snapshot so the model can use
  * the UUIDs when calling mutating tools afterwards.
  */
-export function buildContentTools(user: User, activeCvId: string) {
+export function buildContentTools(user: User, activeCv: ActiveCvRef) {
   return {
     readProfile: tool({
       description:
         'Return a snapshot of the selected CV (summary, entries, ids, ordering). ' +
         'Call this before editing existing items so ids and indices are current.',
       inputSchema: readProfileInputSchema,
-      execute: async () => {
-        const cv = await getCv(activeCvId, user.id);
-        const children = await getCvChildren(activeCvId);
-        const snapshot = buildCvSnapshot(cv.summary, children);
-        logger.info({ userId: user.id }, 'chat-tool readProfile');
+      execute: async ({ cvId }) => {
+        const targetCvId = cvId ?? activeCv.current;
+        const cv = await getCv(targetCvId, user.id);
+        const children = await getCvChildren(targetCvId);
+        const snapshot = buildCvSnapshot(cv, children);
+        logger.info({ userId: user.id, targetCvId }, 'chat-tool readProfile');
         return snapshot;
       },
     }),
@@ -59,7 +62,7 @@ export function buildContentTools(user: User, activeCvId: string) {
         'already in the CV. Omit cvId to target the selected CV.',
       inputSchema: rewriteSummaryInputSchema,
       execute: async ({ cvId, summary }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await updateSummary({ user, cvId: targetCvId, summary });
         logger.info({ userId: user.id }, 'chat-tool rewriteSummary');
         return 'Updated CV summary.';
@@ -72,9 +75,9 @@ export function buildContentTools(user: User, activeCvId: string) {
         'find the experience UUID and the current bullet at the index you want. ' +
         'Omit cvId to target the selected CV.',
       inputSchema: editExperienceBulletInputSchema,
-      execute: async ({ cvId, experienceId, index, text }) => {
-        const targetCvId = cvId ?? activeCvId;
-        await editExperienceBullet({ user, cvId: targetCvId, experienceId, index, text });
+      execute: async ({ cvId, experienceId, index, text, expectedText }) => {
+        const targetCvId = cvId ?? activeCv.current;
+        await editExperienceBullet({ user, cvId: targetCvId, experienceId, index, text, expectedText });
         logger.info(
           { userId: user.id, experienceId, index },
           'chat-tool editExperienceBullet',
@@ -89,7 +92,7 @@ export function buildContentTools(user: User, activeCvId: string) {
         'end. Maximum 50 bullets per entry. Omit cvId to target the selected CV.',
       inputSchema: addExperienceBulletInputSchema,
       execute: async ({ cvId, experienceId, text, index }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await addExperienceBullet({ user, cvId: targetCvId, experienceId, text, index });
         logger.info(
           { userId: user.id, experienceId, index: index ?? null },
@@ -106,9 +109,9 @@ export function buildContentTools(user: User, activeCvId: string) {
         'Remove one bullet from an experience entry by 0-based index. Omit cvId ' +
         'to target the selected CV.',
       inputSchema: removeExperienceBulletInputSchema,
-      execute: async ({ cvId, experienceId, index }) => {
-        const targetCvId = cvId ?? activeCvId;
-        await removeExperienceBullet({ user, cvId: targetCvId, experienceId, index });
+      execute: async ({ cvId, experienceId, index, expectedText }) => {
+        const targetCvId = cvId ?? activeCv.current;
+        await removeExperienceBullet({ user, cvId: targetCvId, experienceId, index, expectedText });
         logger.info(
           { userId: user.id, experienceId, index },
           'chat-tool removeExperienceBullet',
@@ -123,9 +126,9 @@ export function buildContentTools(user: User, activeCvId: string) {
         'the project UUID and the current bullet at the index you want. Omit cvId ' +
         'to target the selected CV.',
       inputSchema: editProjectBulletInputSchema,
-      execute: async ({ cvId, projectId, index, text }) => {
-        const targetCvId = cvId ?? activeCvId;
-        await editProjectBullet({ user, cvId: targetCvId, projectId, index, text });
+      execute: async ({ cvId, projectId, index, text, expectedText }) => {
+        const targetCvId = cvId ?? activeCv.current;
+        await editProjectBullet({ user, cvId: targetCvId, projectId, index, text, expectedText });
         logger.info(
           { userId: user.id, projectId, index },
           'chat-tool editProjectBullet',
@@ -140,7 +143,7 @@ export function buildContentTools(user: User, activeCvId: string) {
         'Maximum 50 bullets per entry. Omit cvId to target the selected CV.',
       inputSchema: addProjectBulletInputSchema,
       execute: async ({ cvId, projectId, text, index }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await addProjectBullet({ user, cvId: targetCvId, projectId, text, index });
         logger.info(
           { userId: user.id, projectId, index: index ?? null },
@@ -157,9 +160,9 @@ export function buildContentTools(user: User, activeCvId: string) {
         'Remove one bullet from a project entry by 0-based index. Omit cvId to ' +
         'target the selected CV.',
       inputSchema: removeProjectBulletInputSchema,
-      execute: async ({ cvId, projectId, index }) => {
-        const targetCvId = cvId ?? activeCvId;
-        await removeProjectBullet({ user, cvId: targetCvId, projectId, index });
+      execute: async ({ cvId, projectId, index, expectedText }) => {
+        const targetCvId = cvId ?? activeCv.current;
+        await removeProjectBullet({ user, cvId: targetCvId, projectId, index, expectedText });
         logger.info(
           { userId: user.id, projectId, index },
           'chat-tool removeProjectBullet',

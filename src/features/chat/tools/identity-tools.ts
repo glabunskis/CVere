@@ -12,6 +12,8 @@ import {
   setPhoneInputSchema,
 } from '../schemas';
 
+import type { ActiveCvRef } from './active-cv';
+
 import 'server-only';
 
 /**
@@ -20,7 +22,7 @@ import 'server-only';
  * the model to edit identity fields when the user asks; previously this was
  * forbidden because no tools existed.
  */
-export function buildIdentityTools(user: User, activeCvId: string) {
+export function buildIdentityTools(user: User, activeCv: ActiveCvRef) {
   return {
     setFullName: tool({
       description:
@@ -28,7 +30,7 @@ export function buildIdentityTools(user: User, activeCvId: string) {
         'clear. Omit cvId to target the selected CV.',
       inputSchema: setFullNameInputSchema,
       execute: async ({ cvId, fullName }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await updateProfileIdentity({ user, cvId: targetCvId, patch: { fullName } });
         logger.info({ userId: user.id }, 'chat-tool setFullName');
         return fullName && fullName.trim().length > 0
@@ -43,7 +45,7 @@ export function buildIdentityTools(user: User, activeCvId: string) {
         'an empty string or null to clear. Omit cvId to target the selected CV.',
       inputSchema: setLocationInputSchema,
       execute: async ({ cvId, location }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await updateProfileIdentity({ user, cvId: targetCvId, patch: { location } });
         logger.info({ userId: user.id }, 'chat-tool setLocation');
         return location && location.trim().length > 0
@@ -58,7 +60,7 @@ export function buildIdentityTools(user: User, activeCvId: string) {
         'Omit cvId to target the selected CV.',
       inputSchema: setPhoneInputSchema,
       execute: async ({ cvId, phone }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await updateProfileIdentity({ user, cvId: targetCvId, patch: { phone } });
         logger.info({ userId: user.id }, 'chat-tool setPhone');
         return phone && phone.trim().length > 0 ? 'Set phone number.' : 'Cleared phone number.';
@@ -71,7 +73,7 @@ export function buildIdentityTools(user: User, activeCvId: string) {
         'null to clear. Omit cvId to target the selected CV.',
       inputSchema: setContactEmailInputSchema,
       execute: async ({ cvId, contactEmail }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await updateProfileIdentity({ user, cvId: targetCvId, patch: { contactEmail } });
         logger.info({ userId: user.id }, 'chat-tool setContactEmail');
         return contactEmail ? `Set contact email to ${contactEmail}.` : 'Cleared contact email.';
@@ -85,7 +87,7 @@ export function buildIdentityTools(user: User, activeCvId: string) {
         'it. Omit cvId to target the selected CV.',
       inputSchema: setLinksInputSchema,
       execute: async ({ cvId, linkedinUrl, githubUrl, websiteUrl }) => {
-        const targetCvId = cvId ?? activeCvId;
+        const targetCvId = cvId ?? activeCv.current;
         await updateProfileIdentity({
           user,
           cvId: targetCvId,
