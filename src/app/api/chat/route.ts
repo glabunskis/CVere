@@ -26,7 +26,9 @@ import { MUTATING_TOOLS } from '@/features/chat/tools/mutating-tools';
 import { buildSectionTools } from '@/features/chat/tools/section-tools';
 import { buildStyleTools } from '@/features/chat/tools/style-tools';
 import { buildVacancyTools } from '@/features/chat/tools/vacancy-tools';
+import type { AiProfile } from '@/features/cv/cv-snapshot';
 import { getSelectedCv } from '@/features/cv/services/cv-service';
+import { loadCvSnapshot, recordCvVersion } from '@/features/cv/services/cv-version-service';
 import { renderAndUploadCv } from '@/features/previewer/render';
 import { getChatModel } from '@/libs/ai/chat-model';
 import {
@@ -138,6 +140,19 @@ export async function POST(req: Request): Promise<Response> {
   // CV the agent created mid-turn.
   const createdCvEvents: { cvId: string; title: string }[] = [];
 
+  // Per-turn version capture. Snapshot each touched CV's state before this
+  // turn's edits so onFinish can record one reversible version that collapses
+  // every tool call in the assistant reply.
+  const beforeSnapshots = new Map<string, AiProfile>();
+  try {
+    beforeSnapshots.set(activeCvId, await loadCvSnapshot(user, activeCvId));
+  } catch (err) {
+    logger.error(
+      { err, userId: user.id, cvId: activeCvId },
+      'chat-route failed to snapshot CV before turn',
+    );
+  }
+
   // Snapshot of message ids already in the DB, used in onFinish to diff what
   // streamText produced and persist only the new (assistant) messages.
   const persistedIds = new Set([...existingIds, ...newClientMessages.map((m) => m.id)]);
@@ -151,8 +166,20 @@ export async function POST(req: Request): Promise<Response> {
       // Kept as one flat object — tools are never gated by session kind.
       const tools = {
         ...buildStyleTools(user, activeCvRef),
-        ...buildCvMetaTools(user, activeCvRef, (info) => {
+        ...buildCvMetaTools(user, activeCvRef, async (info) => {
           createdCvEvents.push(info);
+          // Capture the freshly created copy's baseline before any subsequent
+          // tool call edits it, so its version diff covers only this turn.
+          if (!beforeSnapshots.has(info.cvId)) {
+            try {
+              beforeSnapshots.set(info.cvId, await loadCvSnapshot(user, info.cvId));
+            } catch (err) {
+              logger.error(
+                { err, userId: user.id, cvId: info.cvId },
+                'chat-route failed to snapshot created CV',
+              );
+            }
+          }
         }),
         ...buildContentTools(user, activeCvRef),
         ...buildEntryTools(user, activeCvRef),
@@ -214,6 +241,18 @@ export async function POST(req: Request): Promise<Response> {
           if (dirtyCvIds.size > 0) {
             for (const cvId of dirtyCvIds) {
               try {
+                const before = beforeSnapshots.get(cvId);
+                if (before) {
+                  const after = await loadCvSnapshot(user, cvId);
+                  await recordCvVersion({
+                    user,
+                    cvId,
+                    before,
+                    after,
+                    source: 'chat',
+                    label: firstUserMessageText ? firstUserMessageText.slice(0, 120) : null,
+                  });
+                }
                 await renderAndUploadCv({ user, cvId });
                 writer.write({
                   type: 'data-preview-dirty',

@@ -192,6 +192,7 @@ export type Database = {
           education_date_format: Database["public"]["Enums"]["cv_date_format"]
           full_name: string | null
           github_url: string | null
+          history_seq: number
           id: string
           is_default: boolean
           linkedin_url: string | null
@@ -216,6 +217,7 @@ export type Database = {
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
           full_name?: string | null
           github_url?: string | null
+          history_seq?: number
           id?: string
           is_default?: boolean
           linkedin_url?: string | null
@@ -240,6 +242,7 @@ export type Database = {
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
           full_name?: string | null
           github_url?: string | null
+          history_seq?: number
           id?: string
           is_default?: boolean
           linkedin_url?: string | null
@@ -309,6 +312,47 @@ export type Database = {
           {
             foreignKeyName: "cv_preferences_selected_cv_id_fkey"
             columns: ["selected_cv_id"]
+            isOneToOne: false
+            referencedRelation: "cv"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cv_version: {
+        Row: {
+          created_at: string
+          cv_id: string
+          diff: Json
+          id: string
+          label: string | null
+          seq: number
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cv_id: string
+          diff: Json
+          id?: string
+          label?: string | null
+          seq: number
+          source: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cv_id?: string
+          diff?: Json
+          id?: string
+          label?: string | null
+          seq?: number
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cv_version_cv_id_fkey"
+            columns: ["cv_id"]
             isOneToOne: false
             referencedRelation: "cv"
             referencedColumns: ["id"]

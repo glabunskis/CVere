@@ -15,7 +15,7 @@ import type { ActiveCvRef } from './active-cv';
 
 import 'server-only';
 
-type CvCreatedHandler = (info: { cvId: string; title: string }) => void;
+type CvCreatedHandler = (info: { cvId: string; title: string }) => void | Promise<void>;
 
 /**
  * CV metadata tools: discover CVs and create new ones (copies).
@@ -63,7 +63,7 @@ export function buildCvMetaTools(
         // Subsequent tool calls this turn target the new copy unless the model
         // passes an explicit cvId.
         activeCv.current = row.id;
-        onCvCreated({ cvId: row.id, title: row.title });
+        await onCvCreated({ cvId: row.id, title: row.title });
         logger.info({ userId: user.id, cvId: row.id, sourceCvId: sourceCvId ?? null }, 'chat-tool createCv');
         return `Created "${row.title}" as a copy and switched to it. Edits now target this new CV.`;
       },

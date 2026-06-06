@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { getSelectedCv, updateSummary } from '@/features/cv/services/cv-service';
+import { loadCvSnapshot, recordCvVersion } from '@/features/cv/services/cv-version-service';
 import { renderAndUploadCv } from '@/features/previewer/render';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
@@ -14,6 +15,7 @@ export const updateProfileSection = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const cv = await getSelectedCv(ctx.user.id);
+    const before = await loadCvSnapshot(ctx.user, cv.id);
 
     if (parsedInput.section === 'summary') {
       await updateSummary({ user: ctx.user, cvId: cv.id, summary: parsedInput.payload.summary ?? null });
@@ -233,6 +235,8 @@ export const updateProfileSection = authActionClient
       }
     }
 
+    const after = await loadCvSnapshot(ctx.user, cv.id);
+    await recordCvVersion({ user: ctx.user, cvId: cv.id, before, after, source: 'manual' });
     await renderAndUploadCv({ user: ctx.user, cvId: cv.id });
     revalidatePath('/dashboard');
     revalidatePath('/profile');
@@ -244,6 +248,7 @@ export const deleteProfileChild = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     const supabase = await createSupabaseServerClient();
     const cv = await getSelectedCv(ctx.user.id);
+    const before = await loadCvSnapshot(ctx.user, cv.id);
     const section = parsedInput.section;
     const id = parsedInput.id;
     if (section === 'experience') {
@@ -295,6 +300,8 @@ export const deleteProfileChild = authActionClient
         .eq('cv_id', cv.id);
       if (error) throw new Error(error.message);
     }
+    const after = await loadCvSnapshot(ctx.user, cv.id);
+    await recordCvVersion({ user: ctx.user, cvId: cv.id, before, after, source: 'manual' });
     await renderAndUploadCv({ user: ctx.user, cvId: cv.id });
     revalidatePath('/dashboard');
     revalidatePath('/profile');

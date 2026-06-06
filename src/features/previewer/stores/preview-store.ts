@@ -8,6 +8,12 @@ type PreviewState = {
   previewTarget: PreviewTarget | null;
   signedUrl: string | null;
   isRefreshing: boolean;
+  /**
+   * Bumped on every `markPreviewDirty`. History controls watch this to
+   * re-query undo/redo availability after chat turns and manual saves that
+   * recorded a new version.
+   */
+  historyTick: number;
   setPreviewTarget: (target: PreviewTarget) => void;
   /**
    * Replace the cached signed URL. Used by the provider to hydrate from the
@@ -32,6 +38,7 @@ export const usePreviewStore = create<PreviewState>((set, get) => ({
   previewTarget: null,
   signedUrl: null,
   isRefreshing: false,
+  historyTick: 0,
   setPreviewTarget: (previewTarget) =>
     set((state) => {
       const current = state.previewTarget;
@@ -49,7 +56,7 @@ export const usePreviewStore = create<PreviewState>((set, get) => ({
       const next = await refresherRef.current();
       if (next) set({ signedUrl: next });
     } finally {
-      set({ isRefreshing: false });
+      set((state) => ({ isRefreshing: false, historyTick: state.historyTick + 1 }));
     }
   },
 }));

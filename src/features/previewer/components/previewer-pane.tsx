@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 
 import { renderCv } from '../actions/render-cv';
 import { usePreviewStore } from '../stores/preview-store';
+import { HistoryControls } from './history-controls';
 
 export function PreviewerPane() {
   const signedUrl = usePreviewStore((s) => s.signedUrl);
@@ -30,6 +31,7 @@ export function PreviewerPane() {
           <span className='font-medium'>{targetLabel}</span>
         </div>
         <div className='flex items-center gap-2'>
+          <HistoryControls />
           <Button
             size='sm'
             variant='outline'

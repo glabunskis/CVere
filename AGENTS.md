@@ -91,6 +91,12 @@ Path alias: `@/*` → `./src/*`
 - `chat_message` rows persist the conversation per user. `loadMessages` hydrates the panel on dashboard load.
 - **Do not add new AI entry points.** Achievements and vacancies are intentionally manual.
 
+### CV undo/redo versioning
+
+- Every CV edit boundary records one `cv_version` row: one per chat turn (collapsing all tool calls in an assistant reply) and one per manual profile-editor save. Each row stores a reversible structured diff (`computeCvDiff`/`applyCvDiff` in `src/features/cv/services/cv-diff.ts`) of the `AiProfile` snapshot, not a full copy.
+- `cv.history_seq` is the current position; version `seq = N` represents the transition `N-1 -> N`. Undo applies the inverse diff at `history_seq` and decrements it; redo applies the forward diff at `history_seq + 1` and increments it. History is pruned to the newest 100 versions and the redo branch is discarded on a new edit.
+- Capture/restore logic lives in `src/features/cv/services/cv-version-service.ts`; server actions in `src/features/cv/actions/cv-history-actions.ts`; UI in `src/features/previewer/components/history-controls.tsx` (Undo/Redo buttons + Ctrl/Cmd+Z / Ctrl+Shift+Z / Ctrl+Y).
+
 ### Server Actions (next-safe-action)
 
 - All mutations use `next-safe-action` with Zod validation. Define actions in dedicated `*-actions.ts` files.
@@ -138,6 +144,7 @@ Path alias: `@/*` → `./src/*`
 | `subscriptions` | Stripe subscriptions (synced via webhooks) | Users read own rows |
 | `cv` | CV roots (default + user-created variants) | Owner |
 | `experience`, `project`, `skill`, `education`, `certification`, `language` | Ordered section rows keyed by `cv_id` | Owner |
+| `cv_version` | Reversible structured diffs per CV edit boundary (undo/redo) | Owner |
 | `achievement_log_entry` | Append-only inbox; integrate into a section to apply | Owner |
 | `job_description` | Saved vacancy raw text (no AI extraction) | Owner |
 | `cv_preferences` | Selected CV + last active chat session | Owner |
