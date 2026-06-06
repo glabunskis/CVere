@@ -18,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { createCvAction, setSelectedCvAction } from '@/features/cv/actions/cv-actions';
+import { usePreviewStore } from '@/features/previewer/stores/preview-store';
 import { cn } from '@/lib/utils';
 
 type NavItem = {
@@ -27,7 +28,7 @@ type NavItem = {
 
 const items: NavItem[] = [
   { href: '/dashboard', label: 'Previewer' },
-  { href: '/profile', label: 'Profile' },
+  { href: '/profile', label: 'CV editor' },
   { href: '/achievements', label: 'Achievements' },
   { href: '/vacancies', label: 'Vacancies' },
 ];
@@ -51,12 +52,26 @@ export function AppNav({ cvs, selectedCvId }: Props) {
   const sourceOptions = useMemo(() => cvs, [cvs]);
 
   const { execute: selectCv, isExecuting: switchingCv } = useAction(setSelectedCvAction, {
-    onSuccess: () => router.refresh(),
+    onSuccess: ({ input }) => {
+      const nextCvId = input?.cvId;
+      if (nextCvId) {
+        const previewStore = usePreviewStore.getState();
+        previewStore.setPreviewTarget({ cvId: nextCvId });
+        void previewStore.markPreviewDirty();
+      }
+      router.refresh();
+    },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to switch CV.'),
   });
 
   const { execute: createCv, isExecuting: creatingCv } = useAction(createCvAction, {
-    onSuccess: () => {
+    onSuccess: ({ data }) => {
+      const createdCvId = data?.cv?.id;
+      if (createdCvId) {
+        const previewStore = usePreviewStore.getState();
+        previewStore.setPreviewTarget({ cvId: createdCvId });
+        void previewStore.markPreviewDirty();
+      }
       setIsCreateOpen(false);
       setNewTitle('');
       setSourceCvId('');

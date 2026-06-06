@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import type { SkillRow } from '@/features/profile/controllers/get-profile-children';
+import type { SkillRow } from '@/features/cv/controllers/get-cv-children';
 
 import { deleteProfileChild, updateProfileSection } from '../actions/update-profile-section';
 import type { SkillInput } from '../schemas';

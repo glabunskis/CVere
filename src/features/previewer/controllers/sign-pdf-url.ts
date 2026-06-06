@@ -16,7 +16,3 @@ export async function signPdfUrl(path: string | null): Promise<string | null> {
   }
   return data.signedUrl;
 }
-
-export async function signMasterUrl(path: string | null): Promise<string | null> {
-  return signPdfUrl(path);
-}

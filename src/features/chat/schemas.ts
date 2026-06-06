@@ -23,7 +23,16 @@ import {
 // Style tools
 // =============================================================================
 
+const optionalCvIdSchema = z
+  .uuid()
+  .optional()
+  .describe(
+    'Optional CV id. Omit to target the user\'s selected CV. Pass a specific id only ' +
+      'when the user names a different CV explicitly.',
+  );
+
 export const setTemplateInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   template: cvTemplateSchema.describe(
     'The CV template to apply. "single-column" is the default; "two-column" splits ' +
       'sidebar content (skills, education, certifications) from the main column.',
@@ -31,6 +40,7 @@ export const setTemplateInputSchema = z.object({
 });
 
 export const setAccentHexInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   hex: accentHexSchema.describe(
     'A 6-digit hex color (with leading "#"), e.g. "#0066CC". Used for the CV ' +
       'accent (headings, dividers).',
@@ -38,6 +48,7 @@ export const setAccentHexInputSchema = z.object({
 });
 
 export const setEducationDateFormatInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   format: cvDateFormatSchema.describe(
     'Date format used for education entries: "year" (2024), "mm_yyyy" (03/2024), ' +
       '"mon_yyyy" (Mar 2024), or "mon_d_yyyy" (Mar 5, 2024).',
@@ -45,6 +56,7 @@ export const setEducationDateFormatInputSchema = z.object({
 });
 
 export const setCertificationDateFormatInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   format: cvDateFormatSchema.describe(
     'Date format used for certification entries. Same options as the education ' +
       'date format.',
@@ -58,29 +70,24 @@ export const setCertificationDateFormatInputSchema = z.object({
 export const readProfileInputSchema = z.object({});
 
 export const rewriteSummaryInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   summary: z
     .string()
     .min(1)
     .max(2000)
     .describe(
-      'New profile summary (1–3 sentences). English. Concrete language; never ' +
-        'invent facts or metrics that the profile does not include.',
+      'New CV summary (1–3 sentences). English. Concrete language; never invent facts ' +
+        'or metrics that the CV does not already include.',
     ),
 });
 
 const experienceIdSchema = z
   .uuid()
-  .describe(
-    'The UUID of the target experience entry. Get this from `readProfile`; never ' +
-      'invent an id.',
-  );
+  .describe('UUID of the target experience entry. Get it from `readProfile`; never invent ids.');
 
 const projectIdSchema = z
   .uuid()
-  .describe(
-    'The UUID of the target project entry. Get this from `readProfile`; never ' +
-      'invent an id.',
-  );
+  .describe('UUID of the target project entry. Get it from `readProfile`; never invent ids.');
 
 const bulletIndexSchema = z
   .int()
@@ -106,35 +113,41 @@ const optionalBulletInsertIndexSchema = z
   );
 
 export const editExperienceBulletInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   experienceId: experienceIdSchema,
   index: bulletIndexSchema,
   text: bulletTextSchema,
 });
 
 export const addExperienceBulletInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   experienceId: experienceIdSchema,
   text: bulletTextSchema,
   index: optionalBulletInsertIndexSchema,
 });
 
 export const removeExperienceBulletInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   experienceId: experienceIdSchema,
   index: bulletIndexSchema,
 });
 
 export const editProjectBulletInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   projectId: projectIdSchema,
   index: bulletIndexSchema,
   text: bulletTextSchema,
 });
 
 export const addProjectBulletInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   projectId: projectIdSchema,
   text: bulletTextSchema,
   index: optionalBulletInsertIndexSchema,
 });
 
 export const removeProjectBulletInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   projectId: projectIdSchema,
   index: bulletIndexSchema,
 });
@@ -152,12 +165,14 @@ const toIndexSchema = z
   );
 
 export const moveExperienceBulletInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   experienceId: experienceIdSchema,
   fromIndex: fromIndexSchema,
   toIndex: toIndexSchema,
 });
 
 export const moveProjectBulletInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   projectId: projectIdSchema,
   fromIndex: fromIndexSchema,
   toIndex: toIndexSchema,
@@ -194,6 +209,7 @@ const newEntryBulletsSchema = z
   .describe('Optional initial bullets. Add more later via addExperienceBullet/addProjectBullet.');
 
 export const addExperienceInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   company: z.string().min(1).max(200).describe('Employer name. Required.'),
   role: z.string().min(1).max(200).describe('Job title. Required.'),
   location: optionalShortText(200),
@@ -209,6 +225,7 @@ export const addExperienceInputSchema = z.object({
 });
 
 export const editExperienceInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   experienceId: experienceIdSchema,
   company: z.string().min(1).max(200).optional(),
   role: z.string().min(1).max(200).optional(),
@@ -221,15 +238,18 @@ export const editExperienceInputSchema = z.object({
 });
 
 export const removeExperienceInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   experienceId: experienceIdSchema,
 });
 
 export const moveExperienceInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   experienceId: experienceIdSchema,
   toIndex: toIndexSchema,
 });
 
 export const addProjectInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   name: z.string().min(1).max(200).describe('Project name. Required.'),
   description: optionalShortText(2000),
   link: z.url().max(300).nullable().optional().describe('Optional project URL.'),
@@ -238,6 +258,7 @@ export const addProjectInputSchema = z.object({
 });
 
 export const editProjectInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   projectId: projectIdSchema,
   name: z.string().min(1).max(200).optional(),
   description: optionalShortText(2000),
@@ -246,10 +267,12 @@ export const editProjectInputSchema = z.object({
 });
 
 export const removeProjectInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   projectId: projectIdSchema,
 });
 
 export const moveProjectInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   projectId: projectIdSchema,
   toIndex: toIndexSchema,
 });
@@ -260,19 +283,19 @@ export const moveProjectInputSchema = z.object({
 
 const skillIdSchema = z
   .uuid()
-  .describe('The UUID of the target skill. Get this from `readProfile`; never invent an id.');
+  .describe('UUID of the target skill. Get it from `readProfile`; never invent ids.');
 
 const educationIdSchema = z
   .uuid()
-  .describe('The UUID of the target education entry. Get this from `readProfile`; never invent an id.');
+  .describe('UUID of the target education entry. Get it from `readProfile`; never invent ids.');
 
 const certificationIdSchema = z
   .uuid()
-  .describe('The UUID of the target certification. Get this from `readProfile`; never invent an id.');
+  .describe('UUID of the target certification. Get it from `readProfile`; never invent ids.');
 
 const languageIdSchema = z
   .uuid()
-  .describe('The UUID of the target language. Get this from `readProfile`; never invent an id.');
+  .describe('UUID of the target language. Get it from `readProfile`; never invent ids.');
 
 const chatSkillLevelSchema = skillLevelSchema
   .nullable()
@@ -289,25 +312,29 @@ const chatLanguageProficiencySchema = languageProficiencySchema
   );
 
 export const addSkillInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   name: z.string().min(1).max(120).describe('Skill name (e.g. "PostgreSQL"). Required.'),
   category: optionalShortText(80),
   level: chatSkillLevelSchema,
 });
 
 export const editSkillInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   skillId: skillIdSchema,
   name: z.string().min(1).max(120).optional(),
   category: optionalShortText(80),
   level: chatSkillLevelSchema,
 });
 
-export const removeSkillInputSchema = z.object({ skillId: skillIdSchema });
+export const removeSkillInputSchema = z.object({ cvId: optionalCvIdSchema, skillId: skillIdSchema });
 export const moveSkillInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   skillId: skillIdSchema,
   toIndex: toIndexSchema,
 });
 
 export const addEducationInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   institution: z.string().min(1).max(200).describe('School / university name. Required.'),
   degree: optionalShortText(200),
   field: optionalShortText(200),
@@ -317,6 +344,7 @@ export const addEducationInputSchema = z.object({
 });
 
 export const editEducationInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   educationId: educationIdSchema,
   institution: z.string().min(1).max(200).optional(),
   degree: optionalShortText(200),
@@ -326,13 +354,18 @@ export const editEducationInputSchema = z.object({
   summary: optionalShortText(2000),
 });
 
-export const removeEducationInputSchema = z.object({ educationId: educationIdSchema });
+export const removeEducationInputSchema = z.object({
+  cvId: optionalCvIdSchema,
+  educationId: educationIdSchema,
+});
 export const moveEducationInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   educationId: educationIdSchema,
   toIndex: toIndexSchema,
 });
 
 export const addCertificationInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   name: z.string().min(1).max(200).describe('Certification title. Required.'),
   issuer: optionalShortText(200),
   issuedAt: optionalIsoDateSchema,
@@ -341,6 +374,7 @@ export const addCertificationInputSchema = z.object({
 });
 
 export const editCertificationInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   certificationId: certificationIdSchema,
   name: z.string().min(1).max(200).optional(),
   issuer: optionalShortText(200),
@@ -350,26 +384,34 @@ export const editCertificationInputSchema = z.object({
 });
 
 export const removeCertificationInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   certificationId: certificationIdSchema,
 });
 export const moveCertificationInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   certificationId: certificationIdSchema,
   toIndex: toIndexSchema,
 });
 
 export const addLanguageInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   name: z.string().min(1).max(120).describe('Language name (e.g. "German"). Required.'),
   proficiency: chatLanguageProficiencySchema,
 });
 
 export const editLanguageInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   languageId: languageIdSchema,
   name: z.string().min(1).max(120).optional(),
   proficiency: chatLanguageProficiencySchema,
 });
 
-export const removeLanguageInputSchema = z.object({ languageId: languageIdSchema });
+export const removeLanguageInputSchema = z.object({
+  cvId: optionalCvIdSchema,
+  languageId: languageIdSchema,
+});
 export const moveLanguageInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   languageId: languageIdSchema,
   toIndex: toIndexSchema,
 });
@@ -379,6 +421,7 @@ export const moveLanguageInputSchema = z.object({
 // =============================================================================
 
 export const setFullNameInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   fullName: z
     .string()
     .max(160)
@@ -387,6 +430,7 @@ export const setFullNameInputSchema = z.object({
 });
 
 export const setLocationInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   location: z
     .string()
     .max(160)
@@ -395,6 +439,7 @@ export const setLocationInputSchema = z.object({
 });
 
 export const setPhoneInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   phone: z
     .string()
     .max(40)
@@ -403,6 +448,7 @@ export const setPhoneInputSchema = z.object({
 });
 
 export const setContactEmailInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   contactEmail: z
     .email()
     .max(200)
@@ -412,6 +458,7 @@ export const setContactEmailInputSchema = z.object({
 
 export const setLinksInputSchema = z
   .object({
+    cvId: optionalCvIdSchema,
     linkedinUrl: z
       .url()
       .max(300)
@@ -448,6 +495,7 @@ export const setLinksInputSchema = z
 export const listPendingAchievementsInputSchema = z.object({});
 
 export const integrateAchievementInputSchema = z.object({
+  cvId: optionalCvIdSchema,
   achievementId: z
     .uuid()
     .describe('UUID of the achievement to integrate. Get it from `listPendingAchievements`.'),
@@ -490,12 +538,6 @@ export const previewDirtyDataSchema = z.object({
 
 export type PreviewDirtyData = z.infer<typeof previewDirtyDataSchema>;
 
-export const previewSwitchDataSchema = z.object({
-  cvId: z.uuid(),
-});
-
-export type PreviewSwitchData = z.infer<typeof previewSwitchDataSchema>;
-
 export const sessionTitleDataSchema = z.object({
   sessionId: z.uuid(),
   title: z.string().min(1).max(80),
@@ -535,14 +577,6 @@ export const chatPostBodySchema = z.object({
         })
         .nullable()
         .optional(),
-      workspace: z
-        .object({
-          kind: z.literal('interview'),
-          refId: z.uuid(),
-        })
-        .nullable()
-        .optional(),
-      recentVacancyId: z.uuid().optional(),
     })
     .optional(),
 });

@@ -1,17 +1,17 @@
 import { tool } from 'ai';
 
-import { buildProfileSnapshot } from '@/features/chat/profile-snapshot';
+import { getCvChildren } from '@/features/cv/controllers/get-cv-children';
+import { buildCvSnapshot } from '@/features/cv/cv-snapshot';
 import {
   addExperienceBullet,
   addProjectBullet,
   editExperienceBullet,
   editProjectBullet,
+  getCv,
   removeExperienceBullet,
   removeProjectBullet,
   updateSummary,
-} from '@/features/chat/services/profile-content-service';
-import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
-import { getProfileChildren } from '@/features/profile/controllers/get-profile-children';
+} from '@/features/cv/services/cv-service';
 import { logger } from '@/libs/logger';
 import type { User } from '@supabase/supabase-js';
 
@@ -30,26 +30,24 @@ import 'server-only';
 
 /**
  * Content tools for the chat agent. Tools delegate to the shared
- * `profile-content-service` helpers; nothing here renders the PDF (the route
+ * CV service helpers; nothing here renders the PDF (the route
  * does that once per assistant turn after the stream finishes).
  *
  * Outputs are short human-readable strings. `readProfile` is the exception —
  * it returns the structured `aiProfileSchema` snapshot so the model can use
  * the UUIDs when calling mutating tools afterwards.
  */
-export function buildContentTools(user: User) {
+export function buildContentTools(user: User, activeCvId: string) {
   return {
     readProfile: tool({
       description:
-        'Snapshot the user\'s master CV profile. Always call this before editing ' +
-        'experience or project bullets — the returned UUIDs are required inputs ' +
-        'for the edit/add/remove tools.',
+        'Return a snapshot of the selected CV (summary, entries, ids, ordering). ' +
+        'Call this before editing existing items so ids and indices are current.',
       inputSchema: readProfileInputSchema,
       execute: async () => {
-        const profile = await getOrCreateProfile();
-        if (!profile) throw new Error('Profile not available.');
-        const children = await getProfileChildren(profile.id);
-        const snapshot = buildProfileSnapshot(profile.summary, children);
+        const cv = await getCv(activeCvId, user.id);
+        const children = await getCvChildren(activeCvId);
+        const snapshot = buildCvSnapshot(cv.summary, children);
         logger.info({ userId: user.id }, 'chat-tool readProfile');
         return snapshot;
       },
@@ -57,23 +55,26 @@ export function buildContentTools(user: User) {
 
     rewriteSummary: tool({
       description:
-        'Replace the user\'s profile summary with a new one. Keep it concrete, ' +
-        'English, and based on facts already in the profile.',
+        'Replace the CV summary. Keep it concrete, English, and based on facts ' +
+        'already in the CV. Omit cvId to target the selected CV.',
       inputSchema: rewriteSummaryInputSchema,
-      execute: async ({ summary }) => {
-        await updateSummary({ user, summary });
+      execute: async ({ cvId, summary }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await updateSummary({ user, cvId: targetCvId, summary });
         logger.info({ userId: user.id }, 'chat-tool rewriteSummary');
-        return 'Updated profile summary.';
+        return 'Updated CV summary.';
       },
     }),
 
     editExperienceBullet: tool({
       description:
-        'Replace one bullet in an experience entry. Use `readProfile` first to ' +
-        'find the experience UUID and the current bullet at the index you want.',
+        'Replace one bullet in an experience entry. Call `readProfile` first to ' +
+        'find the experience UUID and the current bullet at the index you want. ' +
+        'Omit cvId to target the selected CV.',
       inputSchema: editExperienceBulletInputSchema,
-      execute: async ({ experienceId, index, text }) => {
-        await editExperienceBullet({ user, experienceId, index, text });
+      execute: async ({ cvId, experienceId, index, text }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await editExperienceBullet({ user, cvId: targetCvId, experienceId, index, text });
         logger.info(
           { userId: user.id, experienceId, index },
           'chat-tool editExperienceBullet',
@@ -85,10 +86,11 @@ export function buildContentTools(user: User) {
     addExperienceBullet: tool({
       description:
         'Add a new bullet to an experience entry. Omit `index` to append at the ' +
-        'end. Maximum 50 bullets per entry.',
+        'end. Maximum 50 bullets per entry. Omit cvId to target the selected CV.',
       inputSchema: addExperienceBulletInputSchema,
-      execute: async ({ experienceId, text, index }) => {
-        await addExperienceBullet({ user, experienceId, text, index });
+      execute: async ({ cvId, experienceId, text, index }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await addExperienceBullet({ user, cvId: targetCvId, experienceId, text, index });
         logger.info(
           { userId: user.id, experienceId, index: index ?? null },
           'chat-tool addExperienceBullet',
@@ -101,10 +103,12 @@ export function buildContentTools(user: User) {
 
     removeExperienceBullet: tool({
       description:
-        'Remove one bullet from an experience entry by 0-based index.',
+        'Remove one bullet from an experience entry by 0-based index. Omit cvId ' +
+        'to target the selected CV.',
       inputSchema: removeExperienceBulletInputSchema,
-      execute: async ({ experienceId, index }) => {
-        await removeExperienceBullet({ user, experienceId, index });
+      execute: async ({ cvId, experienceId, index }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await removeExperienceBullet({ user, cvId: targetCvId, experienceId, index });
         logger.info(
           { userId: user.id, experienceId, index },
           'chat-tool removeExperienceBullet',
@@ -115,11 +119,13 @@ export function buildContentTools(user: User) {
 
     editProjectBullet: tool({
       description:
-        'Replace one bullet in a project entry. Use `readProfile` first to find ' +
-        'the project UUID and the current bullet at the index you want.',
+        'Replace one bullet in a project entry. Call `readProfile` first to find ' +
+        'the project UUID and the current bullet at the index you want. Omit cvId ' +
+        'to target the selected CV.',
       inputSchema: editProjectBulletInputSchema,
-      execute: async ({ projectId, index, text }) => {
-        await editProjectBullet({ user, projectId, index, text });
+      execute: async ({ cvId, projectId, index, text }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await editProjectBullet({ user, cvId: targetCvId, projectId, index, text });
         logger.info(
           { userId: user.id, projectId, index },
           'chat-tool editProjectBullet',
@@ -131,10 +137,11 @@ export function buildContentTools(user: User) {
     addProjectBullet: tool({
       description:
         'Add a new bullet to a project entry. Omit `index` to append at the end. ' +
-        'Maximum 50 bullets per entry.',
+        'Maximum 50 bullets per entry. Omit cvId to target the selected CV.',
       inputSchema: addProjectBulletInputSchema,
-      execute: async ({ projectId, text, index }) => {
-        await addProjectBullet({ user, projectId, text, index });
+      execute: async ({ cvId, projectId, text, index }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await addProjectBullet({ user, cvId: targetCvId, projectId, text, index });
         logger.info(
           { userId: user.id, projectId, index: index ?? null },
           'chat-tool addProjectBullet',
@@ -146,10 +153,13 @@ export function buildContentTools(user: User) {
     }),
 
     removeProjectBullet: tool({
-      description: 'Remove one bullet from a project entry by 0-based index.',
+      description:
+        'Remove one bullet from a project entry by 0-based index. Omit cvId to ' +
+        'target the selected CV.',
       inputSchema: removeProjectBulletInputSchema,
-      execute: async ({ projectId, index }) => {
-        await removeProjectBullet({ user, projectId, index });
+      execute: async ({ cvId, projectId, index }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await removeProjectBullet({ user, cvId: targetCvId, projectId, index });
         logger.info(
           { userId: user.id, projectId, index },
           'chat-tool removeProjectBullet',
@@ -170,67 +180,3 @@ export const CONTENT_TOOL_NAMES = [
   'addProjectBullet',
   'removeProjectBullet',
 ] as const;
-
-/**
- * Tool names that mutate CV data. The chat route uses this set to mark which
- * preview targets became dirty during a turn, then re-renders those targets
- * once at stream finish. Read-only and housekeeping tools are intentionally
- * excluded.
- *
- * Kept flat (single set) on purpose — sessions are generic in Phase 3+, so
- * every tool registers on every session and tool gating belongs in the tool
- * implementations themselves, not here.
- */
-export const MUTATING_TOOLS: ReadonlySet<string> = new Set([
-  // Summary + bullet ops (content-tools)
-  'rewriteSummary',
-  'editExperienceBullet',
-  'addExperienceBullet',
-  'removeExperienceBullet',
-  'editProjectBullet',
-  'addProjectBullet',
-  'removeProjectBullet',
-  // Bullet move (entry-tools)
-  'moveExperienceBullet',
-  'moveProjectBullet',
-  // Entry lifecycle (entry-tools)
-  'addExperience',
-  'editExperience',
-  'removeExperience',
-  'moveExperience',
-  'addProject',
-  'editProject',
-  'removeProject',
-  'moveProject',
-  // Section CRUD (section-tools)
-  'addSkill',
-  'editSkill',
-  'removeSkill',
-  'moveSkill',
-  'addEducation',
-  'editEducation',
-  'removeEducation',
-  'moveEducation',
-  'addCertification',
-  'editCertification',
-  'removeCertification',
-  'moveCertification',
-  'addLanguage',
-  'editLanguage',
-  'removeLanguage',
-  'moveLanguage',
-  // Identity / contact (identity-tools)
-  'setFullName',
-  'setLocation',
-  'setPhone',
-  'setContactEmail',
-  'setLinks',
-  // Achievement integration (achievement-tools) — re-renders because section inserts land
-  'integrateAchievement',
-  // Style (style-tools)
-  'setTemplate',
-  'setAccentHex',
-  'setEducationDateFormat',
-  'setCertificationDateFormat',
-
-]);

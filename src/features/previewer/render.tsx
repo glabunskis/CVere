@@ -1,5 +1,5 @@
-import { buildProfileSnapshot } from '@/features/chat/profile-snapshot';
-import { getProfileChildren } from '@/features/profile/controllers/get-profile-children';
+import { getCvChildren } from '@/features/cv/controllers/get-cv-children';
+import { buildCvSnapshot } from '@/features/cv/cv-snapshot';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 import { Cv } from '@/pdf/Cv';
 import type { ProfileContact } from '@/pdf/primitives';
@@ -51,8 +51,8 @@ export async function renderAndUploadCv({
   if (cvError) throw new Error(cvError.message);
   if (!cv) throw new Error(`CV ${cvId} not found.`);
 
-  const children = await getProfileChildren(cv.id);
-  const snapshot = buildProfileSnapshot(cv.summary, children);
+  const children = await getCvChildren(cv.id);
+  const snapshot = buildCvSnapshot(cv.summary, children);
 
   const userMetadata = (user.user_metadata ?? {}) as { full_name?: string };
   const identity = cv.full_name ?? userMetadata.full_name ?? user.email ?? '[MISSING] name';

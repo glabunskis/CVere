@@ -127,12 +127,6 @@ export function ChatMessage({ message, isStreamingLastAssistant = false }: Props
             return null;
           }
 
-          if (part.type === 'data-preview-switch') {
-            // Side-channel: preview target switch (e.g. createTailoredCv).
-            // Applied in the chat panel `onData` handler, not rendered inline.
-            return null;
-          }
-
           if (part.type === 'data-session-title') {
             // Side-channel: async session title update for the rail.
             return null;

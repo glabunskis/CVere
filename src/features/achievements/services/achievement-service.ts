@@ -2,19 +2,55 @@ import type { z } from 'zod';
 
 import type { AchievementRow } from '@/features/achievements/controllers/list-achievements';
 import type { achievementSectionSchema } from '@/features/achievements/schemas';
-import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
+import { getCv, getSelectedCv } from '@/features/cv/services/cv-service';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 import type { User } from '@supabase/supabase-js';
 
 import 'server-only';
 
 export type AchievementSection = z.infer<typeof achievementSectionSchema>;
+const MAX_SECTION_ROWS = 50;
+
+type OrderedTable = 'experience' | 'project' | 'skill' | 'education' | 'certification' | 'language';
 
 export class AchievementError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'AchievementError';
   }
+}
+
+async function assertCapAndNextPosition({
+  supabase,
+  userId,
+  cvId,
+  table,
+}: {
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  userId: string;
+  cvId: string;
+  table: OrderedTable;
+}): Promise<number> {
+  const { count, error: countError } = await supabase
+    .from(table)
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('cv_id', cvId);
+  if (countError) throw new AchievementError(countError.message);
+  if ((count ?? 0) >= MAX_SECTION_ROWS) {
+    throw new AchievementError(`Cannot exceed ${MAX_SECTION_ROWS} ${table} entries.`);
+  }
+
+  const { data, error } = await supabase
+    .from(table)
+    .select('position')
+    .eq('user_id', userId)
+    .eq('cv_id', cvId)
+    .order('position', { ascending: false })
+    .limit(1);
+  if (error) throw new AchievementError(error.message);
+  if (!data || data.length === 0) return 0;
+  return data[0].position + 1;
 }
 
 export type IntegrateResult = {
@@ -34,10 +70,12 @@ export type IntegrateResult = {
  */
 export async function integrateAchievementById({
   user,
+  cvId,
   achievementId,
   targetSectionOverride,
 }: {
   user: User;
+  cvId?: string;
   achievementId: string;
   targetSectionOverride?: AchievementSection;
 }): Promise<IntegrateResult> {
@@ -60,28 +98,33 @@ export async function integrateAchievementById({
       'No target section set on this achievement. Pass targetSection explicitly.',
     );
   }
-  const profile = await getOrCreateProfile();
-  if (!profile) throw new AchievementError('Profile not available.');
+  const cv = cvId ? await getCv(cvId, user.id) : await getSelectedCv(user.id);
 
   if (entry.status === 'integrated') {
-    return { alreadyIntegrated: true, targetSection, entryText: entry.raw_text, cvId: profile.id };
+    return { alreadyIntegrated: true, targetSection, entryText: entry.raw_text, cvId: cv.id };
   }
 
   const text = (entry.normalized_text ?? entry.raw_text).trim();
 
   if (targetSection === 'summary') {
-    const next = [profile.summary?.trim(), text].filter(Boolean).join('\n\n');
+    const next = [cv.summary?.trim(), text].filter(Boolean).join('\n\n');
     const { error } = await supabase
       .from('cv')
       .update({ summary: next })
-      .eq('id', profile.id)
+      .eq('id', cv.id)
       .eq('user_id', user.id);
     if (error) throw new AchievementError(error.message);
   } else if (targetSection === 'experience') {
+    const nextPosition = await assertCapAndNextPosition({
+      supabase,
+      userId: user.id,
+      cvId: cv.id,
+      table: 'experience',
+    });
     const { error } = await supabase.from('experience').insert({
       user_id: user.id,
-      cv_id: profile.id,
-      position: 0,
+      cv_id: cv.id,
+      position: nextPosition,
       company: '[MISSING] company',
       role: '[MISSING] role',
       bullets: [text],
@@ -89,10 +132,16 @@ export async function integrateAchievementById({
     });
     if (error) throw new AchievementError(error.message);
   } else if (targetSection === 'project') {
+    const nextPosition = await assertCapAndNextPosition({
+      supabase,
+      userId: user.id,
+      cvId: cv.id,
+      table: 'project',
+    });
     const { error } = await supabase.from('project').insert({
       user_id: user.id,
-      cv_id: profile.id,
-      position: 0,
+      cv_id: cv.id,
+      position: nextPosition,
       name: text.slice(0, 60),
       description: text,
       bullets: [],
@@ -100,35 +149,59 @@ export async function integrateAchievementById({
     });
     if (error) throw new AchievementError(error.message);
   } else if (targetSection === 'skill') {
+    const nextPosition = await assertCapAndNextPosition({
+      supabase,
+      userId: user.id,
+      cvId: cv.id,
+      table: 'skill',
+    });
     const { error } = await supabase.from('skill').insert({
       user_id: user.id,
-      cv_id: profile.id,
-      position: 0,
+      cv_id: cv.id,
+      position: nextPosition,
       name: text.slice(0, 80),
     });
     if (error) throw new AchievementError(error.message);
   } else if (targetSection === 'education') {
+    const nextPosition = await assertCapAndNextPosition({
+      supabase,
+      userId: user.id,
+      cvId: cv.id,
+      table: 'education',
+    });
     const { error } = await supabase.from('education').insert({
       user_id: user.id,
-      cv_id: profile.id,
-      position: 0,
+      cv_id: cv.id,
+      position: nextPosition,
       institution: '[MISSING] institution',
       summary: text,
     });
     if (error) throw new AchievementError(error.message);
   } else if (targetSection === 'certification') {
+    const nextPosition = await assertCapAndNextPosition({
+      supabase,
+      userId: user.id,
+      cvId: cv.id,
+      table: 'certification',
+    });
     const { error } = await supabase.from('certification').insert({
       user_id: user.id,
-      cv_id: profile.id,
-      position: 0,
+      cv_id: cv.id,
+      position: nextPosition,
       name: text.slice(0, 200),
     });
     if (error) throw new AchievementError(error.message);
   } else if (targetSection === 'language') {
+    const nextPosition = await assertCapAndNextPosition({
+      supabase,
+      userId: user.id,
+      cvId: cv.id,
+      table: 'language',
+    });
     const { error } = await supabase.from('language').insert({
       user_id: user.id,
-      cv_id: profile.id,
-      position: 0,
+      cv_id: cv.id,
+      position: nextPosition,
       name: text.slice(0, 80),
     });
     if (error) throw new AchievementError(error.message);
@@ -145,7 +218,7 @@ export async function integrateAchievementById({
     .eq('user_id', user.id);
   if (updateError) throw new AchievementError(updateError.message);
 
-  return { alreadyIntegrated: false, targetSection, entryText: text, cvId: profile.id };
+  return { alreadyIntegrated: false, targetSection, entryText: text, cvId: cv.id };
 }
 
 export async function dismissAchievementById({

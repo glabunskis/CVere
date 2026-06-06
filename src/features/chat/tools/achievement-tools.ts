@@ -24,7 +24,7 @@ const MAX_LIST_PREVIEW = 240;
  * prompt requires an explicit user confirmation before `integrateAchievement`
  * runs — the tool itself just persists.
  */
-export function buildAchievementTools(user: User) {
+export function buildAchievementTools(user: User, activeCvId: string) {
   return {
     listPendingAchievements: tool({
       description:
@@ -50,11 +50,14 @@ export function buildAchievementTools(user: User) {
       description:
         'Apply a pending achievement to a CV section. Only call this AFTER the user has ' +
         'explicitly confirmed both the achievement id and the target section. Allowed sections: ' +
-        '"summary", "experience", "project", "skill", "education", "certification", "language".',
+        '"summary", "experience", "project", "skill", "education", "certification", "language". ' +
+        'Omit cvId to target the selected CV.',
       inputSchema: integrateAchievementInputSchema,
-      execute: async ({ achievementId, targetSection }) => {
+      execute: async ({ cvId, achievementId, targetSection }) => {
+        const targetCvId = cvId ?? activeCvId;
         const result = await integrateAchievementById({
           user,
+          cvId: targetCvId,
           achievementId,
           targetSectionOverride: targetSection,
         });

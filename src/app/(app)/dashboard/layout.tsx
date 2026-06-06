@@ -1,13 +1,11 @@
 import type { PropsWithChildren } from 'react';
 
 import { getSession } from '@/features/account/controllers/get-session';
+import { getSelectedCv } from '@/features/cv/services/cv-service';
 import { PreviewStoreProvider } from '@/features/previewer/components/preview-store-provider';
 import { PreviewerPane } from '@/features/previewer/components/previewer-pane';
-import { getOrCreateCvPreferences } from '@/features/previewer/controllers/get-cv-preferences';
-import { resolveInitialPreviewTarget } from '@/features/previewer/controllers/resolve-preview-target';
-import { signPdfUrl } from '@/features/previewer/controllers/sign-master-url';
+import { signPdfUrl } from '@/features/previewer/controllers/sign-pdf-url';
 import { ensureCvPdfPath } from '@/features/previewer/render';
-import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 
 export default async function DashboardLayout({ children }: PropsWithChildren) {
   const user = await getSession();
@@ -15,22 +13,12 @@ export default async function DashboardLayout({ children }: PropsWithChildren) {
     return <>{children}</>;
   }
 
-  const prefs = await getOrCreateCvPreferences();
-  const initialPreviewTarget = await resolveInitialPreviewTarget({
-    userId: user.id,
-    preferences: prefs,
-  });
-  const supabase = await createSupabaseServerClient();
-  const { data: cvRow } = await supabase
-    .from('cv')
-    .select('pdf_path')
-    .eq('id', initialPreviewTarget.cvId)
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const selectedCv = await getSelectedCv(user.id);
+  const initialPreviewTarget = { cvId: selectedCv.id };
   const pdfPath = await ensureCvPdfPath({
     user,
-    cvId: initialPreviewTarget.cvId,
-    existingPath: cvRow?.pdf_path ?? null,
+    cvId: selectedCv.id,
+    existingPath: selectedCv.pdf_path ?? null,
   });
   const signedUrl = await signPdfUrl(pdfPath);
 

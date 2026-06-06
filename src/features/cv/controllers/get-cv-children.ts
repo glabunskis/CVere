@@ -19,7 +19,7 @@ export type ProfileChildren = {
   language: LanguageRow[];
 };
 
-export async function getProfileChildren(cvId: string): Promise<ProfileChildren> {
+export async function getCvChildren(cvId: string): Promise<ProfileChildren> {
   const supabase = await createSupabaseServerClient();
 
   const [experience, project, skill, education, certification, language] = await Promise.all([

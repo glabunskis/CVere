@@ -10,9 +10,8 @@ import {
   setLastActiveSession,
 } from '@/features/chat/storage/chat-session-store';
 import type { ChatUIMessage } from '@/features/chat/types';
-import { listCvs } from '@/features/cv-library/controllers/list-cvs';
+import { listCvs } from '@/features/cv/controllers/list-cv-library';
 import { PreviewerSidebar } from '@/features/previewer/components/previewer-sidebar';
-import { getOrCreateCvPreferences } from '@/features/previewer/controllers/get-cv-preferences';
 
 type DashboardPageProps = {
   searchParams:
@@ -35,15 +34,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     );
   }
 
-  const prefs = await getOrCreateCvPreferences();
-  if (!prefs) {
-    return (
-      <section className='py-10 text-center text-sm text-muted-foreground'>
-        We couldn&apos;t initialize your CV preferences. Please refresh.
-      </section>
-    );
-  }
-
   const resolvedSearchParams = await searchParams;
   const { session: requestedSessionId, prefill } = loadDashboardSearchParams(resolvedSearchParams);
 
@@ -51,7 +41,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ? await getSessionById(user.id, requestedSessionId)
     : null;
   const activeSession = requestedSession ?? (await getOrCreateDefaultSession(user.id));
-  if (requestedSession && prefs.last_active_session_id !== requestedSession.id) {
+  if (requestedSession) {
     await setLastActiveSession(user.id, requestedSession.id);
   }
 
@@ -74,6 +64,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   return (
     <PreviewerSidebar
+      selectedCvId={selectedCv.id}
       template={selectedCv.template}
       accentHex={selectedCv.accentHex}
       educationDateFormat={selectedCv.educationDateFormat}

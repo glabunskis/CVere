@@ -1,7 +1,6 @@
-import type { ProfileRow } from '@/features/profile/controllers/get-profile';
+import type { ProfileChildren } from '@/features/cv/controllers/get-cv-children';
+import type { CvRow } from '@/features/cv/services/cv-service';
 import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT } from '@/utils/format-date';
-
-import type { ProfileChildren } from '../controllers/get-profile-children';
 
 import { CertificationEditor } from './certification-editor';
 import { ContactEditor } from './contact-editor';
@@ -13,7 +12,7 @@ import { SkillEditor } from './skill-editor';
 import { SummaryEditor } from './summary-editor';
 
 type ContactProfile = Pick<
-  ProfileRow,
+  CvRow,
   'full_name' | 'location' | 'phone' | 'contact_email' | 'linkedin_url' | 'github_url' | 'website_url'
 >;
 

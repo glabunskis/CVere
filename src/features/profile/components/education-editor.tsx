@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import type { EducationRow } from '@/features/profile/controllers/get-profile-children';
+import type { EducationRow } from '@/features/cv/controllers/get-cv-children';
 import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/utils/format-date';
 
 import { deleteProfileChild, updateProfileSection } from '../actions/update-profile-section';

@@ -27,7 +27,7 @@ import {
   renameCvAction,
   setSelectedCvAction,
 } from '@/features/cv/actions/cv-actions';
-import type { CvLibraryData, CvLibraryItem } from '@/features/cv-library/controllers/list-cvs';
+import type { CvLibraryData, CvLibraryItem } from '@/features/cv/controllers/list-cv-library';
 import { usePreviewStore } from '@/features/previewer/stores/preview-store';
 
 import { CvRow } from './cv-row';
@@ -99,7 +99,7 @@ export function CvLibraryPanel({ library }: Props) {
                 title={row.title}
                 meta={row.jobDescriptionLabel}
                 updatedAt={row.updatedAt}
-                isActive={previewTarget.cvId === row.id || library.selectedCvId === row.id}
+                isActive={previewTarget?.cvId === row.id || library.selectedCvId === row.id}
                 onOpen={() => selectCv({ cvId: row.id })}
                 actions={
                   <DropdownMenu>

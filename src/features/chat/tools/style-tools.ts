@@ -1,7 +1,6 @@
 import { tool } from 'ai';
 
 import {
-  getSelectedCv,
   setAccentHex,
   setDateFormat,
   setTemplate,
@@ -26,16 +25,16 @@ import 'server-only';
  * Outputs are short human-readable strings; the model surfaces them in its
  * end-of-turn summary.
  */
-export function buildStyleTools(user: User) {
+export function buildStyleTools(user: User, activeCvId: string) {
   return {
     setTemplate: tool({
       description:
-        'Switch the selected CV template. "single-column" is the standard layout. ' +
-        '"two-column" puts skills, education, and certifications in a sidebar.',
+        'Switch the CV template. "single-column" is the standard layout; "two-column" puts ' +
+        'skills, education, and certifications in a sidebar. Omit cvId to target the selected CV.',
       inputSchema: setTemplateInputSchema,
-      execute: async ({ template }) => {
-        const cv = await getSelectedCv(user.id);
-        await setTemplate({ userId: user.id, cvId: cv.id, template });
+      execute: async ({ cvId, template }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await setTemplate({ userId: user.id, cvId: targetCvId, template });
         logger.info({ userId: user.id, template }, 'chat-tool setTemplate');
         return `Set template to ${template}.`;
       },
@@ -43,12 +42,12 @@ export function buildStyleTools(user: User) {
 
     setAccentHex: tool({
       description:
-        'Set the selected CV accent color. Accepts a 6-digit hex like "#0066CC". ' +
-        'Used for headings and dividers.',
+        'Set the CV accent color. Accepts a 6-digit hex like "#0066CC". Used for headings ' +
+        'and dividers. Omit cvId to target the selected CV.',
       inputSchema: setAccentHexInputSchema,
-      execute: async ({ hex }) => {
-        const cv = await getSelectedCv(user.id);
-        await setAccentHex({ userId: user.id, cvId: cv.id, accentHex: hex });
+      execute: async ({ cvId, hex }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await setAccentHex({ userId: user.id, cvId: targetCvId, accentHex: hex });
         logger.info({ userId: user.id, accentHex: hex }, 'chat-tool setAccentHex');
         return `Set accent color to ${hex}.`;
       },
@@ -56,14 +55,14 @@ export function buildStyleTools(user: User) {
 
     setEducationDateFormat: tool({
       description:
-        'Pick how education entry dates are rendered: "year", "mm_yyyy", ' +
-        '"mon_yyyy", or "mon_d_yyyy".',
+        'Pick how education entry dates are rendered: "year", "mm_yyyy", "mon_yyyy", or ' +
+        '"mon_d_yyyy". Omit cvId to target the selected CV.',
       inputSchema: setEducationDateFormatInputSchema,
-      execute: async ({ format }) => {
-        const cv = await getSelectedCv(user.id);
+      execute: async ({ cvId, format }) => {
+        const targetCvId = cvId ?? activeCvId;
         await setDateFormat({
           userId: user.id,
-          cvId: cv.id,
+          cvId: targetCvId,
           section: 'education',
           format,
         });
@@ -77,14 +76,14 @@ export function buildStyleTools(user: User) {
 
     setCertificationDateFormat: tool({
       description:
-        'Pick how certification entry dates are rendered: "year", "mm_yyyy", ' +
-        '"mon_yyyy", or "mon_d_yyyy".',
+        'Pick how certification entry dates are rendered: "year", "mm_yyyy", "mon_yyyy", or ' +
+        '"mon_d_yyyy". Omit cvId to target the selected CV.',
       inputSchema: setCertificationDateFormatInputSchema,
-      execute: async ({ format }) => {
-        const cv = await getSelectedCv(user.id);
+      execute: async ({ cvId, format }) => {
+        const targetCvId = cvId ?? activeCvId;
         await setDateFormat({
           userId: user.id,
-          cvId: cv.id,
+          cvId: targetCvId,
           section: 'certification',
           format,
         });

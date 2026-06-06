@@ -3,7 +3,7 @@ import type { PropsWithChildren } from 'react';
 
 import { Separator } from '@/components/ui/separator';
 import { getSession } from '@/features/account/controllers/get-session';
-import { listCvs } from '@/features/cv-library/controllers/list-cvs';
+import { listCvs } from '@/features/cv/controllers/list-cv-library';
 
 import { AppNav } from './_components/app-nav';
 

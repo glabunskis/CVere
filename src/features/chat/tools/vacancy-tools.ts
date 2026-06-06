@@ -16,7 +16,7 @@ const MAX_VACANCY_TEXT = 20_000;
  *
  * If a lookup fails, tools throw and let the assistant recover naturally.
  */
-export function buildVacancyTools(user: User) {
+export function buildVacancyTools(user: User, _activeCvId: string) {
   return {
     listVacancies: tool({
       description:

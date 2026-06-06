@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const TOOL_LABELS: Record<string, string> = {
-  readProfile: 'Read profile',
+  readProfile: 'Read CV',
   rewriteSummary: 'Rewrite summary',
   // Experience bullets
   editExperienceBullet: 'Edit experience bullet',

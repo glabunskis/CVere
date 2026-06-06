@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 
-import { updateProfileIdentity } from '@/features/chat/services/profile-content-service';
+import { updateProfileIdentity } from '@/features/cv/services/cv-service';
 import { logger } from '@/libs/logger';
 import type { User } from '@supabase/supabase-js';
 
@@ -20,15 +20,16 @@ import 'server-only';
  * the model to edit identity fields when the user asks; previously this was
  * forbidden because no tools existed.
  */
-export function buildIdentityTools(user: User) {
+export function buildIdentityTools(user: User, activeCvId: string) {
   return {
     setFullName: tool({
       description:
-        'Set the user\'s display name (shown at the top of the CV). Pass an empty string or ' +
-        'null to clear.',
+        'Set the display name shown at the top of the CV. Pass an empty string or null to ' +
+        'clear. Omit cvId to target the selected CV.',
       inputSchema: setFullNameInputSchema,
-      execute: async ({ fullName }) => {
-        await updateProfileIdentity({ user, patch: { fullName } });
+      execute: async ({ cvId, fullName }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await updateProfileIdentity({ user, cvId: targetCvId, patch: { fullName } });
         logger.info({ userId: user.id }, 'chat-tool setFullName');
         return fullName && fullName.trim().length > 0
           ? `Set full name to "${fullName.trim()}".`
@@ -38,11 +39,12 @@ export function buildIdentityTools(user: User) {
 
     setLocation: tool({
       description:
-        'Set the user\'s location (e.g. "Berlin, Germany" or "Remote — UTC+1"). Pass an empty ' +
-        'string or null to clear.',
+        'Set the location shown on the CV (e.g. "Berlin, Germany" or "Remote — UTC+1"). Pass ' +
+        'an empty string or null to clear. Omit cvId to target the selected CV.',
       inputSchema: setLocationInputSchema,
-      execute: async ({ location }) => {
-        await updateProfileIdentity({ user, patch: { location } });
+      execute: async ({ cvId, location }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await updateProfileIdentity({ user, cvId: targetCvId, patch: { location } });
         logger.info({ userId: user.id }, 'chat-tool setLocation');
         return location && location.trim().length > 0
           ? `Set location to "${location.trim()}".`
@@ -51,10 +53,13 @@ export function buildIdentityTools(user: User) {
     }),
 
     setPhone: tool({
-      description: 'Set the user\'s phone number. Pass an empty string or null to clear.',
+      description:
+        'Set the phone number shown on the CV. Pass an empty string or null to clear. ' +
+        'Omit cvId to target the selected CV.',
       inputSchema: setPhoneInputSchema,
-      execute: async ({ phone }) => {
-        await updateProfileIdentity({ user, patch: { phone } });
+      execute: async ({ cvId, phone }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await updateProfileIdentity({ user, cvId: targetCvId, patch: { phone } });
         logger.info({ userId: user.id }, 'chat-tool setPhone');
         return phone && phone.trim().length > 0 ? 'Set phone number.' : 'Cleared phone number.';
       },
@@ -63,10 +68,11 @@ export function buildIdentityTools(user: User) {
     setContactEmail: tool({
       description:
         'Set the public contact email shown on the CV. Must be a valid email address. Pass ' +
-        'null to clear.',
+        'null to clear. Omit cvId to target the selected CV.',
       inputSchema: setContactEmailInputSchema,
-      execute: async ({ contactEmail }) => {
-        await updateProfileIdentity({ user, patch: { contactEmail } });
+      execute: async ({ cvId, contactEmail }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await updateProfileIdentity({ user, cvId: targetCvId, patch: { contactEmail } });
         logger.info({ userId: user.id }, 'chat-tool setContactEmail');
         return contactEmail ? `Set contact email to ${contactEmail}.` : 'Cleared contact email.';
       },
@@ -74,13 +80,15 @@ export function buildIdentityTools(user: User) {
 
     setLinks: tool({
       description:
-        'Set one or more of the user\'s links: LinkedIn, GitHub, personal website. Provide ' +
-        'only the fields you want to change; omitted fields are left untouched. Pass null on ' +
-        'a field to clear it.',
+        'Set one or more CV links: LinkedIn, GitHub, personal website. Provide only the fields ' +
+        'you want to change; omitted fields are left untouched. Pass null on a field to clear ' +
+        'it. Omit cvId to target the selected CV.',
       inputSchema: setLinksInputSchema,
-      execute: async ({ linkedinUrl, githubUrl, websiteUrl }) => {
+      execute: async ({ cvId, linkedinUrl, githubUrl, websiteUrl }) => {
+        const targetCvId = cvId ?? activeCvId;
         await updateProfileIdentity({
           user,
+          cvId: targetCvId,
           patch: { linkedinUrl, githubUrl, websiteUrl },
         });
         const changed: string[] = [];

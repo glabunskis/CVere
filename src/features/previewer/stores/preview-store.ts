@@ -5,7 +5,7 @@ import type { PreviewTarget } from '../preview-target';
 type Refresher = () => Promise<string | null>;
 
 type PreviewState = {
-  previewTarget: PreviewTarget;
+  previewTarget: PreviewTarget | null;
   signedUrl: string | null;
   isRefreshing: boolean;
   setPreviewTarget: (target: PreviewTarget) => void;
@@ -29,13 +29,13 @@ type PreviewState = {
 const noopRefresher: Refresher = async () => null;
 
 export const usePreviewStore = create<PreviewState>((set, get) => ({
-  previewTarget: { cvId: '' },
+  previewTarget: null,
   signedUrl: null,
   isRefreshing: false,
   setPreviewTarget: (previewTarget) =>
     set((state) => {
       const current = state.previewTarget;
-      if (current.cvId === previewTarget.cvId) return state;
+      if (current?.cvId === previewTarget.cvId) return state;
       return { previewTarget };
     }),
   setSignedUrl: (signedUrl) => set({ signedUrl }),

@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { ProfileRow } from '@/features/profile/controllers/get-profile';
+import type { CvRow } from '@/features/cv/services/cv-service';
 
 import { updateProfileSection } from '../actions/update-profile-section';
 
@@ -25,7 +25,7 @@ type ContactDraft = {
 
 type Props = {
   profile: Pick<
-    ProfileRow,
+    CvRow,
     'full_name' | 'location' | 'phone' | 'contact_email' | 'linkedin_url' | 'github_url' | 'website_url'
   >;
   fallbackEmail?: string | null;

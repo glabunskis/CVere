@@ -1,4 +1,4 @@
-import type { AiProfile } from '@/features/chat/profile-snapshot';
+import type { AiProfile } from '@/features/cv/cv-snapshot';
 import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/utils/format-date';
 import { Text, View } from '@react-pdf/renderer';
 

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { DefaultChatTransport } from 'ai';
 import { MessageSquareIcon } from 'lucide-react';
@@ -20,9 +19,7 @@ import {
   setActiveChatSession,
 } from '@/features/chat/actions/session-actions';
 import {
-  fromPreviewTargetData,
   isPreviewTargetMatch,
-  toPreviewTargetData,
 } from '@/features/previewer/preview-target';
 import { usePreviewStore } from '@/features/previewer/stores/preview-store';
 import { Chat, useChat } from '@ai-sdk/react';
@@ -35,6 +32,7 @@ import { SessionRail } from './session-rail';
 
 type Props = {
   initialActiveSessionId: string;
+  initialCvId: string;
   sessions: ChatSessionListItem[];
   initialMessages: ChatUIMessage[];
   initialPrefill: string | null;
@@ -49,6 +47,7 @@ const STICKY_BOTTOM_THRESHOLD_PX = 80;
 
 export function ChatPanel({
   initialActiveSessionId,
+  initialCvId,
   sessions,
   initialMessages,
   initialPrefill,
@@ -57,7 +56,6 @@ export function ChatPanel({
   const [activeSessionMessages, setActiveSessionMessages] = useState(initialMessages);
   const [sessionList, setSessionList] = useState(sessions);
   const [prefillText, setPrefillText] = useState<string | null>(initialPrefill);
-  const router = useRouter();
   const contentRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   const activeSessionIdRef = useRef(initialActiveSessionId);
@@ -67,8 +65,6 @@ export function ChatPanel({
   const messagesCacheRef = useRef<Record<string, ChatUIMessage[]>>({
     [initialActiveSessionId]: initialMessages,
   });
-  const setPreviewTarget = usePreviewStore((s) => s.setPreviewTarget);
-
   useEffect(() => {
     activeSessionIdRef.current = activeSessionId;
   }, [activeSessionId]);
@@ -99,11 +95,12 @@ export function ChatPanel({
         transport: new DefaultChatTransport({
           api: `/api/chat?sessionId=${encodeURIComponent(activeSessionId)}`,
           body: () => {
-            const currentPreviewing = toPreviewTargetData(usePreviewStore.getState().previewTarget);
+            const currentPreviewing = usePreviewStore.getState().previewTarget;
+            const cvId = currentPreviewing?.cvId ?? initialCvId;
             return {
               sessionId: activeSessionId,
               context: {
-                cv: { id: currentPreviewing.cvId },
+                cv: { id: cvId },
               },
             };
           },
@@ -126,14 +123,8 @@ export function ChatPanel({
             );
             return;
           }
-          if (dataPart.type === 'data-preview-switch') {
-            const next = fromPreviewTargetData(dataPart.data);
-            setPreviewTarget(next);
-            router.refresh();
-            return;
-          }
           if (dataPart.type === 'data-preview-dirty') {
-            const current = usePreviewStore.getState().previewTarget;
+            const current = usePreviewStore.getState().previewTarget ?? { cvId: initialCvId };
             const shouldRefresh = isPreviewTargetMatch({
               current,
               incoming: dataPart.data,
@@ -146,7 +137,7 @@ export function ChatPanel({
           toast.error(err?.message ?? 'Chat request failed');
         },
       }),
-    [activeSessionId, activeSessionMessages, router, setPreviewTarget],
+    [activeSessionId, activeSessionMessages, initialCvId],
   );
 
   const { messages, sendMessage, status, stop, error, setMessages } = useChat<ChatUIMessage>({
@@ -292,7 +283,7 @@ export function ChatPanel({
                   </EmptyMedia>
                   <EmptyTitle>Edit your CV in chat</EmptyTitle>
                   <EmptyDescription>
-                    Ask the assistant to read your profile, rewrite a summary, tweak a
+                    Ask the assistant to read your CV, rewrite a summary, tweak a
                     bullet, or change the template. Edits land in the selected CV and
                     the preview refreshes automatically.
                   </EmptyDescription>

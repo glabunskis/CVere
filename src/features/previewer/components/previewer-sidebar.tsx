@@ -8,8 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddAchievementForm } from '@/features/achievements/components/add-achievement-form';
 import { ChatPanel } from '@/features/chat/components/chat-panel';
 import type { ChatSessionListItem, ChatUIMessage } from '@/features/chat/types';
+import type { CvLibraryData } from '@/features/cv/controllers/list-cv-library';
 import { CvLibraryPanel } from '@/features/cv-library/components/cv-library-panel';
-import type { CvLibraryData } from '@/features/cv-library/controllers/list-cvs';
 import type { CvDateFormat } from '@/utils/format-date';
 
 import type { CvTemplate } from '../schemas';
@@ -20,6 +20,7 @@ import { TemplatePicker } from './template-picker';
 type SidebarLink = { id: string; href: string; label: string; meta?: string };
 
 type Props = {
+  selectedCvId: string;
   template: CvTemplate;
   accentHex: string;
   educationDateFormat: CvDateFormat;
@@ -33,6 +34,7 @@ type Props = {
 };
 
 export function PreviewerSidebar({
+  selectedCvId,
   template,
   accentHex,
   educationDateFormat,
@@ -119,6 +121,7 @@ export function PreviewerSidebar({
         <TabsContent value='chat' keepMounted className='min-h-0 flex-1'>
           <ChatPanel
             initialActiveSessionId={activeSessionId}
+            initialCvId={selectedCvId}
             sessions={sessions}
             initialMessages={initialChatMessages}
             initialPrefill={initialPrefill}

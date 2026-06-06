@@ -6,9 +6,9 @@ import { toast } from 'sonner';
 
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { updateCvStyle } from '@/features/cv/actions/cv-style-actions';
 import { CV_DATE_FORMATS, type CvDateFormat } from '@/utils/format-date';
 
-import { updateCvPreferences } from '../actions/update-cv-preferences';
 import type { CvTemplate } from '../schemas';
 
 type Props = {
@@ -27,7 +27,7 @@ export function TemplatePicker({ template, accentHex, educationDateFormat, certi
   const [localAccent, setLocalAccent] = useState(accentHex);
   const [isPending, startTransition] = useTransition();
 
-  const { execute } = useAction(updateCvPreferences, {
+  const { execute } = useAction(updateCvStyle, {
     onSuccess: () => toast.success('Style updated'),
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to update style'),
   });

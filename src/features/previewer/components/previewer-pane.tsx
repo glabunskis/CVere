@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 
-import { renderCv } from '../actions/render-master-cv';
+import { renderCv } from '../actions/render-cv';
 import { usePreviewStore } from '../stores/preview-store';
 
 export function PreviewerPane() {
@@ -21,7 +21,7 @@ export function PreviewerPane() {
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to refresh preview'),
   });
 
-  const targetLabel = `CV ${previewTarget.cvId.slice(0, 8)}`;
+  const targetLabel = previewTarget ? `CV ${previewTarget.cvId.slice(0, 8)}` : 'CV';
 
   return (
     <div className='flex h-full flex-col rounded-xl border bg-muted/30'>
@@ -33,8 +33,11 @@ export function PreviewerPane() {
           <Button
             size='sm'
             variant='outline'
-            disabled={rerendering}
-            onClick={() => rerender({ cvId: previewTarget.cvId })}
+            disabled={rerendering || !previewTarget}
+            onClick={() => {
+              if (!previewTarget) return;
+              rerender({ cvId: previewTarget.cvId });
+            }}
           >
             {rerendering ? 'Rendering...' : 'Refresh'}
           </Button>

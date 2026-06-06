@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import type { ProjectRow } from '@/features/profile/controllers/get-profile-children';
+import type { ProjectRow } from '@/features/cv/controllers/get-cv-children';
 
 import { deleteProfileChild, updateProfileSection } from '../actions/update-profile-section';
 import { commaListToArray, jsonToStringArray, stringArrayFromTextarea } from '../utils';

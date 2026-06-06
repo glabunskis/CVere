@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 
 import { createSignedPreviewUrl } from '@/features/previewer/actions/sign-pdf-url';
@@ -22,20 +22,19 @@ type Props = {
  */
 export function PreviewStoreProvider({ initialSignedUrl, initialPreviewTarget, children }: Props) {
   const setRefresher = usePreviewStore((s) => s.setRefresher);
-  const hasHydratedRef = useRef(false);
   const { executeAsync: signPreview } = useAction(createSignedPreviewUrl);
 
-  if (!hasHydratedRef.current) {
+  useState(() => {
     usePreviewStore.setState({
       signedUrl: initialSignedUrl,
       previewTarget: initialPreviewTarget,
     });
-    hasHydratedRef.current = true;
-  }
+  });
 
   useEffect(() => {
     setRefresher(async () => {
       const current = usePreviewStore.getState().previewTarget;
+      if (!current) return null;
       const result = await signPreview({ cvId: current.cvId });
       return result?.data?.url ?? null;
     });

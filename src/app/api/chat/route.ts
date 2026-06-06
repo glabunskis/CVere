@@ -18,9 +18,10 @@ import { appendMessages, loadMessages } from '@/features/chat/storage/chat-messa
 import { generateAndSaveSessionTitle } from '@/features/chat/storage/chat-session-store';
 import { CHAT_SYSTEM_PROMPT } from '@/features/chat/system-prompt';
 import { buildAchievementTools } from '@/features/chat/tools/achievement-tools';
-import { buildContentTools, MUTATING_TOOLS } from '@/features/chat/tools/content-tools';
+import { buildContentTools } from '@/features/chat/tools/content-tools';
 import { buildEntryTools } from '@/features/chat/tools/entry-tools';
 import { buildIdentityTools } from '@/features/chat/tools/identity-tools';
+import { MUTATING_TOOLS } from '@/features/chat/tools/mutating-tools';
 import { buildSectionTools } from '@/features/chat/tools/section-tools';
 import { buildStyleTools } from '@/features/chat/tools/style-tools';
 import { buildVacancyTools } from '@/features/chat/tools/vacancy-tools';
@@ -41,8 +42,6 @@ type ChatRequestBody = {
   messages?: UIMessage[];
   context?: {
     cv?: { id: string } | null;
-    workspace?: { kind: 'interview'; refId: string } | null;
-    recentVacancyId?: string;
   };
 };
 
@@ -142,13 +141,13 @@ export async function POST(req: Request): Promise<Response> {
     execute: ({ writer }) => {
       // Kept as one flat object — tools are never gated by session kind.
       const tools = {
-        ...buildStyleTools(user),
-        ...buildContentTools(user),
-        ...buildEntryTools(user),
-        ...buildSectionTools(user),
-        ...buildIdentityTools(user),
-        ...buildAchievementTools(user),
-        ...buildVacancyTools(user),
+        ...buildStyleTools(user, activeCvId),
+        ...buildContentTools(user, activeCvId),
+        ...buildEntryTools(user, activeCvId),
+        ...buildSectionTools(user, activeCvId),
+        ...buildIdentityTools(user, activeCvId),
+        ...buildAchievementTools(user, activeCvId),
+        ...buildVacancyTools(user, activeCvId),
       };
 
       const result = streamText({
@@ -176,10 +175,10 @@ export async function POST(req: Request): Promise<Response> {
               );
             }
           }
-          // Only treat a tool as having mutated the CV if its execute
-          // resolved (no throw). Failed mutations — including those blocked
-          // by the turn guard after a tailoring lookup failure — must not
-          // trigger a re-render of an artefact that wasn't actually touched.
+          // Only treat a tool as having mutated a CV if its execute resolved
+          // (no throw). Each tool result carries the cvId it actually targeted
+          // (defaulting to the selected CV when the agent omitted cvId); we
+          // mark that CV dirty so it re-renders once at end-of-turn.
           for (const result of toolResults ?? []) {
             const toolName = (result as { toolName?: string }).toolName;
             if (!toolName || !MUTATING_TOOLS.has(toolName)) continue;

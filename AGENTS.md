@@ -56,13 +56,16 @@ src/
 │   │   ├── tools/                # CV mutation + read tools
 │   │   ├── services/             # profile-content-service (selected CV scoped)
 │   │   ├── storage/              # chat_message persistence
-│   │   ├── profile-snapshot.ts   # AiProfile schema + buildProfileSnapshot
 │   │   └── system-prompt.ts
-│   ├── cv/                       # Unified CV actions + services
+│   ├── cv/                       # Unified CV actions, controllers, services, snapshots
+│   │   ├── actions/
+│   │   ├── controllers/
+│   │   ├── services/
+│   │   └── cv-snapshot.ts
 │   ├── emails/                   # React Email templates
 │   ├── jobs/                     # Vacancies (raw text + delete)
 │   ├── previewer/                # Selected-CV renderer + sidebar + preview store
-│   └── profile/                  # Fact-base editor controllers + components
+│   └── profile/                  # Fact-base editor UI, schemas, and form actions
 ├── components/ui/                # shadcn/ui (Base Nova, Base UI primitives)
 ├── libs/
 │   ├── ai/                       # chat-model.ts, resumable-stream.ts (chat-only)

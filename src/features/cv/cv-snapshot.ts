@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { ProfileChildren } from '@/features/profile/controllers/get-profile-children';
+import type { ProfileChildren } from '@/features/cv/controllers/get-cv-children';
 import { jsonToStringArray } from '@/features/profile/utils';
 
 export const aiProfileSchema = z.object({
@@ -81,7 +81,7 @@ export const aiProfileSchema = z.object({
 
 export type AiProfile = z.infer<typeof aiProfileSchema>;
 
-export function buildProfileSnapshot(summary: string | null, children: ProfileChildren): AiProfile {
+export function buildCvSnapshot(summary: string | null, children: ProfileChildren): AiProfile {
   return {
     summary,
     experience: children.experience.map((row) => ({

@@ -10,13 +10,13 @@ export const accentHexSchema = z
   .string()
   .regex(/^#[0-9A-Fa-f]{6}$/, 'Use a hex color like #0066CC');
 
-export const updateCvPreferencesSchema = z.object({
+export const updateCvStyleSchema = z.object({
   template: cvTemplateSchema.optional(),
   accentHex: accentHexSchema.optional(),
   educationDateFormat: cvDateFormatSchema.optional(),
   certificationDateFormat: cvDateFormatSchema.optional(),
 });
-export type UpdateCvPreferencesInput = z.infer<typeof updateCvPreferencesSchema>;
+export type UpdateCvStyleInput = z.infer<typeof updateCvStyleSchema>;
 
 export const importTexFileSchema = z.object({
   name: z.string().min(1).max(300),

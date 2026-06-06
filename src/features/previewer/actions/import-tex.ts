@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { getOrCreateProfile } from '@/features/profile/controllers/get-profile';
+import { getSelectedCv } from '@/features/cv/services/cv-service';
 import { authActionClient } from '@/libs/safe-action';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 import type { TablesUpdate } from '@/libs/supabase/types';
@@ -15,14 +15,13 @@ const CHILD_TABLES = ['experience', 'project', 'skill', 'education', 'certificat
 
 export const importTex = authActionClient.inputSchema(importTexSchema).action(async ({ parsedInput, ctx }) => {
   const supabase = await createSupabaseServerClient();
-  const profile = await getOrCreateProfile();
-  if (!profile) throw new Error('Profile not available');
+  const cv = await getSelectedCv(ctx.user.id);
 
   const parsed = parseTexImport(parsedInput.files);
 
   if (parsedInput.mode === 'replace') {
     for (const table of CHILD_TABLES) {
-      const { error } = await supabase.from(table).delete().eq('cv_id', profile.id).eq('user_id', ctx.user.id);
+      const { error } = await supabase.from(table).delete().eq('cv_id', cv.id).eq('user_id', ctx.user.id);
       if (error) throw new Error(`Failed to clear ${table}: ${error.message}`);
     }
   }
@@ -44,7 +43,7 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
     const { error } = await supabase
       .from('cv')
       .update(profileUpdate)
-      .eq('id', profile.id)
+      .eq('id', cv.id)
       .eq('user_id', ctx.user.id);
     if (error) throw new Error(`Failed to update profile: ${error.message}`);
   }
@@ -62,7 +61,7 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
     const { error } = await supabase.from('experience').insert(
       parsed.experience.map((row) => ({
         user_id: ctx.user.id,
-        cv_id: profile.id,
+        cv_id: cv.id,
         position: row.position,
         company: row.company,
         role: row.role,
@@ -83,7 +82,7 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
     const { error } = await supabase.from('project').insert(
       parsed.projects.map((row) => ({
         user_id: ctx.user.id,
-        cv_id: profile.id,
+        cv_id: cv.id,
         position: row.position,
         name: row.name,
         description: row.description ?? null,
@@ -100,7 +99,7 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
     const { error } = await supabase.from('skill').insert(
       parsed.skills.map((row) => ({
         user_id: ctx.user.id,
-        cv_id: profile.id,
+        cv_id: cv.id,
         position: row.position,
         name: row.name,
         category: row.category ?? null,
@@ -115,7 +114,7 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
     const { error } = await supabase.from('education').insert(
       parsed.education.map((row) => ({
         user_id: ctx.user.id,
-        cv_id: profile.id,
+        cv_id: cv.id,
         position: row.position,
         institution: row.institution,
         degree: row.degree ?? null,
@@ -133,7 +132,7 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
     const { error } = await supabase.from('certification').insert(
       parsed.certifications.map((row) => ({
         user_id: ctx.user.id,
-        cv_id: profile.id,
+        cv_id: cv.id,
         position: row.position,
         name: row.name,
         issuer: row.issuer ?? null,
@@ -150,7 +149,7 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
     const { error } = await supabase.from('language').insert(
       parsed.languages.map((row) => ({
         user_id: ctx.user.id,
-        cv_id: profile.id,
+        cv_id: cv.id,
         position: row.position,
         name: row.name,
         proficiency: row.proficiency ?? null,
@@ -160,7 +159,7 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
     counts.language = parsed.languages.length;
   }
 
-  await renderAndUploadCv({ user: ctx.user, cvId: profile.id });
+  await renderAndUploadCv({ user: ctx.user, cvId: cv.id });
 
   revalidatePath('/dashboard');
   revalidatePath('/profile');

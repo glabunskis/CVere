@@ -60,7 +60,7 @@ export function ChatInput({
           placeholder={
             disabled
               ? 'Chat is unavailable.'
-              : 'Ask me to read your profile or edit a bullet...'
+              : 'Ask me to read your CV or edit a bullet...'
           }
           rows={2}
           disabled={disabled}

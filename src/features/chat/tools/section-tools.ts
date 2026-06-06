@@ -17,7 +17,7 @@ import {
   removeEducation,
   removeLanguage,
   removeSkill,
-} from '@/features/chat/services/profile-content-service';
+} from '@/features/cv/services/cv-service';
 import { logger } from '@/libs/logger';
 import type { User } from '@supabase/supabase-js';
 
@@ -48,36 +48,47 @@ import 'server-only';
  * `readProfile`. Position is auto-managed: `add` appends, `move` rewrites
  * positions densely. Per-section cap matches the existing 50-bullet cap.
  */
-export function buildSectionTools(user: User) {
+export function buildSectionTools(user: User, activeCvId: string) {
   return {
     // ---------- Skills ----------
     addSkill: tool({
       description:
-        'Append a new skill to the selected CV. Use `readProfile` first if the user might ' +
-        'already have a similar skill to avoid duplicates.',
+        'Append a new skill. Call `readProfile` first if the user might already have a ' +
+        'similar skill, to avoid duplicates. Omit cvId to target the selected CV.',
       inputSchema: addSkillInputSchema,
-      execute: async ({ name, category, level }) => {
-        const row = await addSkill({ user, payload: { name, category, level } });
+      execute: async ({ cvId, name, category, level }) => {
+        const targetCvId = cvId ?? activeCvId;
+        const row = await addSkill({ user, cvId: targetCvId, payload: { name, category, level } });
         logger.info({ userId: user.id, skillId: row.id }, 'chat-tool addSkill');
         return `Added skill "${row.name}".`;
       },
     }),
 
     editSkill: tool({
-      description: 'Edit a skill\'s name / category / level. Get the id from `readProfile`.',
+      description:
+        'Edit a skill\'s name / category / level. Get the id from `readProfile`. ' +
+        'Omit cvId to target the selected CV.',
       inputSchema: editSkillInputSchema,
-      execute: async ({ skillId, name, category, level }) => {
-        const row = await editSkill({ user, skillId, patch: { name, category, level } });
+      execute: async ({ cvId, skillId, name, category, level }) => {
+        const targetCvId = cvId ?? activeCvId;
+        const row = await editSkill({
+          user,
+          cvId: targetCvId,
+          skillId,
+          patch: { name, category, level },
+        });
         logger.info({ userId: user.id, skillId }, 'chat-tool editSkill');
         return `Updated skill "${row.name}".`;
       },
     }),
 
     removeSkill: tool({
-      description: 'Remove a skill from the selected CV. Get the id from `readProfile`.',
+      description:
+        'Remove a skill. Get the id from `readProfile`. Omit cvId to target the selected CV.',
       inputSchema: removeSkillInputSchema,
-      execute: async ({ skillId }) => {
-        await removeSkill({ user, skillId });
+      execute: async ({ cvId, skillId }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await removeSkill({ user, cvId: targetCvId, skillId });
         logger.info({ userId: user.id, skillId }, 'chat-tool removeSkill');
         return 'Removed skill.';
       },
@@ -86,10 +97,11 @@ export function buildSectionTools(user: User) {
     moveSkill: tool({
       description:
         'Reorder a skill. `toIndex` is the new 0-based position; values past the end ' +
-        'clamp to the last slot.',
+        'clamp to the last slot. Omit cvId to target the selected CV.',
       inputSchema: moveSkillInputSchema,
-      execute: async ({ skillId, toIndex }) => {
-        await moveSkill({ user, skillId, toIndex });
+      execute: async ({ cvId, skillId, toIndex }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await moveSkill({ user, cvId: targetCvId, skillId, toIndex });
         logger.info({ userId: user.id, skillId, toIndex }, 'chat-tool moveSkill');
         return `Moved skill to position ${toIndex + 1}.`;
       },
@@ -97,11 +109,13 @@ export function buildSectionTools(user: User) {
 
     // ---------- Education ----------
     addEducation: tool({
-      description: 'Append a new education entry to the selected CV.',
+      description: 'Append a new education entry. Omit cvId to target the selected CV.',
       inputSchema: addEducationInputSchema,
-      execute: async ({ institution, degree, field, startDate, endDate, summary }) => {
+      execute: async ({ cvId, institution, degree, field, startDate, endDate, summary }) => {
+        const targetCvId = cvId ?? activeCvId;
         const row = await addEducation({
           user,
+          cvId: targetCvId,
           payload: { institution, degree, field, startDate, endDate, summary },
         });
         logger.info({ userId: user.id, educationId: row.id }, 'chat-tool addEducation');
@@ -112,11 +126,13 @@ export function buildSectionTools(user: User) {
     editEducation: tool({
       description:
         'Edit an education entry. Provide only the fields you want to change; the rest ' +
-        'are left untouched. Get the id from `readProfile`.',
+        'are left untouched. Get the id from `readProfile`. Omit cvId to target the selected CV.',
       inputSchema: editEducationInputSchema,
-      execute: async ({ educationId, institution, degree, field, startDate, endDate, summary }) => {
+      execute: async ({ cvId, educationId, institution, degree, field, startDate, endDate, summary }) => {
+        const targetCvId = cvId ?? activeCvId;
         const row = await editEducation({
           user,
+          cvId: targetCvId,
           educationId,
           patch: { institution, degree, field, startDate, endDate, summary },
         });
@@ -126,20 +142,26 @@ export function buildSectionTools(user: User) {
     }),
 
     removeEducation: tool({
-      description: 'Remove an education entry. Get the id from `readProfile`.',
+      description:
+        'Remove an education entry. Get the id from `readProfile`. Omit cvId to target the ' +
+        'selected CV.',
       inputSchema: removeEducationInputSchema,
-      execute: async ({ educationId }) => {
-        await removeEducation({ user, educationId });
+      execute: async ({ cvId, educationId }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await removeEducation({ user, cvId: targetCvId, educationId });
         logger.info({ userId: user.id, educationId }, 'chat-tool removeEducation');
         return 'Removed education entry.';
       },
     }),
 
     moveEducation: tool({
-      description: 'Reorder an education entry. `toIndex` is the new 0-based position.',
+      description:
+        'Reorder an education entry. `toIndex` is the new 0-based position. Omit cvId to ' +
+        'target the selected CV.',
       inputSchema: moveEducationInputSchema,
-      execute: async ({ educationId, toIndex }) => {
-        await moveEducation({ user, educationId, toIndex });
+      execute: async ({ cvId, educationId, toIndex }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await moveEducation({ user, cvId: targetCvId, educationId, toIndex });
         logger.info({ userId: user.id, educationId, toIndex }, 'chat-tool moveEducation');
         return `Moved education entry to position ${toIndex + 1}.`;
       },
@@ -147,11 +169,13 @@ export function buildSectionTools(user: User) {
 
     // ---------- Certifications ----------
     addCertification: tool({
-      description: 'Append a new certification to the selected CV.',
+      description: 'Append a new certification. Omit cvId to target the selected CV.',
       inputSchema: addCertificationInputSchema,
-      execute: async ({ name, issuer, issuedAt, expiresAt, link }) => {
+      execute: async ({ cvId, name, issuer, issuedAt, expiresAt, link }) => {
+        const targetCvId = cvId ?? activeCvId;
         const row = await addCertification({
           user,
+          cvId: targetCvId,
           payload: { name, issuer, issuedAt, expiresAt, link },
         });
         logger.info({ userId: user.id, certificationId: row.id }, 'chat-tool addCertification');
@@ -162,11 +186,13 @@ export function buildSectionTools(user: User) {
     editCertification: tool({
       description:
         'Edit a certification. Provide only the fields you want to change. Get the id ' +
-        'from `readProfile`.',
+        'from `readProfile`. Omit cvId to target the selected CV.',
       inputSchema: editCertificationInputSchema,
-      execute: async ({ certificationId, name, issuer, issuedAt, expiresAt, link }) => {
+      execute: async ({ cvId, certificationId, name, issuer, issuedAt, expiresAt, link }) => {
+        const targetCvId = cvId ?? activeCvId;
         const row = await editCertification({
           user,
+          cvId: targetCvId,
           certificationId,
           patch: { name, issuer, issuedAt, expiresAt, link },
         });
@@ -179,20 +205,26 @@ export function buildSectionTools(user: User) {
     }),
 
     removeCertification: tool({
-      description: 'Remove a certification. Get the id from `readProfile`.',
+      description:
+        'Remove a certification. Get the id from `readProfile`. Omit cvId to target the ' +
+        'selected CV.',
       inputSchema: removeCertificationInputSchema,
-      execute: async ({ certificationId }) => {
-        await removeCertification({ user, certificationId });
+      execute: async ({ cvId, certificationId }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await removeCertification({ user, cvId: targetCvId, certificationId });
         logger.info({ userId: user.id, certificationId }, 'chat-tool removeCertification');
         return 'Removed certification.';
       },
     }),
 
     moveCertification: tool({
-      description: 'Reorder a certification. `toIndex` is the new 0-based position.',
+      description:
+        'Reorder a certification. `toIndex` is the new 0-based position. Omit cvId to target ' +
+        'the selected CV.',
       inputSchema: moveCertificationInputSchema,
-      execute: async ({ certificationId, toIndex }) => {
-        await moveCertification({ user, certificationId, toIndex });
+      execute: async ({ cvId, certificationId, toIndex }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await moveCertification({ user, cvId: targetCvId, certificationId, toIndex });
         logger.info(
           { userId: user.id, certificationId, toIndex },
           'chat-tool moveCertification',
@@ -203,10 +235,11 @@ export function buildSectionTools(user: User) {
 
     // ---------- Languages ----------
     addLanguage: tool({
-      description: 'Append a new language to the selected CV.',
+      description: 'Append a new language. Omit cvId to target the selected CV.',
       inputSchema: addLanguageInputSchema,
-      execute: async ({ name, proficiency }) => {
-        const row = await addLanguage({ user, payload: { name, proficiency } });
+      execute: async ({ cvId, name, proficiency }) => {
+        const targetCvId = cvId ?? activeCvId;
+        const row = await addLanguage({ user, cvId: targetCvId, payload: { name, proficiency } });
         logger.info({ userId: user.id, languageId: row.id }, 'chat-tool addLanguage');
         return `Added language "${row.name}".`;
       },
@@ -215,11 +248,13 @@ export function buildSectionTools(user: User) {
     editLanguage: tool({
       description:
         'Edit a language. Provide only the fields you want to change. Get the id from ' +
-        '`readProfile`.',
+        '`readProfile`. Omit cvId to target the selected CV.',
       inputSchema: editLanguageInputSchema,
-      execute: async ({ languageId, name, proficiency }) => {
+      execute: async ({ cvId, languageId, name, proficiency }) => {
+        const targetCvId = cvId ?? activeCvId;
         const row = await editLanguage({
           user,
+          cvId: targetCvId,
           languageId,
           patch: { name, proficiency },
         });
@@ -229,20 +264,25 @@ export function buildSectionTools(user: User) {
     }),
 
     removeLanguage: tool({
-      description: 'Remove a language. Get the id from `readProfile`.',
+      description:
+        'Remove a language. Get the id from `readProfile`. Omit cvId to target the selected CV.',
       inputSchema: removeLanguageInputSchema,
-      execute: async ({ languageId }) => {
-        await removeLanguage({ user, languageId });
+      execute: async ({ cvId, languageId }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await removeLanguage({ user, cvId: targetCvId, languageId });
         logger.info({ userId: user.id, languageId }, 'chat-tool removeLanguage');
         return 'Removed language.';
       },
     }),
 
     moveLanguage: tool({
-      description: 'Reorder a language. `toIndex` is the new 0-based position.',
+      description:
+        'Reorder a language. `toIndex` is the new 0-based position. Omit cvId to target the ' +
+        'selected CV.',
       inputSchema: moveLanguageInputSchema,
-      execute: async ({ languageId, toIndex }) => {
-        await moveLanguage({ user, languageId, toIndex });
+      execute: async ({ cvId, languageId, toIndex }) => {
+        const targetCvId = cvId ?? activeCvId;
+        await moveLanguage({ user, cvId: targetCvId, languageId, toIndex });
         logger.info({ userId: user.id, languageId, toIndex }, 'chat-tool moveLanguage');
         return `Moved language to position ${toIndex + 1}.`;
       },

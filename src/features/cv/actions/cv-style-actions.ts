@@ -8,13 +8,12 @@ import {
   setDateFormat,
   setTemplate,
 } from '@/features/cv/services/cv-service';
+import { renderAndUploadCv } from '@/features/previewer/render';
+import { updateCvStyleSchema } from '@/features/previewer/schemas';
 import { authActionClient } from '@/libs/safe-action';
 
-import { renderAndUploadCv } from '../render';
-import { updateCvPreferencesSchema } from '../schemas';
-
-export const updateCvPreferences = authActionClient
-  .inputSchema(updateCvPreferencesSchema)
+export const updateCvStyle = authActionClient
+  .inputSchema(updateCvStyleSchema)
   .action(async ({ parsedInput, ctx }) => {
     const selectedCv = await getSelectedCv(ctx.user.id);
     if (parsedInput.template) {

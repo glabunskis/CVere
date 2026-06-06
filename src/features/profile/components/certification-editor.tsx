@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { CertificationRow } from '@/features/profile/controllers/get-profile-children';
+import type { CertificationRow } from '@/features/cv/controllers/get-cv-children';
 import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/utils/format-date';
 
 import { deleteProfileChild, updateProfileSection } from '../actions/update-profile-section';
