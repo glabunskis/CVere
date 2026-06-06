@@ -239,7 +239,7 @@ async function getDefaultCv(userId: string): Promise<CvRow> {
 
   const { data: created, error: createError } = await supabase
     .from('cv')
-    .insert({ user_id: userId, title: 'My CV', is_default: true })
+    .insert({ user_id: userId, title: 'Master', is_default: true })
     .select('*')
     .single();
   if (createError || !created) {

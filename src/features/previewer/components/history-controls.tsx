@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Redo2, Undo2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
+import { Redo2, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -60,11 +60,7 @@ export function HistoryControls() {
   });
 
   useEffect(() => {
-    if (!cvId) {
-      setCanUndo(false);
-      setCanRedo(false);
-      return;
-    }
+    if (!cvId) return;
     let active = true;
     void fetchState({ cvId }).then((result) => {
       if (!active) return;

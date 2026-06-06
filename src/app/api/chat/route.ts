@@ -27,7 +27,7 @@ import { buildSectionTools } from '@/features/chat/tools/section-tools';
 import { buildStyleTools } from '@/features/chat/tools/style-tools';
 import { buildVacancyTools } from '@/features/chat/tools/vacancy-tools';
 import type { AiProfile } from '@/features/cv/cv-snapshot';
-import { getSelectedCv } from '@/features/cv/services/cv-service';
+import { getSelectedCv, listCvRows } from '@/features/cv/services/cv-service';
 import { loadCvSnapshot, recordCvVersion } from '@/features/cv/services/cv-version-service';
 import { renderAndUploadCv } from '@/features/previewer/render';
 import { getChatModel } from '@/libs/ai/chat-model';
@@ -145,11 +145,23 @@ export async function POST(req: Request): Promise<Response> {
   // every tool call in the assistant reply.
   const beforeSnapshots = new Map<string, AiProfile>();
   try {
-    beforeSnapshots.set(activeCvId, await loadCvSnapshot(user, activeCvId));
+    const cvRows = await listCvRows(user.id);
+    await Promise.all(
+      cvRows.map(async (row) => {
+        try {
+          beforeSnapshots.set(row.id, await loadCvSnapshot(user, row.id));
+        } catch (err) {
+          logger.error(
+            { err, userId: user.id, cvId: row.id },
+            'chat-route failed to snapshot CV before turn',
+          );
+        }
+      }),
+    );
   } catch (err) {
     logger.error(
-      { err, userId: user.id, cvId: activeCvId },
-      'chat-route failed to snapshot CV before turn',
+      { err, userId: user.id },
+      'chat-route failed to list CVs before turn',
     );
   }
 

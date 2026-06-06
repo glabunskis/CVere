@@ -1,12 +1,12 @@
 import { tool } from 'ai';
 
-import { logger } from '@/libs/logger';
 import {
   createCv as createCvRecord,
   getSelectedCv,
   listCvRows,
   setSelectedCv,
 } from '@/features/cv/services/cv-service';
+import { logger } from '@/libs/logger';
 import type { User } from '@supabase/supabase-js';
 
 import { createCvInputSchema, listCvsInputSchema } from '../schemas';
