@@ -340,6 +340,15 @@ export async function POST(req: Request): Promise<Response> {
 
   return createUIMessageStreamResponse({
     stream,
+    // `no-transform` stops Vercel's edge network (and any intermediary proxy)
+    // from gzip/brotli-compressing the SSE response. A streaming compressor
+    // holds bytes until it has a full block, which made the whole answer land
+    // at once in production while it streamed token-by-token locally. The SDK
+    // already sets `x-accel-buffering: no`; this overrides its `no-cache`
+    // cache-control to add `no-transform`.
+    headers: {
+      'cache-control': 'no-cache, no-transform',
+    },
     // Tee a copy of the SSE bytes into Upstash Redis so that a reload mid-turn
     // can resume the stream via GET. Falls back to a regular non-resumable
     // stream when UPSTASH_REDIS_REST_* are not set (the helper returns null).
@@ -418,7 +427,14 @@ export async function GET(req: Request): Promise<Response> {
       return new Response(null, { status: 204 });
     }
 
-    return new Response(resumed, { headers: UI_MESSAGE_STREAM_HEADERS });
+    return new Response(resumed, {
+      headers: {
+        ...UI_MESSAGE_STREAM_HEADERS,
+        // See POST: add `no-transform` so the edge network doesn't compress
+        // (and thereby buffer) the resumed SSE stream.
+        'cache-control': 'no-cache, no-transform',
+      },
+    });
   } catch (err) {
     logger.error(
       { err, userId: user.id, sessionId },
