@@ -39,6 +39,8 @@ import { logger } from '@/libs/logger';
 import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
 
 export const maxDuration = 60;
+// SSE route: never statically optimize/cache, so chunks flush incrementally.
+export const dynamic = 'force-dynamic';
 
 type ChatRequestBody = {
   sessionId?: string;
@@ -340,12 +342,9 @@ export async function POST(req: Request): Promise<Response> {
 
   return createUIMessageStreamResponse({
     stream,
-    // `no-transform` stops Vercel's edge network (and any intermediary proxy)
-    // from gzip/brotli-compressing the SSE response. A streaming compressor
-    // holds bytes until it has a full block, which made the whole answer land
-    // at once in production while it streamed token-by-token locally. The SDK
-    // already sets `x-accel-buffering: no`; this overrides its `no-cache`
-    // cache-control to add `no-transform`.
+    // `no-transform` tells any intermediary not to compress/transform the SSE
+    // response (a streaming compressor buffers a window before emitting). The
+    // SDK already sets `x-accel-buffering: no`.
     headers: {
       'cache-control': 'no-cache, no-transform',
     },
@@ -430,8 +429,8 @@ export async function GET(req: Request): Promise<Response> {
     return new Response(resumed, {
       headers: {
         ...UI_MESSAGE_STREAM_HEADERS,
-        // See POST: add `no-transform` so the edge network doesn't compress
-        // (and thereby buffer) the resumed SSE stream.
+        // See POST: `no-transform` so no intermediary compresses (and buffers)
+        // the resumed SSE stream.
         'cache-control': 'no-cache, no-transform',
       },
     });
