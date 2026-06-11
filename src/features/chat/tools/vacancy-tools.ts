@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 
-import { logger } from '@/libs/logger';
-import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
+import { createSupabaseServerClient } from '@/shared/api/supabase/supabase-server-client';
+import { logger } from '@/shared/lib/logger';
 import type { User } from '@supabase/supabase-js';
 
 import { listVacanciesInputSchema, readVacancyInputSchema } from '../schemas';

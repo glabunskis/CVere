@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
-import type { AchievementRow } from '@/features/achievements/controllers/list-achievements';
+import type { AchievementRow } from '@/entities/achievement/list-achievements';
+import { integrableSectionSchema } from '@/entities/achievement/schemas';
+import { Badge } from '@/shared/ui/badge';
+import { Button } from '@/shared/ui/button';
+import { Select } from '@/shared/ui/select';
 
 import { dismissAchievement, integrateAchievement } from '../actions/achievement-actions';
-import { integrableSectionSchema } from '../schemas';
 
 const SECTIONS = integrableSectionSchema.options;
 type IntegrableSection = (typeof SECTIONS)[number];

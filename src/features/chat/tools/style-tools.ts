@@ -4,8 +4,8 @@ import {
   setAccentHex,
   setDateFormat,
   setTemplate,
-} from '@/features/cv/services/cv-service';
-import { logger } from '@/libs/logger';
+} from '@/entities/cv';
+import { logger } from '@/shared/lib/logger';
 import type { User } from '@supabase/supabase-js';
 
 import {

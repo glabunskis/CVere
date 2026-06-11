@@ -1,11 +1,10 @@
 import { redirect } from 'next/navigation';
 import type { PropsWithChildren } from 'react';
 
-import { Separator } from '@/components/ui/separator';
-import { getSession } from '@/features/account/controllers/get-session';
-import { listCvs } from '@/features/cv/controllers/list-cv-library';
-
-import { AppNav } from './_components/app-nav';
+import { listCvs } from '@/entities/cv';
+import { getSession } from '@/entities/user';
+import { Separator } from '@/shared/ui/separator';
+import { AppNav } from '@/widgets/app-nav';
 
 export default async function AppLayout({ children }: PropsWithChildren) {
   const session = await getSession();

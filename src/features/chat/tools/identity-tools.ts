@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 
-import { updateProfileIdentity } from '@/features/cv/services/cv-service';
-import { logger } from '@/libs/logger';
+import { updateProfileIdentity } from '@/entities/cv';
+import { logger } from '@/shared/lib/logger';
 import type { User } from '@supabase/supabase-js';
 
 import {

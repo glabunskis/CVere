@@ -3,9 +3,9 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
-import { Logo } from '@/components/logo';
-import { Toaster } from '@/components/ui/sonner';
-import { APP_DESCRIPTION, APP_DISPLAY_NAME } from '@/config';
+import { APP_DESCRIPTION, APP_DISPLAY_NAME } from '@/shared/config';
+import { Logo } from '@/shared/ui/logo';
+import { Toaster } from '@/shared/ui/sonner';
 import { Analytics } from '@vercel/analytics/react';
 
 import { Navigation } from './navigation';

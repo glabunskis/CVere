@@ -1,9 +1,9 @@
 import { generateText } from 'ai';
 
-import { getTitleModel } from '@/libs/ai/chat-model';
-import { logger } from '@/libs/logger';
-import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
-import type { Tables } from '@/libs/supabase/types';
+import { getTitleModel } from '@/shared/api/ai/chat-model';
+import { createSupabaseServerClient } from '@/shared/api/supabase/supabase-server-client';
+import type { Tables } from '@/shared/api/supabase/types';
+import { logger } from '@/shared/lib/logger';
 
 import type { ChatSessionListItem } from '../types';
 

@@ -8,8 +8,8 @@ import {
   InputGroupAddon,
   InputGroupButton,
   InputGroupTextarea,
-} from '@/components/ui/input-group';
-import { Spinner } from '@/components/ui/spinner';
+} from '@/shared/ui/input-group';
+import { Spinner } from '@/shared/ui/spinner';
 
 type Props = {
   status: 'submitted' | 'streaming' | 'ready' | 'error';

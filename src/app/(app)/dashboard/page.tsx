@@ -1,17 +1,17 @@
 import { createLoader, parseAsString } from 'nuqs/server';
 
-import { getSession } from '@/features/account/controllers/get-session';
-import { listAchievements } from '@/features/achievements/controllers/list-achievements';
-import { loadMessages } from '@/features/chat/storage/chat-message-store';
+import { listAchievements } from '@/entities/achievement';
+import { listCvs } from '@/entities/cv';
+import { getSession } from '@/entities/user';
+import type { ChatUIMessage } from '@/features/chat';
 import {
   getOrCreateDefaultSession,
   getSessionById,
   listSessions,
+  loadMessages,
   setLastActiveSession,
-} from '@/features/chat/storage/chat-session-store';
-import type { ChatUIMessage } from '@/features/chat/types';
-import { listCvs } from '@/features/cv/controllers/list-cv-library';
-import { PreviewerSidebar } from '@/features/previewer/components/previewer-sidebar';
+} from '@/features/chat';
+import { DashboardView } from '@/views/dashboard';
 
 type DashboardPageProps = {
   searchParams:
@@ -63,7 +63,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   }
 
   return (
-    <PreviewerSidebar
+    <DashboardView
       selectedCvId={selectedCv.id}
       template={selectedCv.template}
       accentHex={selectedCv.accentHex}

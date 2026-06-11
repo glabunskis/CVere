@@ -2,9 +2,8 @@
 
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 
-import { Select } from '@/components/ui/select';
-
-import { achievementSectionSchema, achievementStatusSchema } from '../schemas';
+import { achievementSectionSchema, achievementStatusSchema } from '@/entities/achievement/schemas';
+import { Select } from '@/shared/ui/select';
 
 const STATUS_OPTIONS = ['all', ...achievementStatusSchema.options] as const;
 const SECTION_OPTIONS = ['all', ...achievementSectionSchema.options] as const;

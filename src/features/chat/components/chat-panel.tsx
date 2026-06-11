@@ -8,21 +8,21 @@ import { MessageSquareIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
+  loadChatSessionMessages,
+  setActiveChatSession,
+} from '@/features/chat/actions/session-actions';
+import { usePreviewStore } from '@/features/cv-preview/preview-store';
+import {
+  isPreviewTargetMatch,
+} from '@/features/cv-preview/preview-target';
+import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@/components/ui/empty';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  loadChatSessionMessages,
-  setActiveChatSession,
-} from '@/features/chat/actions/session-actions';
-import {
-  isPreviewTargetMatch,
-} from '@/features/previewer/preview-target';
-import { usePreviewStore } from '@/features/previewer/stores/preview-store';
+} from '@/shared/ui/empty';
+import { ScrollArea } from '@/shared/ui/scroll-area';
 import { Chat, useChat } from '@ai-sdk/react';
 
 import type { ChatSessionListItem, ChatUIMessage } from '../types';
