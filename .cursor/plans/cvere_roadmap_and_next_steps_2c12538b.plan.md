@@ -1,38 +1,47 @@
 ---
 name: CVere roadmap and next steps
-overview: "Roadmap rebased after the Remove-non-chat-AI cut. Chat stays the only AI surface and sessions are generic threads — any session can read or mutate any artefact (master CV, tailored CVs, cover letters, interview prep). Visible streaming and visible tool calls land first so every later expansion is debuggable. Tailored CVs, cover letters, and interview prep return as chat-driven artefacts backed by their own tables, library views, and (for CVs/letters) previews."
+overview: Roadmap rebased after the Remove-non-chat-AI cut. Chat stays the only AI surface and sessions are generic threads — any session can read or mutate any artefact (master CV, tailored CVs, cover letters, interview prep). Visible streaming and visible tool calls land first so every later expansion is debuggable. Tailored CVs, cover letters, and interview prep return as chat-driven artefacts backed by their own tables, library views, and (for CVs/letters) previews.
 todos:
   - id: phase-0
-    content: "Pre-work: real AI provider, subscription-gate decision"
+    content: "✅ Pre-work: real AI provider, subscription-gate decision"
     status: completed
   - id: phase-1
-    content: "Visible streaming + visible tool calls: smooth token-by-token text, expandable tool-call cards showing inputs/outputs"
+    content: "✅ Visible streaming + visible tool calls: smooth token-by-token text, expandable tool-call cards showing inputs/outputs"
     status: completed
   - id: phase-2
-    content: "Deepen master-CV chat tools: missing sections, reorder/create/delete, achievement integration, vacancy-aware editing"
+    content: "✅ Deepen master-CV chat tools: missing sections, reorder/create/delete, achievement integration, vacancy-aware editing"
     status: completed
   - id: phase-3
-    content: "Multi-session chat (generic threads): schema, store rework, useChat per-session id, resumable-stream per-session id"
+    content: "✅ Multi-session chat (generic threads): schema, store rework, useChat per-session id, resumable-stream per-session id"
     status: completed
   - id: phase-4
-    content: "Tailored CV artefact: schema, chat tools, library/picker view, parametric preview, per-CV PDF render"
+    content: "✅ Tailored CV artefact (shipped as the multiple-CV model: normalized cv + variant rows, cv-meta tools, CV library, parametric preview, per-CV PDF render)"
     status: completed
   - id: phase-5
-    content: "Chat as primary workspace: two-column layout, session list, CV library, handoffs, current-context hint"
-    status: pending
+    content: "✅ Chat as primary workspace: two-column layout, session list, CV library, handoffs, current-context hint"
+    status: completed
+  - id: detours
+    content: "✅ Detours alongside Phase 1-5: Feature-Sliced Design restructure, Vercel deployment, multiple-CV introduction (incl. cv_version undo/redo)"
+    status: completed
   - id: phase-6
-    content: "Cover letter artefact: schema, chat tools, library/picker, per-letter preview"
-    status: pending
+    content: "✅ Access-code gate at signup (hardcoded SIGNUP_ACCESS_CODE env, validated in signUpWithPassword + UI field). Stripe left dormant."
+    status: completed
   - id: phase-7
-    content: "Interview prep artefact: schema, chat tools, Q&A workspace (no PDF)"
+    content: "AI-generated PDF layout: chat model emits a structured LayoutSpec (section order, column assignment, density), deterministic react-pdf executor renders it; no length constraint; stays within chat-only-AI rule"
     status: pending
   - id: phase-8
     content: "Chat UX polish (remainder): retry/edit, mobile Sheet, rate limiting, incremental request payload, clear-history, cross-session quoting"
     status: pending
   - id: phase-9
-    content: "Connective tissue: profile-form parity, stream-resume partial persistence, manual ↔ chat round-trip, undo on destructive tools"
+    content: "Cover letter artefact: schema, chat tools, library/picker, per-letter preview"
     status: pending
   - id: phase-10
+    content: "Interview prep artefact: schema, chat tools, Q&A workspace (no PDF)"
+    status: pending
+  - id: phase-11
+    content: "Connective tissue: profile-form parity, stream-resume partial persistence, manual ↔ chat round-trip, undo on destructive tools"
+    status: pending
+  - id: phase-12
     content: "Infra story: PDFs to Azure Blob, background render via after(), per-user render lock"
     status: pending
   - id: polish-track
@@ -43,6 +52,20 @@ todos:
     status: pending
 isProject: false
 ---
+
+## Status (updated)
+
+Phases 0–5 are ✅ **done**. Chat is now the primary workspace: visible streaming + tool cards, deepened master-CV tools, multi-session generic threads, the multiple-CV artefact, and the two-column layout with CV library + handoffs all shipped.
+
+Detours taken alongside phases 1–5 (also ✅ done):
+
+- **Feature-Sliced Design restructure** — the codebase was reorganised into `views → widgets → features → entities → shared` (see `AGENTS.md`). Some path references in the phase write-ups below still use the pre-FSD locations (`src/features/previewer/`, `src/libs/ai/`, `src/pdf/`); current equivalents live under `src/widgets/previewer-sidebar/`, `src/shared/api/ai/`, `src/entities/cv/pdf/`.
+- **Vercel deployment** — app is deployed.
+- **Multiple-CV introduction** — the planned Phase 4 "tailored CV" artefact shipped instead as a general multiple-CV model: normalized `cv` root + section rows, user-created variants, `cv-meta-tools` (`listCvs` + `cvId`-scoped edit tools), a CV library widget, parametric preview, per-CV PDF render, plus `cv_version` reversible-diff undo/redo (the old separate `tailored_cv` table was not needed).
+
+Most recent: **Phase 6 (access-code signup gate) ✅ done**.
+
+Remaining work, in order: **Phase 7** (AI-generated PDF layout), **Phase 8** (chat UX polish), then **Phase 9** (cover letter) and **Phase 10** (interview prep) — both intentionally sequenced *after* UX polish — then **Phase 11** (connective tissue) and **Phase 12** (infra story).
 
 ## Recommendation in one line
 
@@ -86,7 +109,7 @@ The route appends a synthetic system message ("The user is currently looking at 
 
 ## What changed since the previous roadmap
 
-The Remove-non-chat-AI cut deleted `tailored`, `letters`, `advice`, `interview`, the cover-letter PDF, the `extracted`/`diff` job-description AI, the old multi-file stub provider module set under `src/libs/ai/` (`stub.ts`, `provider.ts`, `openai.ts`, `types.ts`, `index.ts`), and `pinned_tailored_cv_id`. Achievements insert with `null normalized_text/target_section` and integrate manually; vacancies are raw text + delete. See `AGENTS.md` for the current shape.
+The Remove-non-chat-AI cut deleted `tailored`, `letters`, `advice`, `interview`, the cover-letter PDF, the `extracted`/`diff` job-description AI, the stub AI provider, and `pinned_tailored_cv_id`. Achievements insert with `null normalized_text/target_section` and integrate manually; vacancies are raw text + delete. See `AGENTS.md` for the current shape.
 
 The user has confirmed:
 
@@ -104,8 +127,9 @@ Implications:
 - New Phase 1 covers visible streaming + visible tool calls; the items moved out of the old "Chat UX polish" phase.
 - Old Phase 1 (deepen master tools) shifts to Phase 2; everything below shifts by one. New Phase 8 (Chat UX polish) keeps only the items that did not move up.
 - Multi-session is Phase 3 — schema is minimal (no surface columns), tool registration is uniform across sessions.
-- Phase 4 (Tailored CV), Phase 6 (Cover letter), Phase 7 (Interview) each cost one table + one chat-tool group + one view.
-- Layout (Phase 5) ships between Tailored and Cover letter so it proves itself against ≥1 non-master artefact before the next one lands.
+- Phase 4 (Tailored CV, shipped as the multiple-CV model), Phase 9 (Cover letter), Phase 10 (Interview) each cost one table + one chat-tool group + one view.
+- Dashboard layout (Phase 5) shipped after Tailored so it proved itself against ≥1 non-master artefact before the next one lands.
+- Two items were promoted to real phases after Phase 5: Phase 6 (access-code signup gate, done) and Phase 7 (AI-generated PDF layout). Cover letter and Interview were moved to **after** chat UX polish (now Phases 9 and 10, with polish at Phase 8).
 
 ## Why this order
 
@@ -113,9 +137,10 @@ Implications:
 - Master-CV depth (Phase 2) is independent of multi-session and serves as the pattern for every later artefact's mutation tools. With Phase 1 in place, the new tools are observable from day one.
 - Multi-session (Phase 3) is mandatory before any non-master artefact — users need to keep multiple parallel conversations alive (one per vacancy they're chasing, typically) and the singleton thread won't scale to that.
 - Tailored CV (Phase 4) is the most-asked artefact and the most pattern-defining: it forces decisions about per-artefact PDF caching, library view shape, and how the current-context hint flows from the preview pane into the chat request.
-- Layout (Phase 5) ships after Tailored so the session list, CV library, and current-context hint are validated against a real second artefact kind before Cover letter and Interview pile on.
-- Cover letter (Phase 6) and Interview (Phase 7) reuse the Phase 4 + Phase 5 patterns. Interview is later because it has no PDF and is the most experimental.
-- Phases 8–10 carry over their previous purpose.
+- Dashboard layout (Phase 5) shipped after Tailored so the session list, CV library, and current-context hint are validated against a real second artefact kind before Cover letter and Interview pile on.
+- AI-generated PDF layout (Phase 7) is independent of the remaining artefacts and reuses the existing multiple-CV render pipeline, so it slots in right after the access gate.
+- Cover letter (Phase 9) and Interview (Phase 10) reuse the Phase 4 + Phase 5 patterns and now ship **after** chat UX polish (Phase 8), so the chat surface is solid before two more artefact kinds pile on. Interview is last because it has no PDF and is the most experimental.
+- Phases 11–12 carry over the connective-tissue and infra purpose.
 
 ## What I would defer indefinitely
 
@@ -137,9 +162,9 @@ flowchart LR
   Chat -. Phase 2 .-> Achievements
   Chat -. Phase 2 .-> Vacancies
   Chat -. Phase 2 .-> Skills["skill / education /<br/>certification / language"]
-  Chat -. Phase 4 .-> Tailored["tailored_cv<br/>(planned)"]
-  Chat -. Phase 6 .-> Letter["cover_letter<br/>(planned)"]
-  Chat -. Phase 7 .-> Interview["interview_prep<br/>(planned)"]
+  Chat -- Phase 4 --> Tailored["cv variants<br/>(shipped: multiple-CV)"]
+  Chat -. Phase 9 .-> Letter["cover_letter<br/>(planned)"]
+  Chat -. Phase 10 .-> Interview["interview_prep<br/>(planned)"]
   Master & Tailored & Letter --- Preview["Preview pane<br/>(parametric)"]
   Interview --- Workspace["Q&A workspace"]
 ```
@@ -148,31 +173,33 @@ flowchart LR
 
 | Phase | Depends on | Unblocks |
 |---|---|---|
-| 0 | — | (done) |
-| 1 | 0 | every later phase (observability of chat behaviour) |
-| 2 | 1 | 4, 6 (mutation-tool patterns) |
-| 3 | 1 | 4, 5 |
-| 4 | 2, 3 | 5 (real second artefact), 6 (artefact pattern) |
-| 5 | 3 (and ≥1 artefact from 4) | 8 |
-| 6 | 3, 4 | — |
-| 7 | 3 | — |
-| 8 | 5 | polish gate for 9 |
-| 9 | 2, 4/6/7 (relevant artefact) | — |
-| 10 | none (decoupled) | — |
+| 0 ✅ | — | (done) |
+| 1 ✅ | 0 | every later phase (observability of chat behaviour) |
+| 2 ✅ | 1 | 9 (mutation-tool patterns) |
+| 3 ✅ | 1 | 4, 5 |
+| 4 ✅ | 2, 3 | 5 (real second artefact), 9 (artefact pattern) |
+| 5 ✅ | 3 (and ≥1 artefact from 4) | 8 |
+| 6 ✅ | — (auth only) | — |
+| 7 | 4 (multiple-CV render pipeline) | — |
+| 8 | 5 | polish gate for 11 |
+| 9 | 3, 4 | — |
+| 10 | 3 | — |
+| 11 | 2, 4/9/10 (relevant artefact) | — |
+| 12 | none (decoupled) | — |
 | Polish track | runs in parallel from phase 0 onward | each phase's polish gate |
 | Observability | none | — |
 
 ## Roadmap
 
-### Phase 0 — Pre-work (DONE)
+### ✅ Phase 0 — Pre-work (DONE)
 
 Outcome:
 
-- Stub provider module set deleted; only `src/libs/ai/chat-model.ts` remains in that folder. `getChatModel()` returns OpenAI directly via `@ai-sdk/openai` when `OPENAI_API_KEY` + `OPENAI_CHAT_MODEL` are set. The in-file `MockLanguageModelV3` branch is an allowed dev/test fallback for missing env vars outside production; production throws `ChatModelNotConfiguredError`. `OPENAI_API_KEY` is documented in README.
+- Stub provider deleted; only `src/libs/ai/chat-model.ts` remains. `getChatModel()` returns OpenAI directly via `@ai-sdk/openai`. `OPENAI_API_KEY` documented in README.
 - Subscription gate landed as `CHAT_REQUIRE_SUBSCRIPTION` env flag (default `false`) in `src/app/api/chat/route.ts`; no dead commented block.
 - Langfuse intentionally skipped (see Observability).
 
-### Phase 1 — Visible streaming + visible tool calls (DONE)
+### ✅ Phase 1 — Visible streaming + visible tool calls
 
 Goal: the chat panel feels like Claude / OpenAI / Cursor. Text streams in smoothly with a blinking caret while a response is in flight; every tool call renders as a card showing the tool name, the arguments the model passed, and the output it received, with collapse/expand on demand. No new tools, no schema changes — pure UX work over the existing AI SDK parts.
 
@@ -232,19 +259,7 @@ Polish gate (Done when):
 - Reload mid-turn restores both the partial text (via the existing resumable-stream path) and the tool-card state.
 - Scrolling up to re-read does not get yanked back to the bottom by streaming updates.
 
-Handoff notes:
-
-- **Server**: `src/app/api/chat/route.ts` now imports `smoothStream` from `ai` v6 and passes `experimental_transform: smoothStream({ delayInMs: 25, chunking: 'word' })` to `streamText`. Word-level chunking gives ~40 words/sec; tune the delay later if it feels off. Persistence, tool wiring, and the `data-preview-dirty` part are unchanged.
-- **`src/features/chat/components/streaming-text.tsx` (new)**: pure-presentational. Renders a text part with `whitespace-pre-wrap` and an inline blinking-caret span (`animate-caret-blink`, already shipped by `tw-animate-css`). Caret visibility is decided by the parent — the component never tries to know about stream status itself.
-- **`src/features/chat/components/tool-call-card.tsx` (new)**: replaces the old single-row badge. Header (icon + humanised name + summary + status badge + chevron) is a `<button aria-expanded>`; body shows `Arguments` and `Result`/`Error`. Auto-open rule lives in `shouldAutoOpen(state)`: open while `input-streaming`/`input-available`/`output-error`, collapsed once `output-available`. User clicks lock the open state via `useState<boolean | null>`. Payload renderer has two modes: a key/value `<dl>` for plain objects with ≤ 4 primitive fields, otherwise a `<pre>` JSON block (max-height 18rem, scrollable). `ToolPartState` is exported here and shared with the message component.
-- **`src/features/chat/components/chat-message.tsx`**: rewritten. Text parts now go through `StreamingText`; tool parts (both `tool-*` and `dynamic-tool`) through `ToolCallCard`. Reasoning parts render through a new local `ReasoningDisclosure` component (collapsed by default, same chevron pattern as the tool card). `data-preview-dirty` parts still return `null`. New prop `isStreamingLastAssistant` is used to compute `lastTextPartIndex` so the caret only trails the very last text part of a streaming assistant message.
-- **`src/features/chat/components/chat-panel.tsx`**: passes `isStreamingLastAssistant={status === 'streaming' && index === lastAssistantIndex}` to `ChatMessage`. The auto-scroll effect now finds the base-ui scroll viewport via `closest('[data-slot="scroll-area-viewport"]')` (the previous version wrote to a non-scrolling inner div, which was a no-op) and gates auto-scroll on `stickToBottomRef.current`, which is updated by a passive `scroll` listener that compares `scrollHeight - scrollTop - clientHeight` against `STICKY_BOTTOM_THRESHOLD_PX` (80 px). Scrolling more than 80 px above the bottom suspends auto-scroll until the user returns.
-- **`src/styles/globals.css`**: not touched — `tw-animate-css` already exposes the `animate-caret-blink` utility, so a new keyframe was unnecessary.
-- **Persistence**: unchanged. AI SDK v6 already round-trips tool `input`/`output`/`errorText` inside `chat_message.parts`, so reload restores the cards in their final state without store changes.
-- **Deferred to Phase 8 per the original plan**: per-tool-call re-run button (still no UI surface), retry/edit on last assistant/user message, the "chunked fade-in" effect (`smoothStream` alone reads well enough). The original plan called for a `data-preview-dirty` carrying `{kind, refId}` — that's a Phase 4 change, not Phase 1, so the side-channel still uses the legacy `{ renderedAt }` shape.
-- **Verification**: `npm run lint` clean; `npm run build` clean (Next 16.2.6, Turbopack, TypeScript pass). Manual smoke test of the streaming UX requires `OPENAI_API_KEY` + `OPENAI_CHAT_MODEL` in `.env.local`.
-
-### Phase 2 — Deepen master-CV chat tools (DONE)
+### ✅ Phase 2 — Deepen master-CV chat tools
 
 Goal: the user can do every realistic master-CV edit by talking to the agent, including the things currently bouncing them to manual forms. With Phase 1 in place, every new tool ships with its arguments and outputs visible from day one.
 
@@ -266,29 +281,7 @@ Guardrails:
 
 Done when: the user can land in the dashboard, say "rebuild my CV for an SRE role at $company using this vacancy I just pasted", and the chat reads the vacancy, edits summary + relevant bullets + skills + ordering, and re-renders the PDF — all without the manual editor, with every tool call visible.
 
-Handoff notes:
-
-- **`src/features/chat/services/profile-content-service.ts`**: extended with section CRUD (`add/edit/remove/move` for skill, education, certification, language), entry lifecycle (`add/edit/remove/move` for experience and project), bullet reorder (`moveExperienceBullet`, `moveProjectBullet`), and `updateProfileIdentity` (single patch for full_name / location / phone / contact_email / linkedin_url / github_url / website_url). All routes go through `getOrCreateProfile` for the profile_id, validate ownership via `user_id`, trim strings, and coerce empty strings to `null` via the shared `normaliseNullableString` helper. New `MAX_SECTION_ROWS = 50` cap matches the existing 50-bullet cap; the new `assertCapAndNextPosition(user, table)` helper centralises the cap check + auto-positioning (max + 1). Move ops fan out one UPDATE per row that needs renumbering — bounded at 50 by the cap.
-- **`src/features/achievements/services/achievement-service.ts` (new)**: extracted `integrateAchievementById`, `dismissAchievementById`, and `listPendingAchievementRows` so both the `/achievements` safe-action and the chat tools share one implementation. The placeholder `[MISSING] company` / `[MISSING] institution` strings survive on the `experience` and `education` inserts (polish-track copy fix, not a Phase 2 change). The safe-action (`achievement-actions.ts`) keeps the `revalidatePath('/achievements' | '/profile' | '/dashboard')` triggers; the chat tool path relies on the route's end-of-turn PDF render plus normal RSC refetches.
-- **`src/features/chat/schemas.ts`**: added zod input schemas for every new tool. Identity / contact schemas use the trimmed-string + nullable-clear convention. Email and URL fields use `z.email()` / `z.url()` (zod v4 top-level helpers). `setLinksInputSchema` uses a `.refine()` to require at least one of the three link fields. The `optionalShortText`, `isoDateSchema`, and `stackSchema` helpers are local to the section/entry block; everything carries `.describe()` metadata so the model gets a clean JSON Schema.
-- **New tool modules** (each is a separate file so PRs around a single domain stay small; all of them register flat on the route alongside the existing groups):
-  - `src/features/chat/tools/section-tools.ts` — 16 tools (4 ops × 4 sections).
-  - `src/features/chat/tools/entry-tools.ts` — 10 tools (add/edit/remove/move + moveBullet × 2). `editExperience` / `editProject` cover parent-entry fields (company, role, dates, etc.); bullets stay on the dedicated bullet tools.
-  - `src/features/chat/tools/identity-tools.ts` — `setFullName`, `setLocation`, `setPhone`, `setContactEmail`, `setLinks` (last accepts any subset of linkedinUrl / githubUrl / websiteUrl).
-  - `src/features/chat/tools/achievement-tools.ts` — `listPendingAchievements`, `integrateAchievement`, `dismissAchievement`. `previewText` truncates the inbox row to 240 chars so the snapshot stays small.
-  - `src/features/chat/tools/vacancy-tools.ts` — `listVacancies`, `readVacancy`. Read-only; the chat reads raw text and edits master in place until tailored CVs ship in Phase 4. `readVacancy` clamps text at 20k chars (same as the ingest cap).
-- **`src/features/chat/tools/content-tools.ts`**: `MUTATING_TOOLS` set is now the central registry for every mutating tool name across all tool modules (per the plan's "flat" guardrail). `integrateAchievement` is included (it inserts into experience / project / etc.); `listPendingAchievements`, `listVacancies`, `readVacancy`, and `dismissAchievement` are excluded (the latter doesn't change anything that affects the rendered PDF).
-- **`src/app/api/chat/route.ts`**: spreads the five new tool builders into the existing `tools` object alongside `buildStyleTools` and `buildContentTools`. Tool gating logic in `onStepFinish` is unchanged — it still checks `MUTATING_TOOLS.has(toolName)` to flip the `dirty` flag for the end-of-turn render.
-- **`src/features/chat/system-prompt.ts`**: rewritten. Lifted the "Do not change identity-level fields" restriction now that identity tools exist. Added a tool-groups index, the per-tool confirmation rule (`integrateAchievement` needs explicit user agreement on both achievement and target section, `remove*` tools need confirmation), and the vacancy-aware-editing instruction telling the model to invent nothing beyond what's in the profile.
-- **`src/features/chat/components/tool-call-card.tsx`**: `TOOL_LABELS` extended with humanised labels for every new tool name (grouped by domain). Auto-humanise still covers anything we forget. No behavioural changes.
-- **`src/features/achievements/actions/achievement-actions.ts`**: refactored to call the new service. Behaviour and revalidation paths are unchanged.
-- **Verification**: `npm run lint` clean; `npm run build` clean (Next 16.2.6, Turbopack, TypeScript pass). End-to-end tool exercise requires a live OpenAI key — no automated test added.
-- **Deferred to later phases (not regressions)**:
-  - `stepCountIs(8)` in the route is unchanged. A long tailoring turn (readProfile + readVacancy + many edits) may hit the cap; if that happens before Phase 4, bump conservatively to 16. Left alone for now to avoid silent runtime cost growth.
-  - The "[MISSING] company" / "[MISSING] institution" placeholders on achievement integration into experience / education are still in the service — flagged as a polish-track copy fix.
-  - Per-tool re-run UI (Phase 8) and undo on destructive tools (Phase 9) still deferred; the system prompt's confirmation rule is the only safety net for the new `remove*` tools.
-
-### Phase 3 — Multi-session chat (generic threads)
+### ✅ Phase 3 — Multi-session chat (generic threads)
 
 Goal: chat becomes session-scoped. Required infrastructure for every artefact that follows. Sessions are general-purpose threads; the model decides what each one is for from conversation context and the current-context hint.
 
@@ -300,16 +293,16 @@ Schema:
 
 Store + route:
 
-- Rework `src/features/chat/storage/chat-message-store.ts` from `(userId)` to `(sessionId)`. Session CRUD (`listSessions`, `createSession`, `renameSession`, `deleteSession`, plus `getOrCreateDefaultSession` and `setLastActiveSession`) lives in a new sibling file `chat-session-store.ts` so message persistence and session metadata stay independent. The route handler is the only caller of the message functions.
+- Rework `src/features/chat/storage/chat-message-store.ts` from `(userId)` to `(sessionId)`. Add `listSessions(userId)`, `createSession({userId, title?})`, `renameSession`, `deleteSession`. The route handler is the only caller of the message functions.
 - Change `useChat` id in `src/features/chat/components/chat-panel.tsx` from `'chat:singleton'` to the active session id.
 - Resumable stream id derives from session id (`src/libs/ai/resumable-stream.ts`).
-- `POST /api/chat` accepts `{ sessionId, messages }`. Ownership check via `chat_session.user_id = auth.uid()`. (The `ChatContext` payload defined under "Current-context hint" is introduced in Phase 4 when a second artefact kind exists, not in Phase 3.)
+- `POST /api/chat` accepts `{ sessionId, messages, context }`. Ownership check via `chat_session.user_id = auth.uid()`. The `context` payload follows the shape defined under "Current-context hint" above; the route appends a synthetic system message describing it.
 - `GET /api/chat` takes `sessionId` for resume.
 
 Tool registration:
 
-- Every tool registers on every session. `MUTATING_TOOLS` stays a flat set. The model is trusted to pick the right artefact based on intent + (Phase 4+) context hint + tool snapshots; tools enforce ownership server-side regardless.
-- System prompt stays master-CV-only in Phase 3. It expands in Phases 4 / 6 / 7 alongside the artefacts they introduce, and the `context.previewing` pronoun rule lands together with the `ChatContext` hint in Phase 4.
+- Every tool registers on every session. `MUTATING_TOOLS` stays a flat set. The model is trusted to pick the right artefact based on intent + context hint + tool snapshots; tools enforce ownership server-side regardless.
+- System prompt becomes one unified prompt that describes: the master CV, tailored CVs (when Phase 4 lands), cover letters (Phase 9), interview prep (Phase 10), achievements, vacancies, and the rule that the model should reference `context.previewing` when the user uses pronouns ("the summary", "this CV").
 
 UI minimum:
 
@@ -318,106 +311,11 @@ UI minimum:
 
 Done when: a user can create, rename, delete, and switch between sessions; histories load correctly; resumable stream survives reload tied to the session, not the user; switching sessions does not flash empty state; chat behaviour is unchanged from today within any single session.
 
-#### Phase 3 prep — decisions and handoff notes
-
-Decisions on the seven gaps surfaced during prep:
-
-1. **Defer `ChatContext` to Phase 4.** Phase 3 ships without a `context` field on the request body and without a synthetic context system message. With only `master` existing, a hint that always says `master` is dead weight. The `ChatContext` type under "Current-context hint" stays as future-state documentation.
-2. **Storage takes `sessionId` only; rely on RLS.** `loadMessages(sessionId)`, `appendMessages(sessionId, …)`, `clearMessages(sessionId)`. Keep `chat_message.user_id` so the existing RLS predicate doesn't change. Mirrors how `profile-content-service` trusts RLS for ownership.
-3. **`last_message_at` maintained by DB trigger.** `after insert on chat_message for each row execute procedure public.bump_chat_session_last_message_at()`. Cheap, can't be forgotten by application code, same shape as the existing `set_updated_at`.
-4. **Title generation: cheap model + heuristic fallback.** New env `OPENAI_TITLE_MODEL` (default `gpt-4o-mini`). One-shot `generateText`, ~8 tokens, 3 s timeout, fire-and-forget via `after()`. On failure or empty output: title = trimmed first 40 chars of the first user message. Never blocks the stream.
-5. **Reconnect URL: query string on `/api/chat`.** `GET /api/chat?sessionId=<id>` resumes. Client uses `prepareReconnectToStreamRequest: ({ api }) => ({ api: \`${api}?sessionId=${sessionId}\` })`. Smaller diff than introducing `/api/chat/[sessionId]/stream`.
-6. **Session-switch UX.**
-   - New chat auto-switches to the new session id (`useChat` re-mounts under the new id).
-   - Delete current session confirms via a Base UI Dialog, then switches to the most-recent remaining session, or creates a fresh one if none remain.
-   - Initial load: dashboard server component reads `cv_preferences.last_active_session_id`, calls `getOrCreateDefaultSession(userId)` if null, then `loadMessages(activeSessionId)`. Switching only re-mounts `useChat`, never the panel shell, so there is no empty-state flash.
-7. **Keep `chat_message.user_id`.** Avoids touching the existing RLS predicate. Migration adds `session_id`; drops nothing on `chat_message` until the lock-down follow-up.
-
-Migration plan (two files):
-
-- **First migration** `supabase/migrations/<ts>_chat_sessions.sql`:
-  - `create table chat_session(id uuid pk default gen_random_uuid(), user_id uuid not null references auth.users on delete cascade, title text not null default 'New chat', created_at timestamptz default now(), updated_at timestamptz default now(), last_message_at timestamptz default now())`.
-  - Owner full-access RLS policies on `chat_session`.
-  - `alter table cv_preferences add column last_active_session_id uuid null references chat_session(id) on delete set null`.
-  - `alter table chat_message add column session_id uuid null references chat_session(id) on delete cascade`.
-  - Backfill: one session per user with `title = 'General'`, attach every existing `chat_message` row to that session.
-  - `bump_chat_session_last_message_at` after-insert trigger on `chat_message`.
-  - `set_updated_at` trigger on `chat_session`.
-  - New index `chat_message(session_id, created_at)`.
-- **Lock-down migration** `supabase/migrations/<ts+1>_chat_sessions_lock.sql` (run only after one clean deploy on the first migration):
-  - `alter table chat_message alter column session_id set not null`.
-  - `drop index chat_message_user_created_idx`.
-
-Files touched:
-
-- `supabase/migrations/` — two new files per above.
-- `src/libs/supabase/types.ts` — regenerated via `npm run migration:up`.
-- `src/features/chat/storage/chat-message-store.ts` — rewire `loadMessages` / `appendMessages` / `clearMessages` to `(sessionId)`.
-- `src/features/chat/storage/chat-session-store.ts` (new) — `listSessions(userId)`, `getOrCreateDefaultSession(userId)`, `createSession`, `renameSession`, `deleteSession`, `setLastActiveSession`, `generateAndSaveSessionTitle` (called from `after()`).
-- `src/libs/ai/resumable-stream.ts` — `getChatStreamId(sessionId)`.
-- `src/app/api/chat/route.ts` — body becomes `{ sessionId, messages }`; ownership check; persist scoped to session; GET reads `sessionId` from query; first-turn title generation via `after()`.
-- `src/app/(app)/dashboard/page.tsx` — read `?session=<id>` (via `nuqs/server`), resolve through `getOrCreateDefaultSession`, call `loadMessages(sessionId)`, pass both id and messages to the chat panel.
-- `src/features/chat/components/chat-panel.tsx` — `useChat` `id` becomes the active session id; reconnect URL appends `?sessionId=` so GET resume targets the same session.
-- `src/features/chat/components/session-rail.tsx` (new) — collapsible left rail inside the chat panel with new/rename/delete; ~220 px when open, icon strip when collapsed. The same shape Phase 5 will lift into the page-level layout, so no rework when that lands.
-- `src/components/ui/dialog.tsx` (new) — installed via `npx shadcn@latest add dialog`, used by the delete-session confirm.
-- `src/libs/ai/chat-model.ts` — add `getTitleModel()` alongside `getChatModel()`. Reads `OPENAI_TITLE_MODEL` (default `gpt-4o-mini`).
-- `src/features/chat/actions/session-actions.ts` (new) — safe-actions backing the session-list UI.
-- `src/features/chat/system-prompt.ts` — no content change in Phase 3.
-
-Out of scope for Phase 3 (carried forward):
-
-- `ChatContext` type + synthetic context system message — Phase 4.
-- `last_previewed_kind` / `last_previewed_ref_id` columns — Phase 4.
-- Cross-session quoting, clear-history affordance — Phase 8.
-- Title regeneration UI — polish track.
-
-Clarifications (decisions resolving sub-issues found while pressure-testing the prep):
-
-- **Active session id lives in the URL via `nuqs`.** `?session=<id>` on `/dashboard`. Matches the project rule "Use `nuqs` for type-safe search params". Session switching is a `router.push('/dashboard?session=<id>')` — the server component re-renders with the new `initialMessages`, `useChat`'s `id` prop changes, and the panel cleanly remounts with the new history. No client-side message-fetching path.
-- **`getOrCreateDefaultSession(userId)` handles three states**: `last_active_session_id` null, dangling (FK is `on delete set null`, so the cell can survive a deleted session), or live. It also covers "user has zero sessions" by inserting one. Idempotent and safe to call on every dashboard render.
-- **Resumable stream id format**: `chat:${sessionId}`. The previous `chat:${userId}` form is dropped entirely; there is no per-user fallback.
-- **Title generator runs once per session**, only when `chat_session.title = 'New chat'` (the default) AND the persisted user-message count for the session is exactly 1. Skips on every later turn; never clobbers a user rename.
-- **Title generator prompt**: a fixed system message — "Write a short, neutral title for this conversation in five words or fewer. No quotes, no punctuation, no emojis." — paired with the first user message as the user turn. `maxOutputTokens: 16`, `temperature: 0.2`. On failure or empty output: title = trimmed first 40 chars of the first user message.
-- **Title generator model wiring**: new helper `getTitleModel()` in `src/libs/ai/chat-model.ts` alongside `getChatModel()`. Reads `OPENAI_TITLE_MODEL` (default `gpt-4o-mini`). Independent so swapping the chat model never silently changes the title model.
-- **Where `after()` runs**: the title call is scheduled inside `createUIMessageStream`'s `onFinish` (where assistant messages already persist) and wrapped in `after(...)` from `next/server`. Runs after the SSE response closes; never blocks the user-visible stream.
-- **Session-list refresh**: session mutations (`createSession`, `renameSession`, `deleteSession`) call `revalidatePath('/dashboard')`. The session rail is a server-rendered list fed by `listSessions(userId)`; mutations re-render through `router.refresh()` on the client.
-- **`chat_message` RLS predicate stays `auth.uid() = user_id`.** No new policy. The session join is unnecessary because `user_id` is still on the row. New `chat_session` policy is the standard "owner full access" pattern used by `cv_preferences`.
-- **Existing chat migration is frozen.** Do not edit `supabase/migrations/20260515112237_chat.sql`; the comment block on lines 7–9 already anticipates this work. All new column adds and constraints land in the two new migrations.
-- **Both new migrations can ship in one go** for this single-developer project. The split into "first" and "lock-down" is documented for the deploy-safety rule but is not enforced — local `npm run migration:up` applies them in order.
-- **Delete-session UX**: the new shadcn `dialog` confirms ("Delete this chat? This cannot be undone."), then the safe-action deletes the row, the FK cascade clears its messages, the rail re-renders, and the client navigates to the most-recent remaining session or to a freshly created one if none remain.
-- **Session-rail UI for Phase 3**: collapsible left rail inside the existing chat panel, ~220 px when open, icon strip when collapsed, toggle in the panel header. Items show title + relative time; per-row dropdown with Rename / Delete. The page-level layout reshuffle (preview left, chat right, rail in its final home) remains Phase 5 work; the rail itself is reused there with no API changes.
-
-Handoff notes:
-
-- **Schema + types**: added `supabase/migrations/20260523113100_chat_sessions.sql` and `supabase/migrations/20260523113200_chat_sessions_lock.sql`. The first migration creates `chat_session`, adds `chat_message.session_id`, adds `cv_preferences.last_active_session_id`, backfills one `General` session per user with existing messages, and installs `bump_chat_session_last_message_at` + `set_updated_at_chat_session` triggers. The second migration enforces `chat_message.session_id NOT NULL` and drops `chat_message_user_created_idx`. `npm run migration:up` was run and regenerated `src/libs/supabase/types.ts`.
-- **Session-aware storage**: `src/features/chat/storage/chat-message-store.ts` now persists/loads/clears by `sessionId`; `appendMessages` takes `userId` from the route to keep `chat_message.user_id` without an extra owner-lookup query. New `src/features/chat/storage/chat-session-store.ts` implements `listSessions`, `getSessionById`, `getOrCreateDefaultSession`, `createSession`, `renameSession`, `deleteSession`, `setLastActiveSession`, and `generateAndSaveSessionTitle`.
-- **Route + stream scope**: `src/app/api/chat/route.ts` now scopes POST and GET by owned `sessionId`, persists message history per session, and derives resumable stream ids from session (`chat:${sessionId}` via `src/libs/ai/resumable-stream.ts`). First-turn title generation is scheduled with `after()` in `createUIMessageStream` `onFinish`.
-- **Title model wiring**: `src/libs/ai/chat-model.ts` now exports `getTitleModel()` (reads `OPENAI_TITLE_MODEL`, default `gpt-4o-mini`) alongside `getChatModel()`, with dev fallback and production guard behavior matching the chat model path.
-- **Dashboard + chat UI**: `src/app/(app)/dashboard/page.tsx` now resolves active session from `?session=` via `nuqs/server`, falls back through `getOrCreateDefaultSession`, persists last-active id, and loads messages for that session. `src/features/chat/components/chat-panel.tsx` now uses `useChat` id = active session id, session-scoped transport/reconnect URLs, and renders the new `src/features/chat/components/session-rail.tsx`.
-- **Session actions + confirm dialog**: added `src/features/chat/actions/session-actions.ts` for create/rename/delete safe-actions (all revalidate `/dashboard`) and `src/components/ui/dialog.tsx` for delete confirmation. `src/features/previewer/components/previewer-sidebar.tsx` now passes `sessions` + `activeSessionId` into `ChatPanel`.
-- **Compatibility note**: POST accepts `sessionId` in body and (as fallback) query string; GET resume uses `?sessionId=` query. This keeps reconnection behavior stable with the current `DefaultChatTransport` wiring while preserving the Phase 3 request contract.
-- **Verification**: `npm run build` passes on Next 16.2.6 / TypeScript strict after the Phase 3 changes.
-
-#### Phase 3 retrospective (post-merge)
-
-- **Shipped in follow-up:** keyed `ChatPanel` by `activeSessionId` in `src/features/previewer/components/previewer-sidebar.tsx` so session switches force a clean `useChat` remount.
-- **Shipped in follow-up:** added `supabase/migrations/20260523121400_chat_message_session_insert_policy.sql` to require that inserted `chat_message.session_id` belongs to `auth.uid()`.
-- **Shipped in follow-up:** removed the `setLastActiveChatSession` safe-action and the rail-side write path; last-active persistence now flows through server-side session resolution.
-- **Shipped in follow-up:** changed `appendMessages` to `(sessionId, userId, messages)` to drop the redundant `chat_session` owner lookup query.
-- **Shipped in follow-up:** removed the dead `incomingMessages.length === 0` route branch and documented that `after()` work runs outside the request lifetime (no auth-cookie writes from `supabase-ssr`).
-- **Shipped in follow-up:** replaced `window.prompt` rename with a Base UI `Dialog` in `src/features/chat/components/session-rail.tsx`.
-- **Shipped in follow-up:** defaulted the session rail to collapsed in the current tabbed sidebar layout to keep chat content usable before the Phase 5 layout move.
-- **Shipped in follow-up:** replaced URL navigation-based switching with client-side session swapping (`Chat` instance swap + `dashboard/layout.tsx` preview ownership + `history.replaceState`), intentionally superseding the earlier "no client-side message-fetching path" Phase 3 note.
-
-### Phase 4 — Tailored CV artefact
-
-Pre-reqs from Phase 3 retrospective:
-
-- Session switches hard-remount `useChat` (`key={activeSessionId}`), preventing cross-session streaming state bleed.
-- `chat_message` insert RLS enforces `(user_id, session_id)` ownership pairing.
-- `appendMessages(sessionId, userId, ...)` now uses route-owned `userId`, reducing persistence round trips.
+### ✅ Phase 4 — Tailored CV artefact (shipped as the multiple-CV model)
 
 First chat-driven non-master artefact. Establishes the patterns letters and interview will reuse.
+
+> **Shipped differently.** Rather than a dedicated `tailored_cv` table, this landed as a general **multiple-CV** model: a normalized `cv` root (default + user-created variants) with section rows, `cv-meta-tools` (`listCvs` + `cvId`-scoped edit tools), a CV library widget, parametric preview, and per-CV PDF render at `pdf/{user_id}/cv/{cv_id}.pdf`. Undo/redo arrived via the `cv_version` reversible-diff table. The original schema/tool sketch below is kept for historical context; see `AGENTS.md` for the current shape.
 
 Schema:
 
@@ -458,182 +356,69 @@ System prompt additions: the model is told (a) tailored edits never invent facts
 
 Done when: in any session, the user can say "tailor my CV for vacancy X", the preview swaps to the new tailored CV, follow-up "rewrite the summary to emphasise X" edits the right artefact without re-prompting, and the variant shows up in the CV library afterwards.
 
-#### Phase 4 prep — decisions and handoff plan
-
-Decisions on the gaps surfaced while pressure-testing the prep:
-
-1. **`source_profile_snapshot` is frozen and fully self-describing.** Stored as a versioned wrapper: `{ schemaVersion: 1, identity: { fullName, contact: ProfileContact }, profile: AiProfile }`. Identity + contact are snapshotted alongside profile content so the variant doesn't drift when the user later edits master. Type and builder live in a new `src/features/chat/tailored-snapshot.ts`; `applySectionsToSnapshot(snapshot, sections)` does the merge for the renderer. Version field is there for future migrations and is asserted on read.
-
-2. **`sections` shape stays narrow in Phase 4.** Only summary override + per-experience/project bullet arrays mutate. Stack, dates, company, role, location, and the entire skills/education/cert/lang block are frozen from the snapshot. Concrete shape: `{ summary?: string | null, experience?: Array<{ id, bullets, summary? }>, projects?: Array<{ id, bullets }> }`. Reordering and child-section overrides are deferred to Phase 9. Keeps the tool list short and the model's choice space small.
-
-3. **`tailored_cv` carries its own style.** `accent_hex` and `template` are nullable; null = inherit user-level `cv_preferences`, non-null = override. Mirrors the existing accent-hex regex constraint on `cv_preferences`.
-
-4. **Render path generalises in-place.** `src/features/previewer/render.tsx` grows a `renderAndUploadCv({ user, target })` where `target` is the discriminated union `{ kind: 'master' } | { kind: 'tailored_cv', refId }`. Each branch knows how to build the React node, the storage path, and the destination column (`cv_preferences.master_pdf_path` vs `tailored_cv.pdf_path`). The existing `renderAndUploadMasterCv` + `ensureMasterPdfPath` stay as thin wrappers so the dashboard layout, manual refresh action, and chat-route call sites migrate incrementally.
-
-5. **Storage paths.** Master keeps `pdf/{userId}/master.pdf`. Tailored writes to `pdf/{userId}/tailored/{tailoredCvId}.pdf`. The existing path-prefix RLS on the `pdf` bucket already scopes both — no policy changes. Row deletion service calls `supabase.storage.from('pdf').remove([path])` so blobs don't leak; storage failures log but don't block the row delete.
-
-6. **Sign URL helper needs no change.** `createSignedDownload({ path })` already accepts an arbitrary path and validates the `{userId}/` prefix. Phase 4 work is purely caller-side (the store and provider learn to sign different paths over time).
-
-7. **`ChatContext` lands now (deferred from Phase 3).** Request body becomes `{ sessionId, messages, context? }`. `context.previewing` is `{ kind: 'master' } | { kind: 'tailored_cv', refId: string } | null`. `context.workspace` and `context.recentVacancyId` are reserved in the type union but unused in Phase 4 — Phase 6 / Phase 7 will add discriminants without rewriting the schema. The route turns `context.previewing` into a one-line synthetic system message appended to `CHAT_SYSTEM_PROMPT`; the synthetic message is never persisted to `chat_message`, only rebuilt per request from the body.
-
-8. **Preview target lives in the preview store, mirrored to `cv_preferences`.** New store state: `previewTarget: { kind: 'master' } | { kind: 'tailored_cv', refId: string }`. `setPreviewTarget(target)` updates the store, re-registers the refresher to sign the right path, and fires a safe-action to persist `cv_preferences.last_previewed_kind` + `last_previewed_ref_id`. On dashboard mount, the layout reads these columns and seeds the store before the first render.
-
-9. **Two SSE data parts cover the preview side-channel:**
-   - `data-preview-dirty` payload extends from `{ renderedAt }` to `{ kind, refId, renderedAt }`. Client only triggers `markPreviewDirty()` if the dirty target matches what the preview pane is currently showing — prevents background mutations from yanking the visible iframe.
-   - New `data-preview-switch` part carries `{ kind, refId }`. `createTailoredCv` emits it after the row inserts and before the end-of-turn render, so the client calls `setPreviewTarget(...)` and the subsequent `data-preview-dirty` for the new tailored target lands on the right iframe.
-
-10. **End-of-turn render becomes target-aware.** The route's `dirty: boolean` becomes `dirtyTargets: Set<TargetKey>` (key = `master` or `tailored:{id}`). `onStepFinish` inspects the tool name and its `tailoredCvId` argument (if present) to compute which target was mutated. After the stream, the route awaits one render per dirty target sequentially (keeps Supabase storage writes serialised) and emits one `data-preview-dirty` per target. Mutating tools that touch tailored CVs include `tailoredCvId` in their input; the route reads it without any per-tool registration table.
-
-11. **Tailored content service mirrors profile content service.** New `src/features/chat/services/tailored-content-service.ts` with `updateTailoredSummary`, `add/edit/remove/moveTailoredExperienceBullet`, `add/edit/remove/moveTailoredProjectBullet`, `applyTailoredStylePatch`, `renameTailoredCv`, `deleteTailoredCv`. Same caps as profile (`MAX_BULLETS = 50`, `MAX_SUMMARY_LENGTH = 2000`, `MAX_BULLET_LENGTH = 500`). Shared validation helpers (text trim, cap check, nullable-clear) extract into `src/features/chat/services/chat-content-validation.ts` so the profile service can borrow them without circular imports. All writes scoped by `(id, user_id)`; RLS is the backstop.
-
-12. **Tool naming convention.** Tailored tools take `tailoredCvId` as the first argument and use `Tailored` in the name (`editTailoredExperienceBullet`, `rewriteTailoredSummary`, …). Mirroring master tool names plus the `Tailored` infix means the model never confuses which artefact a call targets. Tool descriptions explicitly tell the model to default to `context.previewing` and only call `listTailoredCvs` when the user names an artefact the context hint doesn't already point at.
-
-13. **`MUTATING_TOOLS` extension.** New tailored tool names join the set in `content-tools.ts` (single source of truth). Set membership stays informational — the route uses tool arguments to choose the target. Including the names preserves `dirty` semantics for the master-only path that still uses the helper.
-
-14. **`stepCountIs(8)` bump to `stepCountIs(20)`.** A realistic tailoring turn is `readProfile` + `readVacancy` + `createTailoredCv` + 6–12 bullet edits + `rewriteTailoredSummary`. The cap is a runaway-cost ceiling, not a budget; 20 buys headroom without changing typical-case cost.
-
-15. **CV library scope for Phase 4.** Lands inside the existing tabbed sidebar's `Library` tab. A new "CVs" group sits at the top of the panel and lists master + tailored rows with title, source-vacancy chip if linked, last-updated, per-row Open / Rename / Delete. The existing Style / Capture / Quick links / Import stack stays underneath (final layout move is Phase 5). Master is always present, can't be renamed or deleted. Creation stays chat-only per the architecture rule — no `createTailoredCv` safe-action; the library only mutates via `renameTailoredCvAction` and `deleteTailoredCvAction`.
-
-16. **Handoffs in Phase 4 are limited to two prefill buttons.** "Create tailored CV" inside the library panel and "Tailor my CV for this" on each vacancy row in `/vacancies`. Both prefill the active session's chat input via a small URL contract (`/dashboard?session=<id>&prefill=<urlencoded>`); the dashboard reads `prefill` once on mount and seeds the chat input then clears it from the URL. The wider per-section handoff matrix (achievements, profile editor) lands in Phase 5.
-
-17. **Render concurrency.** No per-user lock yet (Phase 10). Phase 4 trusts that one user runs one chat at a time. The `dirtyTargets` set is per-request, so multiple targets dirtied in the same turn render sequentially in `onFinish` and emit their dirty parts one after the other. Concurrent requests on different sessions can race for the same `tailored_cv.pdf_path`, but the storage upload is `upsert: true` and the row update is a single SQL statement — worst case the cached path lags one render. Acceptable.
-
-18. **Delete cleanup.** `deleteTailoredCv` issues `supabase.storage.from('pdf').remove([path])` then deletes the row. Storage failures log and don't block the row delete (orphaned blobs are tolerable; orphaned rows aren't). If the user was previewing the deleted CV, the route emits a `data-preview-switch` to master before stream close.
-
-19. **Title generation stays unchanged.** `generateAndSaveSessionTitle` fires on the first user message of a session regardless of whether that session ends up about a tailored CV; we don't try to re-title after the artefact appears.
-
-20. **Manual "Refresh" preview button generalises.** The existing `renderMasterCv` safe-action splits into a parametric `renderCv({ kind, refId })` that the previewer-pane calls with the store's `previewTarget`. Existing call sites that need explicitly-master rendering keep the master-only thin wrapper.
-
-Migration plan (one new file):
-
-- `supabase/migrations/<ts>_tailored_cv.sql`:
-  - Re-create `tailored_cv` (dropped in `20260521120000_drop_ai_features.sql`). Columns: `id uuid pk default gen_random_uuid()`, `user_id uuid not null references auth.users on delete cascade`, `job_description_id uuid null references job_description(id) on delete set null`, `title text not null`, `source_profile_snapshot jsonb not null`, `summary text`, `sections jsonb not null default '{}'`, `accent_hex text` with `~ '^#[0-9A-Fa-f]{6}$'` check (mirror `cv_preferences`), `template cv_template`, `pdf_path text`, `created_at`, `updated_at`. Index `(user_id, updated_at desc)`.
-  - Owner full-access RLS using the `(select auth.uid()) = user_id` idiom that `chat_session` already uses.
-  - `set_updated_at` trigger.
-  - `alter table cv_preferences add column last_previewed_kind text check (last_previewed_kind in ('master','tailored_cv'))`.
-  - `alter table cv_preferences add column last_previewed_ref_id uuid` — no FK because the refId is per-kind and null for master; the service is responsible for clearing the row if a referenced tailored CV is deleted.
-  - Backfill `last_previewed_kind = 'master'` for every existing `cv_preferences` row.
-  - `npm run migration:up` applies and regenerates `src/libs/supabase/types.ts`.
-
-Files touched:
-
-Schema + types:
-- `supabase/migrations/<ts>_tailored_cv.sql` (new)
-- `src/libs/supabase/types.ts` (regenerated)
-
-Snapshot + render:
-- `src/features/chat/tailored-snapshot.ts` (new): versioned `TailoredSnapshot` type, `buildTailoredSnapshot`, `applySectionsToSnapshot`, `readTailoredSnapshot` (asserts `schemaVersion`).
-- `src/features/previewer/render.tsx`: rename + generalise into `renderAndUploadCv({ user, target })`; keep `renderAndUploadMasterCv` + `ensureMasterPdfPath` as thin wrappers; add `renderAndUploadTailoredCv`, `ensureTailoredPdfPath`.
-
-Services:
-- `src/features/chat/services/tailored-content-service.ts` (new): full CRUD + bullet ops + style overrides + delete-with-storage-cleanup. On delete, also nulls `cv_preferences.last_previewed_ref_id` where it equals the deleted id.
-- `src/features/chat/services/chat-content-validation.ts` (new, small extraction): text trim, cap check, nullable-clear. Profile service migrates to it as part of the same PR.
-
-Schemas + chat types:
-- `src/features/chat/schemas.ts`: add input schemas for every new tailored tool; extend `chatPostBodySchema` with a `context: ChatContextSchema.optional()`; add `previewSwitchDataSchema`; extend `previewDirtyDataSchema` with `{ kind, refId }`.
-- `src/features/chat/types.ts`: extend `ChatUIDataParts` with `'preview-switch'`.
-
-Tools:
-- `src/features/chat/tools/tailored-tools.ts` (new): `listTailoredCvs`, `createTailoredCv`, `readTailoredCv`, `rewriteTailoredSummary`, `editTailoredBullet`, `addTailoredBullet`, `removeTailoredBullet`, `editTailoredProjectBullet`, `addTailoredProjectBullet`, `removeTailoredProjectBullet`, `setTailoredAccentHex`, `setTailoredTemplate`, `renameTailoredCv`, `deleteTailoredCv`.
-- `src/features/chat/tools/content-tools.ts`: append the new tool names to `MUTATING_TOOLS`.
-
-Route:
-- `src/app/api/chat/route.ts`: parse `context` from body; build and prepend the synthetic preview-context system message; replace `dirty` boolean with `dirtyTargets: Set<TargetKey>`; per-target render in `onFinish`; per-target `data-preview-dirty` emission; `stepCountIs(20)`; register `buildTailoredTools(user)`. The `createTailoredCv` tool implementation writes a `data-preview-switch` part to the writer before returning so the client swaps target before the dirty event for the new tailored CV arrives.
-
-System prompt:
-- `src/features/chat/system-prompt.ts`: add the tailored-CV tool group; "do not invent facts beyond `source_profile_snapshot`"; "when previewing a tailored CV, pronouns default to that CV"; "explain what changed vs the snapshot when finishing a tailoring turn"; explicit confirmation rule for `deleteTailoredCv`; clarify that `createTailoredCv` should re-use the active session, not assume a new one.
-
-Preview store + provider:
-- `src/features/previewer/stores/preview-store.ts`: add `previewTarget` state, `setPreviewTarget(target)`. Refresher becomes target-aware (path is derived from target server-side or via a small client lookup); module-scoped refresher ref keeps subscribers from re-rendering on swap.
-- `src/features/previewer/components/preview-store-provider.tsx`: takes `initialPreviewTarget`, registers the parametric refresher. Persists target swaps via the new `set-last-previewed` safe-action.
-- `src/features/previewer/actions/set-last-previewed.ts` (new): authenticated safe-action that writes `cv_preferences.last_previewed_kind` + `last_previewed_ref_id` and revalidates `/dashboard`.
-
-Previewer pane:
-- `src/features/previewer/components/previewer-pane.tsx`: header shows current target name ("Master CV" / `Tailored: {title}`). Refresh action calls the parametric `renderCv` (new) instead of `renderMasterCv` directly. Empty state copy adjusts to the active target.
-- `src/features/previewer/actions/render-master-cv.ts` → adds `renderCv({ kind, refId })`; the master-only export stays for the manual refresh path until the previewer-pane migrates.
-
-CV library feature (new folder):
-- `src/features/cv-library/controllers/list-cvs.ts` (new): returns `{ master: MasterCvSummary, tailored: TailoredCvSummary[] }`. Master summary is `{ title: 'Master CV', updatedAt }`; tailored summary is `{ id, title, jobDescriptionId, jobDescriptionLabel, updatedAt }`.
-- `src/features/cv-library/actions/tailored-actions.ts` (new): `renameTailoredCvAction`, `deleteTailoredCvAction`. Both revalidate `/dashboard`. Creation stays chat-only.
-- `src/features/cv-library/components/cv-library-panel.tsx` (new): renders the master + tailored list with Open / Rename / Delete (dialog-confirmed) and a "Create tailored CV" prefill button.
-- `src/features/cv-library/components/cv-row.tsx` (new): single row with kind-aware actions.
-
-Sidebar + dashboard wiring:
-- `src/features/previewer/components/previewer-sidebar.tsx`: drop nothing — slot `cv-library-panel` above the existing Style / Capture / Quick links / Import groups inside the Library tab. Pass the new `previewTarget` (server-resolved from `cv_preferences.last_previewed_*` or default master) and the library data down. The final layout reshuffle is Phase 5.
-- `src/app/(app)/dashboard/page.tsx`: resolve `previewTarget` from preferences (with master fallback when `last_previewed_ref_id` dangles after a delete), pass it to the layout provider. Read `?prefill=...` once, feed it to the chat input, then strip from the URL via `history.replaceState`.
-- `src/app/(app)/dashboard/layout.tsx`: hand `initialPreviewTarget` to `PreviewStoreProvider` and use the parametric `ensureCvPdfPath(user, target)` to pick the right initial signed URL.
-
-Vacancy handoff:
-- `src/app/(app)/vacancies/...` (one button): per-row "Tailor my CV for this" links to `/dashboard?session=<active>&prefill=Tailor%20my%20CV%20for%20vacancy%20<id>`. The dashboard's prefill-reader does the rest.
-
-Chat panel ChatContext wiring:
-- `src/features/chat/components/chat-panel.tsx`: subscribe to `usePreviewStore.previewTarget`, include it in each POST via the `DefaultChatTransport` `body` factory (a function so the body recomputes each send rather than capturing a stale target). Add a `'preview-switch'` branch in `onData` that calls `usePreviewStore.getState().setPreviewTarget(...)`. Filter `data-preview-dirty` by current target before triggering the refresher.
-
-Handoff notes:
-
-- **Migration + generated types:** added `supabase/migrations/20260524110000_tailored_cv.sql`, then ran `npm run migration:up` (which also ran `npm run generate-types`). This re-created `tailored_cv`, added `cv_preferences.last_previewed_kind` / `last_previewed_ref_id`, backfilled preview kind to `master`, and regenerated `src/libs/supabase/types.ts`.
-- **Snapshot + tailored persistence layer:** added `src/features/chat/tailored-snapshot.ts` (versioned `source_profile_snapshot`, override merge via `applySectionsToSnapshot`) and `src/features/chat/services/tailored-content-service.ts` (create/read/list tailored CVs, summary + experience/project bullet mutations, style overrides, rename, delete with PDF blob cleanup and preview fallback).
-- **Chat tools + route wiring:** added `src/features/chat/tools/tailored-tools.ts`; extended `src/features/chat/schemas.ts` with tailored tool schemas + `context` payload + `preview-switch`/targeted `preview-dirty` data parts; extended `src/features/chat/types.ts`; updated `src/features/chat/tools/content-tools.ts` mutating tool set; updated `src/app/api/chat/route.ts` to parse `context.previewing`, append a synthetic non-persisted context system message, register tailored tools, emit `data-preview-switch`, track `dirtyTargets`, render per target, emit targeted `data-preview-dirty`, and bump stop condition to `stepCountIs(20)`.
-- **Preview target architecture:** added `src/features/previewer/preview-target.ts`; generalized `src/features/previewer/render.tsx` to `renderAndUploadCv` + `ensureCvPdfPath` with wrappers kept; added `src/features/previewer/actions/set-last-previewed.ts`; extended `src/features/previewer/actions/sign-pdf-url.ts` with `createSignedPreviewUrl`; extended `src/features/previewer/actions/render-master-cv.ts` with `renderCv`; updated `PreviewStoreProvider`/store to hold `previewTarget`, re-sign per target, and persist target changes.
-- **Dashboard + library + handoffs:** added `src/features/cv-library/controllers/list-cvs.ts`, `src/features/cv-library/actions/tailored-actions.ts`, `src/features/cv-library/components/cv-library-panel.tsx`, and `src/features/cv-library/components/cv-row.tsx`; slotted library into `src/features/previewer/components/previewer-sidebar.tsx`; updated dashboard page/layout to resolve initial preview target + pass prefill; added `src/features/chat/handoff.ts`; wired vacancy list/detail "Tailor in chat" links (`/dashboard?session=<id>&prefill=...`) and chat input prefill handling/URL cleanup.
-- **Prompt + UI behavior:** updated `src/features/chat/system-prompt.ts` with tailored tool guidance, preview-context pronoun defaults, and `deleteTailoredCv` confirmation rule; `ChatPanel` now sends `context.previewing` on POST, handles `preview-switch`, and only refreshes preview URL when dirty target matches current preview.
-- **Verification:** `npm run lint` passes and `npm run build` passes on Next 16.2.6 + TypeScript strict.
-- **Intentional deltas from prep notes:** no separate `chat-content-validation.ts` extraction in this pass (validation remains inside the new tailored service); tool naming uses explicit `*TailoredExperienceBullet`/`*TailoredProjectBullet` names instead of a generic `editTailoredBullet` alias.
-
-Out of scope for Phase 4 (carried forward):
-
-- Tailored skill / education / certification / language overrides → Phase 9.
-- Tailored reorder (experience / project ordering) → Phase 9.
-- "Diff against master" view on the preview → Phase 9.
-- `/cvs` standalone route + thumbnail strip → Phase 5.
-- Per-section handoffs from `/profile` and `/achievements` → Phase 5.
-- Per-user render lock → Phase 10.
-- Background `after()` render → Phase 10.
-- Undo on `deleteTailoredCv` / destructive tailored mutations → Phase 9.
-
-Open questions to resolve before coding (none blocking):
-
-- `readTailoredCv` payload shape: pure merged snapshot vs merged snapshot + a flat `overrides` map so the model can compare against master. Default: include overrides; drop in a follow-up if unused.
-- Sign-URL TTL stays 60 s; two preview swaps in quick succession may re-sign twice. Acceptable for Phase 4.
-- Handoff URL contract is currently inline (`?prefill=...`); pulling it into a shared `src/features/chat/handoff.ts` keeps Phase 5's additional handoffs a one-line change. Worth doing during Phase 4's PR 3.
-
-Polish gate (Done when):
-
-- A user opens the dashboard, sees the master CV previewed by default, types "tailor my CV for the vacancy I just pasted", and watches the preview swap to the new tailored CV mid-turn.
-- Tool-call cards show the tailored mutations as they happen, with the right `tailoredCvId` and the resulting one-line summaries.
-- Switching back to master in the library swaps the preview without changing the chat session; saying "rewrite the summary" now edits master again.
-- Reloading the page restores the same preview target and the same active session.
-- Deleting a tailored CV removes the row and the storage blob; the preview falls back to master and `cv_preferences.last_previewed_ref_id` clears.
-- `chat_message` row count grows only with persisted user/assistant turns; the synthetic context system message is never written.
-
-Suggested PR split:
-
-1. **PR 1 — data plane.** Migration + types regen + `tailored-snapshot.ts` + `renderAndUploadCv` refactor + `tailored-content-service.ts` + `chat-content-validation.ts` extraction + parametric `renderCv` action + store/provider target awareness (no UI changes yet). Verified by a one-off scratch script or curl against the new safe-actions; preview still shows master.
-2. **PR 2 — chat surface.** `tailored-tools.ts` + schema/type extensions + route changes (`context`, `dirtyTargets`, per-target render emission, `data-preview-switch`, `stepCountIs(20)`) + system-prompt additions + chat-panel `body` factory + `onData` branches. End-of-PR demo: in chat, "create a tailored CV called test" inserts a row, emits switch + dirty, route renders tailored PDF visible.
-3. **PR 3 — library + handoff.** `cv-library` feature folder + sidebar slot + previewer-pane header + `set-last-previewed` + `?prefill=` reader + vacancy "Tailor my CV for this" button. End-of-PR demo: full Phase 4 flow as in the polish gate.
-
-### Phase 5 — Chat as primary workspace (layout + handoffs)
+### ✅ Phase 5 — Chat as primary workspace (layout + handoffs)
 
 With Phase 3 + Phase 4 in hand, restructure the dashboard.
 
 - Two-column dashboard: preview/workspace on the left, chat on the right. Today both live inside `src/features/previewer/components/previewer-sidebar.tsx` under a tabs control with "Library" + "Chat". Tabs disappear.
 - Move the current "Library" tab content (template picker, import-tex, links) into a collapsible left rail or a top-toolbar popover.
 - **Session list.** Plain chronological list with new-chat / rename / delete actions. Auto-generated titles from Phase 3 make this useful without grouping. No surface badges — sessions are generic. Optional: a "search sessions" input once the count gets high.
-- **CV library.** If Phase 4 shipped it as a panel, lift it to a dedicated `/cvs` route once the count justifies it. Lists master + all tailored CVs with thumbnail + last-updated + source vacancy. Selecting a row swaps the preview target (which becomes the next request's `context.previewing`). Cover letters and interview prep get their own library entries in Phases 6 and 7.
+- **CV library.** If Phase 4 shipped it as a panel, lift it to a dedicated `/cvs` route once the count justifies it. Lists master + all tailored CVs with thumbnail + last-updated + source vacancy. Selecting a row swaps the preview target (which becomes the next request's `context.previewing`). Cover letters and interview prep get their own library entries in Phases 9 and 10.
 - **Decoupled preview / session.** Switching CVs in the library swaps the preview pane but does **not** change the chat session. Switching chat sessions does not swap the preview. The chat tools read `context.previewing` to figure out what the user is referring to.
 - **Empty state per session.** Profile-completeness + pending-achievements + saved-vacancies + saved-CVs counts (all loadable server-side on dashboard mount). Suggested prompts pivot off whatever the user is currently previewing.
 - **Handoffs.** Every handoff lands in the **current active session** by default. The user controls whether to stay in the same chat or start a new one — the chat panel exposes a clearly visible "New chat" affordance next to the input, so the deliberate action of starting fresh is always one click away.
   - From `/achievements`, a per-row "Send to chat" populates the input of the active session with a templated `integrateAchievement` prompt (not auto-sent — the user reviews and submits).
   - From `/vacancies`, "Tailor my CV for this" populates the active session's input with a templated `createTailoredCv` prompt.
-  - From `/vacancies`, "Draft cover letter" populates with a templated `createCoverLetter` prompt (Phase 6).
-  - From `/vacancies`, "Prep for interview" populates with a templated `createInterviewPrep` prompt (Phase 7).
+  - From `/vacancies`, "Draft cover letter" populates with a templated `createCoverLetter` prompt (Phase 9).
+  - From `/vacancies`, "Prep for interview" populates with a templated `createInterviewPrep` prompt (Phase 10).
   - From the manual profile editor, per-section "Ask chat to rewrite this" populates with a templated prompt referencing the section.
   - All handoffs prefill, not send. The user can edit the prompt, hit "New chat" first if they want a clean thread, or send as-is to keep iterating in the current conversation.
 - Persist `cv_preferences.last_active_session_id` and `cv_preferences.last_previewed_*` so reload restores both independently.
 
 Done when: opening the app lands on chat + preview side-by-side, with the session list visible, every other page has a working handoff to chat, and the user can preview one CV while a session that just edited another is still on screen.
 
-### Phase 6 — Cover letter artefact
+### ✅ Phase 6 — Access-code gate at signup (DONE)
+
+Replaces the (never-built) payment paywall with a hardcoded access code so friends can sign up but random people cannot. Decisions: gate **at signup only** (existing accounts unaffected, no per-user tracking, no DB migration); Stripe code **left dormant** (untouched).
+
+Outcome:
+
+- `SIGNUP_ACCESS_CODE` env var added (documented in `.env.local.example`, `.env.vercel`, `README.md`). Fails closed: if unset/empty, signups are rejected.
+- `signUpWithPassword` (`src/features/auth/auth-actions.ts`) gained an `accessCode` field, validated against the env var *before* calling Supabase `signUp`. `signInWithPassword` is unchanged (existing users always get in).
+- `AuthUI` (`src/features/auth/auth-ui.tsx`) renders an "Access code" field in signup mode only, with a friendly error ("Invalid access code") via `getAuthErrorMessage`.
+- Not a real security boundary (single shared secret, no rate limit beyond Supabase's) — just a friction gate. Revisit if abused.
+
+### Phase 7 — AI-generated PDF layout (chat-driven layout plan)
+
+Replaces the two hardcoded react-pdf templates with a model-produced **layout plan** executed deterministically, so item allocation on the page is content-aware. Decisions: the chat model emits the plan (no new AI surface — respects "chat is the only AI surface"); a deterministic react-pdf executor renders it; **no page-length constraint** (allocate attractively across as many pages as needed).
+
+Shape:
+
+- **`LayoutSpec`** (new schema, `src/entities/cv/pdf/`): section order, per-section column assignment (single vs multi-column regions), density/font-scale knobs, optional summary override. Builds on the already-present-but-unused `TailoredSections` seam in `templates/shared.tsx`.
+- **Storage:** new nullable `cv.layout_json jsonb` column (migration + regenerated Supabase types). Null = fall back to the current `cv.template` enum behaviour, so nothing breaks for existing CVs. Layout is style metadata, versioned separately from the `AiProfile` content diffs (not part of `cv_version` undo content).
+- **Executor:** a generic template component in `src/entities/cv/pdf/` that consumes `LayoutSpec` + `AiProfile` and composes the existing section primitives (`shared.tsx`) into the planned regions. `Cv.tsx` routes to it when `layout_json` is present, else keeps the `cv.template` enum behaviour.
+- **Chat tool:** `setLayout({ cvId, layoutSpec })` in a new/existing chat-tools module, registered like other CV tools; member of `MUTATING_TOOLS` so it triggers the end-of-turn render. The model reasons about good CV layout from a system-prompt section (and optionally a `.claude/skills` layout skill) describing allocation heuristics, then persists the spec. A `setTemplate`/`resetLayout` call clears `layout_json` so manual template selection and AI layout stay mutually exclusive (last writer wins).
+- **Render path:** unchanged contract — `renderAndUploadCv` still renders `<Cv/>` → upload → `pdf_path` → signed-URL preview. Only the template resolution inside `Cv.tsx` changes.
+
+Open implementation risk: react-pdf is flexbox-only with no pre-layout height measurement, so "better allocation" is heuristic (the model estimates from content volume), not measured. If that proves too coarse, escalate to the HTML/CSS + headless-chrome rendering path (deferred; heavier Vercel infra).
+
+Done when: in any chat session the user can say "lay this CV out better / make it two columns / make it denser", the model emits a `LayoutSpec`, the PDF re-renders with the new allocation, and existing CVs without a plan are unaffected.
+
+### Phase 8 — Chat UX polish (remainder)
+
+The streaming + tool-card items that used to live here are now Phase 1. What stays:
+
+- Retry on last assistant turn, edit/resend on last user turn (AI SDK v6 supports both — just wire UI).
+- Re-run on individual tool calls. Phase 1 leaves the re-run button behind a feature flag; turn it on here once we have a clear UX for "re-run with the same args" vs "re-run and let the model rebuild args".
+- Mobile: surface chat in a `Sheet` below `lg`; preview switches to a tab beside the workspace.
+- Rate limiting per session (and per user across sessions) via Upstash (`messages/minute` and `maxOutputTokens` cap on `streamText`). Redis client is already wired in `src/libs/ai/resumable-stream.ts`.
+- Switch `useChat` to incremental request payload (`prepareSendMessagesRequest`) once histories grow.
+- Clear-history affordance per session, with confirmation. `clearMessages` already exists in `src/features/chat/storage/chat-message-store.ts`; scope it to a session id once Phase 3 lands.
+- Cross-session "send to other session" action for sharing context (paste a message into another session as a quote).
+
+Done when: chat feels good on a fresh laptop, on a slow connection, and on a phone, across all surface kinds.
+
+### Phase 9 — Cover letter artefact
 
 Pattern reuse from Phase 4.
 
@@ -666,7 +451,7 @@ Views:
 
 Done when: in any session the user can say "draft a cover letter for vacancy X", iterate paragraph by paragraph (referring to "the letter" or "the second paragraph" without re-naming the artefact), and the letter shows up in the library with its own preview.
 
-### Phase 7 — Interview prep artefact
+### Phase 10 — Interview prep artefact
 
 Most experimental of the three. No PDF — this is a chat-driven Q&A workspace.
 
@@ -696,21 +481,7 @@ View:
 
 Done when: the user can spin up an interview prep from a vacancy, talk through answers in any chat session, and have the workspace persist questions / answers / reviews. PDF export is intentionally out of scope.
 
-### Phase 8 — Chat UX polish (remainder)
-
-The streaming + tool-card items that used to live here are now Phase 1. What stays:
-
-- Retry on last assistant turn, edit/resend on last user turn (AI SDK v6 supports both — just wire UI).
-- Re-run on individual tool calls. Phase 1 leaves the re-run button behind a feature flag; turn it on here once we have a clear UX for "re-run with the same args" vs "re-run and let the model rebuild args".
-- Mobile: surface chat in a `Sheet` below `lg`; preview switches to a tab beside the workspace.
-- Rate limiting per session (and per user across sessions) via Upstash (`messages/minute` and `maxOutputTokens` cap on `streamText`). Redis client is already wired in `src/libs/ai/resumable-stream.ts`.
-- Switch `useChat` to incremental request payload (`prepareSendMessagesRequest`) once histories grow.
-- Clear-history affordance per session, with confirmation. `clearMessages` already exists in `src/features/chat/storage/chat-message-store.ts`; scope it to a session id once Phase 3 lands.
-- Cross-session "send to other session" action for sharing context (paste a message into another session as a quote).
-
-Done when: chat feels good on a fresh laptop, on a slow connection, and on a phone, across all surface kinds.
-
-### Phase 9 — Connective tissue
+### Phase 11 — Connective tissue
 
 Pull in opportunistically alongside the matching surface.
 
@@ -718,9 +489,9 @@ Pull in opportunistically alongside the matching surface.
 - Stream resume hardening: persist partial assistant turns every N tokens, not only in `onFinish`. Without this, a crash mid-render loses the assistant message.
 - "Diff against master" view on the tailored CV preview — uses `tailored_cv.source_profile_snapshot` for the comparison; cheap because the snapshot is on the row.
 - Undo on destructive chat tool calls (`removeExperience`, `removeProject`, `deleteTailoredCv`, `deleteCoverLetter`, `deleteInterviewPrep`). A simple inverse-tool "Undo last change" suffices.
-- Voice input for interview answers (transcribe via the AI SDK's audio APIs). Out of scope until Phase 7 is solid.
+- Voice input for interview answers (transcribe via the AI SDK's audio APIs). Out of scope until Phase 10 is solid.
 
-### Phase 10 — Infra story
+### Phase 12 — Infra story
 
 No critical-path trigger. Pick this up only after Phase 8 is solid.
 
@@ -731,7 +502,7 @@ No critical-path trigger. Pick this up only after Phase 8 is solid.
 
 ## UI/UX polish track (parallel)
 
-Runs alongside phases 0–9. Each phase has its own polish gate; this track captures the cross-cutting work.
+Runs alongside phases 0–12. Each phase has its own polish gate; this track captures the cross-cutting work.
 
 - **Design tokens.** Audit the Tailwind v4 `@theme inline` block in `src/styles/globals.css`. Lock the oklch palette and a small set of motion durations before Phase 5 reshuffles the layout. The caret blink + tool-card expand animations from Phase 1 are the first entries in the motion vocabulary.
 - **Motion.** Define a small motion vocabulary (message-enter, tool-card-expand, preview-dirty pulse, session-switch, caret-blink). Use `tw-animate-css`, not the deprecated `tailwindcss-animate`.
@@ -739,8 +510,6 @@ Runs alongside phases 0–9. Each phase has its own polish gate; this track capt
 - **Accessibility.** Keyboard nav for session list and tool-call cards, focus states, `aria-live="polite"` on the streaming text region (announce new tokens at most once per ~500ms to avoid screen-reader spam), contrast checked against both `:root` and `.dark`.
 - **Dark mode.** Already wired via `next-themes`; spot-check every new surface as it ships.
 - **Copy.** Tighten labels and empty-state text. Internal placeholders like `[MISSING] company` (see `integrateAchievement`) need user-friendly replacements.
-- **Phase 3 follow-up (shipped):** Session rename now uses an in-app dialog (not `window.prompt`) and keeps validation/error handling in the existing action flow.
-- **Phase 3 follow-up (shipped):** Session rail defaults to collapsed in the tabbed sidebar shell to preserve chat width until the Phase 5 layout reshuffle.
 
 ## Observability (optional, do later)
 
@@ -756,9 +525,11 @@ Trigger: any non-trivial real usage or a recruiter-facing dashboard need.
 3. Phase 2 group 2 (experience/project entry lifecycle + reorder).
 4. Phase 2 group 4 (achievement integration tools).
 5. Phase 3 as a single PR: schema migrations + store rework + route changes + `useChat` id + resumable stream id + minimal session list UI.
-6. Phase 4 as one or two PRs: schema + tools + parametric preview + library/picker (the latter can land as a panel first, route later).
-7. Phase 5 layout rework, bundled with the handoffs.
-8. Phase 6 cover letter artefact.
-9. Phase 7 interview prep artefact.
-10. Phases 8 and 9 in parallel with the surface work as time allows.
-11. Phase 10 (Azure Blob) only after Phase 8 feels finished.
+6. Phase 4 as one or two PRs: schema + tools + parametric preview + library/picker (the latter can land as a panel first, route later). ✅ Shipped as the multiple-CV model.
+7. Phase 5 layout rework, bundled with the handoffs. ✅ Shipped.
+8. Phase 6 access-code signup gate. ✅ Shipped.
+9. Phase 7 AI-generated PDF layout as one PR: `cv.layout_json` column + `LayoutSpec` schema + executor in `Cv.tsx` + `setLayout` chat tool + system-prompt guidance.
+10. Phase 8 chat UX polish.
+11. Phase 9 cover letter artefact, then Phase 10 interview prep artefact (both after UX polish).
+12. Phase 11 connective tissue in parallel with the surface work as time allows.
+13. Phase 12 (Azure Blob) only after Phase 8 feels finished.
