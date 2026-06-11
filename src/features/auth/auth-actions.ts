@@ -12,6 +12,23 @@ const credentialsSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
+const signUpSchema = credentialsSchema.extend({
+  accessCode: z.string().min(1, 'Access code is required'),
+});
+
+// Friction gate for closed beta: only people with the shared access code can
+// create accounts. Existing users (sign-in) are unaffected. Fails closed — if
+// SIGNUP_ACCESS_CODE is unset or empty, signups are rejected entirely.
+function assertSignUpAllowed(accessCode: string): void {
+  const expected = process.env.SIGNUP_ACCESS_CODE?.trim();
+  if (!expected) {
+    throw new Error('Signups are currently disabled.');
+  }
+  if (accessCode.trim() !== expected) {
+    throw new Error('Invalid access code.');
+  }
+}
+
 export const signInWithOAuth = actionClient
   .inputSchema(z.object({ provider: z.enum(['github', 'google']) }))
   .action(async ({ parsedInput: { provider } }) => {
@@ -42,8 +59,10 @@ export const signInWithPassword = actionClient
   });
 
 export const signUpWithPassword = actionClient
-  .inputSchema(credentialsSchema)
-  .action(async ({ parsedInput: { email, password } }) => {
+  .inputSchema(signUpSchema)
+  .action(async ({ parsedInput: { email, password, accessCode } }) => {
+    assertSignUpAllowed(accessCode);
+
     const supabase = await createSupabaseServerClient();
 
     const { data, error } = await supabase.auth.signUp({

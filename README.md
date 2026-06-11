@@ -140,6 +140,10 @@ RESEND_API_KEY=re_...
 OPENAI_API_KEY=sk-...
 
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Closed-beta signup gate. New accounts require this shared code; existing users
+# sign in normally. Fails closed: if unset/empty, all signups are rejected.
+SIGNUP_ACCESS_CODE=pick-a-shared-code
 ```
 
 ### 6. Run database migrations

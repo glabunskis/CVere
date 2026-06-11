@@ -14,11 +14,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import { signInWithPassword, signUpWithPassword } from './auth-actions';
 
-const credentialsSchema = z.object({
+const loginSchema = z.object({
   email: z.email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
-type CredentialsForm = z.infer<typeof credentialsSchema>;
+const signupSchema = loginSchema.extend({
+  accessCode: z.string().min(1, 'Access code is required'),
+});
+type CredentialsForm = z.infer<typeof loginSchema> & { accessCode?: string };
 
 function getAuthErrorMessage(error?: string): string {
   const lower = (error ?? '').toLowerCase();
@@ -34,6 +37,12 @@ function getAuthErrorMessage(error?: string): string {
   if (lower.includes('email not confirmed')) {
     return 'Please confirm your email before signing in.';
   }
+  if (lower.includes('access code')) {
+    return error ?? 'Invalid access code.';
+  }
+  if (lower.includes('signups are currently disabled')) {
+    return 'Signups are currently disabled.';
+  }
   if (lower.includes('invalid') || lower.includes('credentials')) {
     return 'Invalid email or password.';
   }
@@ -47,7 +56,7 @@ const titleMap = {
 
 const subtitleMap = {
   login: 'Enter your email and password',
-  signup: 'Enter your email and choose a password',
+  signup: 'Enter your email, choose a password, and add your access code',
 };
 
 export function AuthUI({ mode }: { mode: 'login' | 'signup' }) {
@@ -57,23 +66,40 @@ export function AuthUI({ mode }: { mode: 'login' | 'signup' }) {
     reset,
     formState: { errors },
   } = useForm<CredentialsForm>({
-    resolver: zodResolver(credentialsSchema),
+    resolver: zodResolver(mode === 'signup' ? signupSchema : loginSchema),
   });
 
-  const action = mode === 'login' ? signInWithPassword : signUpWithPassword;
-  const { executeAsync, isPending } = useAction(action);
+  const loginAction = useAction(signInWithPassword);
+  const signupAction = useAction(signUpWithPassword);
+  const isPending = mode === 'login' ? loginAction.isPending : signupAction.isPending;
 
   async function onSubmit(data: CredentialsForm) {
-    const result = await executeAsync(data);
+    if (mode === 'signup') {
+      const result = await signupAction.executeAsync({
+        email: data.email,
+        password: data.password,
+        accessCode: data.accessCode ?? '',
+      });
 
-    if (result?.serverError) {
-      toast.error(getAuthErrorMessage(result.serverError));
+      if (result?.serverError) {
+        toast.error(getAuthErrorMessage(result.serverError));
+        return;
+      }
+
+      if (result?.data && 'needsEmailConfirmation' in result.data) {
+        toast(`Check your inbox to confirm your email: ${data.email}`);
+        reset();
+      }
       return;
     }
 
-    if (mode === 'signup' && result?.data && 'needsEmailConfirmation' in result.data) {
-      toast(`Check your inbox to confirm your email: ${data.email}`);
-      reset();
+    const result = await loginAction.executeAsync({
+      email: data.email,
+      password: data.password,
+    });
+
+    if (result?.serverError) {
+      toast.error(getAuthErrorMessage(result.serverError));
     }
   }
 
@@ -108,6 +134,22 @@ export function AuthUI({ mode }: { mode: 'login' | 'signup' }) {
           />
           {errors.password && <p className='text-sm text-destructive'>{errors.password.message}</p>}
         </div>
+
+        {mode === 'signup' && (
+          <div className='flex flex-col gap-2'>
+            <Label htmlFor='accessCode'>Access code</Label>
+            <Input
+              id='accessCode'
+              type='text'
+              autoComplete='off'
+              placeholder='Invite-only access code'
+              {...register('accessCode')}
+            />
+            {errors.accessCode && (
+              <p className='text-sm text-destructive'>{errors.accessCode.message}</p>
+            )}
+          </div>
+        )}
 
         <Button type='submit' disabled={isPending}>
           {isPending
