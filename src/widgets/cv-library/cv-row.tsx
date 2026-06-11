@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/shared/lib/cn';
+import { useHasMounted } from '@/shared/lib/use-has-mounted';
 import { Button } from '@/shared/ui/button';
 
 type CvRowProps = {
@@ -20,6 +21,7 @@ function formatUpdatedAt(value: string | null | undefined): string {
 }
 
 export function CvRow({ title, meta, updatedAt, isActive, onOpen, actions }: CvRowProps) {
+  const hasMounted = useHasMounted();
   return (
     <div
       className={cn(
@@ -34,7 +36,9 @@ export function CvRow({ title, meta, updatedAt, isActive, onOpen, actions }: CvR
       >
         <p className='truncate text-sm font-medium text-foreground'>{title}</p>
         {meta ? <p className='truncate text-xs text-muted-foreground'>{meta}</p> : null}
-        <p className='truncate text-[11px] text-muted-foreground'>{formatUpdatedAt(updatedAt)}</p>
+        <p className='truncate text-[11px] text-muted-foreground'>
+          {hasMounted ? formatUpdatedAt(updatedAt) : '\u00A0'}
+        </p>
       </button>
       <div className='flex shrink-0 items-center gap-1'>
         <Button type='button' size='sm' variant='ghost' onClick={onOpen}>

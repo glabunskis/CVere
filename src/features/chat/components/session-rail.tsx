@@ -18,6 +18,7 @@ import {
   renameChatSession,
 } from '@/features/chat/actions/session-actions';
 import { cn } from '@/shared/lib/cn';
+import { useHasMounted } from '@/shared/lib/use-has-mounted';
 import { Button } from '@/shared/ui/button';
 import {
   Dialog,
@@ -56,6 +57,7 @@ export function SessionRail({
   onRenamed,
   onDeleted,
 }: Props) {
+  const hasMounted = useHasMounted();
   const [collapsed, setCollapsed] = useState(true);
   const [pendingDelete, setPendingDelete] = useState<ChatSessionListItem | null>(null);
   const [pendingRename, setPendingRename] = useState<ChatSessionListItem | null>(null);
@@ -190,7 +192,7 @@ export function SessionRail({
                 >
                   <p className='truncate text-sm font-medium text-foreground'>{session.title}</p>
                   <p className='truncate text-[11px] text-muted-foreground'>
-                    {formatRelativeTime(session.lastMessageAt)}
+                    {hasMounted ? formatRelativeTime(session.lastMessageAt) : '\u00A0'}
                   </p>
                 </button>
 

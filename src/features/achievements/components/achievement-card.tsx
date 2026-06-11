@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import type { AchievementRow } from '@/entities/achievement/list-achievements';
 import { integrableSectionSchema } from '@/entities/achievement/schemas';
+import { useHasMounted } from '@/shared/lib/use-has-mounted';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Select } from '@/shared/ui/select';
@@ -22,6 +23,7 @@ function defaultSection(suggested: AchievementRow['target_section']): Integrable
 }
 
 export function AchievementCard({ row }: { row: AchievementRow }) {
+  const hasMounted = useHasMounted();
   const [section, setSection] = useState<IntegrableSection>(defaultSection(row.target_section));
 
   const { execute: integrate, isExecuting: integrating } = useAction(integrateAchievement, {
@@ -41,7 +43,7 @@ export function AchievementCard({ row }: { row: AchievementRow }) {
           <div className='flex items-center gap-2'>
             <StatusBadge status={row.status} />
             <span className='text-xs text-muted-foreground'>
-              {new Date(row.created_at).toLocaleString()}
+              {hasMounted ? new Date(row.created_at).toLocaleString() : '\u00A0'}
             </span>
           </div>
         </div>
