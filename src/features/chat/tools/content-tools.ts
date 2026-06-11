@@ -1,18 +1,7 @@
 import { tool } from 'ai';
 
-import { getCvChildren } from '@/features/cv/controllers/get-cv-children';
-import { buildCvSnapshot } from '@/features/cv/cv-snapshot';
-import {
-  addExperienceBullet,
-  addProjectBullet,
-  editExperienceBullet,
-  editProjectBullet,
-  getCv,
-  removeExperienceBullet,
-  removeProjectBullet,
-  updateSummary,
-} from '@/features/cv/services/cv-service';
-import { logger } from '@/libs/logger';
+import { addExperienceBullet, addProjectBullet, buildCvSnapshot, editExperienceBullet, editProjectBullet, getCv, getCvChildren, removeExperienceBullet, removeProjectBullet, updateSummary } from '@/entities/cv';
+import { logger } from '@/shared/lib/logger';
 import type { User } from '@supabase/supabase-js';
 
 import {

@@ -1,11 +1,8 @@
 import type { PropsWithChildren } from 'react';
 
-import { getSession } from '@/features/account/controllers/get-session';
-import { getSelectedCv } from '@/features/cv/services/cv-service';
-import { PreviewStoreProvider } from '@/features/previewer/components/preview-store-provider';
-import { PreviewerPane } from '@/features/previewer/components/previewer-pane';
-import { signPdfUrl } from '@/features/previewer/controllers/sign-pdf-url';
-import { ensureCvPdfPath } from '@/features/previewer/render';
+import { ensureCvPdfPath, getSelectedCv } from '@/entities/cv';
+import { getSession } from '@/entities/user';
+import { PreviewerPane, PreviewStoreProvider, signPdfUrl } from '@/features/cv-preview';
 
 export default async function DashboardLayout({ children }: PropsWithChildren) {
   const user = await getSession();

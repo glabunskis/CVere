@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { ChevronDownIcon, WrenchIcon } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/cn';
+import { Badge } from '@/shared/ui/badge';
 
 import { TOOL_REGISTRY } from '../tools/tool-registry';
 

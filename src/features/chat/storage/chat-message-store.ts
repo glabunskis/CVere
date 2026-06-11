@@ -1,7 +1,7 @@
 import type { UIMessage } from 'ai';
 
-import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
-import type { Json } from '@/libs/supabase/types';
+import { createSupabaseServerClient } from '@/shared/api/supabase/supabase-server-client';
+import type { Json } from '@/shared/api/supabase/types';
 
 import 'server-only';
 

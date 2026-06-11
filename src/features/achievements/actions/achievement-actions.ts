@@ -3,18 +3,17 @@
 import { revalidatePath } from 'next/cache';
 
 import {
-  dismissAchievementById,
-  integrateAchievementById,
-} from '@/features/achievements/services/achievement-service';
-import { renderAndUploadCv } from '@/features/previewer/render';
-import { authActionClient } from '@/libs/safe-action';
-import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
-
-import {
   addAchievementSchema,
   dismissAchievementSchema,
   integrateAchievementSchema,
-} from '../schemas';
+} from '@/entities/achievement';
+import { renderAndUploadCv } from '@/entities/cv';
+import {
+  dismissAchievementById,
+  integrateAchievementById,
+} from '@/features/achievements/services/achievement-service';
+import { createSupabaseServerClient } from '@/shared/api/supabase/supabase-server-client';
+import { authActionClient } from '@/shared/lib/safe-action';
 
 export const addAchievement = authActionClient
   .inputSchema(addAchievementSchema)

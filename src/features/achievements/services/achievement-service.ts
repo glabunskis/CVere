@@ -1,12 +1,12 @@
 import type { z } from 'zod';
 
-import type { AchievementRow } from '@/features/achievements/controllers/list-achievements';
+import type { AchievementRow } from '@/entities/achievement';
 import type {
   achievementSectionSchema,
   integrableSectionSchema,
-} from '@/features/achievements/schemas';
-import { getCv, getSelectedCv } from '@/features/cv/services/cv-service';
-import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
+} from '@/entities/achievement';
+import { getCv, getSelectedCv } from '@/entities/cv';
+import { createSupabaseServerClient } from '@/shared/api/supabase/supabase-server-client';
 import type { User } from '@supabase/supabase-js';
 
 import 'server-only';

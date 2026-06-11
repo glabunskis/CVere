@@ -4,8 +4,8 @@ import {
   dismissAchievementById,
   integrateAchievementById,
   listPendingAchievementRows,
-} from '@/features/achievements/services/achievement-service';
-import { logger } from '@/libs/logger';
+} from '@/features/achievements';
+import { logger } from '@/shared/lib/logger';
 import type { User } from '@supabase/supabase-js';
 
 import {

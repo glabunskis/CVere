@@ -1,15 +1,15 @@
 import { z } from 'zod';
 
-import { achievementSectionSchema } from '@/features/achievements/schemas';
+import { achievementSectionSchema } from '@/entities/achievement';
 import {
   accentHexSchema,
   cvDateFormatSchema,
   cvTemplateSchema,
-} from '@/features/previewer/schemas';
+} from '@/features/cv-style';
 import {
   languageProficiencySchema,
   skillLevelSchema,
-} from '@/features/profile/schemas';
+} from '@/features/profile-editor';
 
 /**
  * Zod schemas for chat tool inputs (consumed by `streamText`'s `tools` map)

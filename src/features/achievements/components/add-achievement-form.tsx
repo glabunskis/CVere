@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/shared/ui/button';
+import { Label } from '@/shared/ui/label';
+import { Textarea } from '@/shared/ui/textarea';
 
 import { addAchievement } from '../actions/achievement-actions';
 

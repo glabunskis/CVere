@@ -34,57 +34,88 @@ After code changes, always run `npm run build` to verify no type errors or build
 
 ## Project Structure
 
+This codebase follows [Feature-Sliced Design](docs/feature-sliced-design.md). See also `.cursor/rules/feature-sliced-design.mdc` for condensed conventions.
+
+Layer import direction (downward only): `views` → `widgets` → `features` → `entities` → `shared`. No same-layer cross-slice imports. Each slice exposes a single `index.ts` public API; external code must import through it, not via deep paths. Exception: client components that need a client-safe sub-module from a slice whose barrel also re-exports `server-only` code must use direct deep paths (the barrel itself is server-consumer only in those slices).
+
 ```
 src/
-├── app/
-│   ├── (auth)/                   # Auth route group (login, signup, callback)
+├── app/                          # Next.js routing only (thin wrappers + data fetching)
+│   ├── (auth)/                   # login/, signup/, auth/callback
 │   ├── (account)/                # account/, manage-subscription/
-│   ├── (app)/                    # Protected app shell (nav + layout guard)
-│   │   ├── _components/app-nav.tsx
-│   │   ├── dashboard/            # Previewer + sidebar (Library + Chat tabs)
-│   │   ├── profile/              # Fact-base editor
-│   │   ├── achievements/         # Achievements inbox
-│   │   ├── vacancies/            # Saved job descriptions (raw text only)
+│   ├── (app)/                    # Protected shell; imports widgets + views
+│   │   ├── dashboard/
+│   │   ├── profile/
+│   │   ├── achievements/
+│   │   ├── vacancies/ + [id]/
 │   │   └── layout.tsx
 │   └── api/
 │       ├── chat/route.ts         # Streaming chat agent (only AI surface)
 │       └── webhooks/route.ts     # Stripe webhook handler
-├── features/
-│   ├── account/                  # Auth + Stripe customer/subscription controllers
-│   ├── achievements/             # Manual CRUD inbox of wins
-│   ├── chat/                     # Chat agent: tools, schemas, storage
+├── views/                        # Page-level compositions (named *View exports)
+│   ├── dashboard/, profile/, achievements/
+│   ├── vacancies/, vacancy-detail/
+│   ├── account/, home/
+├── widgets/                      # Multi-feature composed UI blocks
+│   ├── app-nav/                  # App shell nav + account-menu
+│   ├── cv-library/               # CV list panel
+│   └── previewer-sidebar/        # Sidebar tabs (Library + Chat)
+├── features/                     # User-action slices
+│   ├── auth/                     # Login/signup UI + server actions
+│   ├── chat/                     # Chat agent: tools, storage, system-prompt, UI
 │   │   ├── tools/                # CV mutation, read, & metadata tools
-│   │   ├── storage/              # chat_message persistence
-│   │   └── system-prompt.ts
-│   ├── cv/                       # Unified CV actions, controllers, services, snapshots
-│   │   ├── actions/
-│   │   ├── controllers/
-│   │   ├── services/
-│   │   └── cv-snapshot.ts
-│   ├── emails/                   # React Email templates
-│   ├── jobs/                     # Vacancies (raw text + delete)
-│   ├── previewer/                # Selected-CV renderer + sidebar + preview store
-│   └── profile/                  # Fact-base editor UI, schemas, and form actions
-├── components/ui/                # shadcn/ui (Base Nova, Base UI primitives)
-├── libs/
-│   ├── ai/                       # chat-model.ts, resumable-stream.ts (chat-only)
-│   ├── safe-action.ts            # next-safe-action clients
-│   ├── stripe/, supabase/, resend/, logger/
-├── pdf/                          # @react-pdf/renderer templates
-├── types/, utils/
-├── config.ts                     # App name & description
+│   │   └── storage/              # chat_message persistence
+│   ├── cv-management/            # CV CRUD actions (create, rename, delete, duplicate)
+│   ├── cv-history/               # Undo/redo: version service + history-controls UI
+│   ├── cv-style/                 # Template picker + style actions
+│   ├── cv-preview/               # Render, sign URL, preview store
+│   ├── cv-import/                # TeX import parser + form
+│   ├── profile-editor/           # Fact-base editor: actions, components, schemas
+│   ├── achievements/             # Achievement actions, service, components
+│   └── vacancies/                # Job description actions + components
+├── entities/                     # Domain models + data-access (no UI)
+│   ├── cv/                       # cv-service (~1800 ln), cv-snapshot, cv-diff,
+│   │   │                         # list-cv-library, get-cv-children
+│   │   └── pdf/                  # @react-pdf/renderer templates + LM Roman fonts
+│   ├── user/                     # get-session, get-user
+│   ├── subscription/             # Stripe subscription controllers
+│   ├── achievement/              # listAchievements, schemas
+│   └── job/                      # listJobs, getJob, schemas
+├── shared/                       # Cross-cutting infrastructure, zero business logic
+│   ├── ui/                       # shadcn/ui components (Base Nova, Base UI primitives)
+│   ├── lib/                      # cn, logger, safe-action, format-date,
+│   │                             # get-url, get-env-var, to-date-time, cv-json
+│   ├── api/
+│   │   ├── supabase/             # Server, middleware & admin clients + generated types
+│   │   ├── stripe/               # stripeAdmin, upsert helpers
+│   │   ├── ai/                   # chat-model, resumable-stream
+│   │   ├── redis/
+│   │   └── resend/
+│   ├── config/                   # App name & description
+│   ├── types/                    # Stripe webhook types
+│   └── emails/                   # React Email templates
 ├── proxy.ts                      # Middleware (session refresh + route guards)
 └── styles/globals.css            # Tailwind v4 + shadcn CSS variables (oklch)
 ```
 
 Path alias: `@/*` → `./src/*`
 
+### Accepted FSD deviations
+
+- `shared/lib/safe-action.ts` imports `entities/user/get-session` — a `shared → entities` violation. Accepted for this structural pass; the auth middleware belongs in a dedicated infrastructure layer but extracting it is deferred.
+- `app/` is kept as the Next.js routing layer only, not split into a separate FSD `app` layer.
+- A small set of same-layer (feature → feature) cross-slice imports are accepted as deliberate compositions. The shared CV-render concern (`renderAndUploadCv`/`ensureCvPdfPath`/`buildProfileContact`) was lifted down to `entities/cv` to remove the largest cluster of these; the remainder are intentional and kept as deep imports (not enforced by the ESLint layer rules, which only block upward cross-layer imports):
+  - `features/chat` is an orchestration surface and composes `features/{achievements,cv-style,profile-editor,cv-preview}` (tool wiring, schemas, preview store/target).
+  - `features/cv-import` composes `features/{cv-style,profile-editor}` (TeX-import schemas + row parsing).
+  - `features/{cv-style,cv-history,chat}` import the client `preview-store`/`preview-target` from `features/cv-preview` (shared client UI state for the previewer).
+  - `features/profile-editor` and `features/cv-preview` import `features/cv-history` (`loadCvSnapshot`/`recordCvVersion`/`HistoryControls`) at CV-edit boundaries.
+
 ## Architecture — Project-Specific Decisions
 
 ### Chat is the only AI surface
 
-- All AI calls go through `src/app/api/chat/route.ts`. It uses the AI SDK with the model from `src/libs/ai/chat-model.ts` and exposes tools defined in `src/features/chat/tools/`.
-- All CV read, scope, and mutation logic lives in `src/features/cv/services/cv-service.ts` and `src/features/cv/cv-snapshot.ts`.
+- All AI calls go through `src/app/api/chat/route.ts`. It uses the AI SDK with the model from `src/shared/api/ai/chat-model.ts` and exposes tools defined in `src/features/chat/tools/`.
+- All CV read, scope, and mutation logic lives in `src/entities/cv/cv-service.ts` and `src/entities/cv/cv-snapshot.ts`.
 - The streaming chat agent discovers available CV variants using the `listCvs` metadata tool (defined in `src/features/chat/tools/cv-meta-tools.ts`), and can inspect or edit a specific CV by passing a `cvId` argument to the corresponding tools.
 - Chat tools mutate CV normalized rows (`cv`, `experience`, `project`, `skill`, `education`, `certification`, `language`).
 - Tool call sets that mutate the CV trigger `renderAndUploadCv` at the end of the assistant turn. The chat stream emits a `data-preview-dirty` event keyed by `cvId` so the previewer iframe re-signs the storage URL.
@@ -93,14 +124,14 @@ Path alias: `@/*` → `./src/*`
 
 ### CV undo/redo versioning
 
-- Every CV edit boundary records one `cv_version` row: one per chat turn (collapsing all tool calls in an assistant reply) and one per manual profile-editor save. Each row stores a reversible structured diff (`computeCvDiff`/`applyCvDiff` in `src/features/cv/services/cv-diff.ts`) of the `AiProfile` snapshot, not a full copy.
+- Every CV edit boundary records one `cv_version` row: one per chat turn (collapsing all tool calls in an assistant reply) and one per manual profile-editor save. Each row stores a reversible structured diff (`computeCvDiff`/`applyCvDiff` in `src/entities/cv/cv-diff.ts`) of the `AiProfile` snapshot, not a full copy.
 - `cv.history_seq` is the current position; version `seq = N` represents the transition `N-1 -> N`. Undo applies the inverse diff at `history_seq` and decrements it; redo applies the forward diff at `history_seq + 1` and increments it. History is pruned to the newest 100 versions and the redo branch is discarded on a new edit.
-- Capture/restore logic lives in `src/features/cv/services/cv-version-service.ts`; server actions in `src/features/cv/actions/cv-history-actions.ts`; UI in `src/features/previewer/components/history-controls.tsx` (Undo/Redo buttons + Ctrl/Cmd+Z / Ctrl+Shift+Z / Ctrl+Y).
+- Capture/restore logic lives in `src/features/cv-history/cv-version-service.ts`; server actions in `src/features/cv-history/cv-history-actions.ts`; UI in `src/features/cv-history/history-controls.tsx` (Undo/Redo buttons + Ctrl/Cmd+Z / Ctrl+Shift+Z / Ctrl+Y).
 
 ### Server Actions (next-safe-action)
 
 - All mutations use `next-safe-action` with Zod validation. Define actions in dedicated `*-actions.ts` files.
-- Two action clients exist in `src/libs/safe-action.ts`: a base client and an authenticated client with session middleware.
+- Two action clients exist in `src/shared/lib/safe-action.ts`: a base client and an authenticated client with session middleware.
 - Always use the **authenticated action client** for any action that requires a logged-in user.
 
 ### Forms
@@ -114,9 +145,9 @@ Path alias: `@/*` → `./src/*`
 
 ### Data Fetching
 
-- Fetch data in Server Components using the Supabase server client (`src/libs/supabase/supabase-server-client.ts`).
-- For protected data, use controller functions under `src/features/<feature>/controllers/`.
-- The admin Supabase client (`supabase-admin.ts`) bypasses RLS — use only in webhooks and trusted server-side operations.
+- Fetch data in Server Components using the Supabase server client (`src/shared/api/supabase/supabase-server-client.ts`).
+- For protected data, use controller/query functions in entity slices (`src/entities/*/`) or feature slices.
+- The admin Supabase client (`src/shared/api/supabase/supabase-admin.ts`) bypasses RLS — use only in webhooks and trusted server-side operations.
 
 ### Route Protection
 
@@ -124,14 +155,14 @@ Path alias: `@/*` → `./src/*`
 
 ### PDF Previewer
 
-- The dashboard renders the selected CV through `Cv` (`src/pdf/Cv.tsx`) using templates in `src/pdf/templates/`.
-- The signed URL refresher lives in `src/features/previewer/actions/sign-pdf-url.ts` and is wired through `PreviewStoreProvider`. Anything client-side that needs to invalidate the preview should call `usePreviewStore().markPreviewDirty()`.
+- The dashboard renders the selected CV through `Cv` (`src/entities/cv/pdf/Cv.tsx`) using templates in `src/entities/cv/pdf/templates/`.
+- The signed URL refresher lives in `src/features/cv-preview/sign-pdf-url.action.ts` and is wired through `PreviewStoreProvider`. Anything client-side that needs to invalidate the preview should call `usePreviewStore().markPreviewDirty()`.
 - `cv_preferences` (1 row per user) stores global UI state (`selected_cv_id`, `last_active_session_id`). Style settings and `pdf_path` now live on `cv`.
 
 ## Database & Supabase
 
 - **RLS is mandatory on every table in the public schema.** No exceptions.
-- Run `npm run generate-types` after any schema change to keep `src/libs/supabase/types.ts` in sync. `npm run migration:up` does both.
+- Run `npm run generate-types` after any schema change to keep `src/shared/api/supabase/types.ts` in sync. `npm run migration:up` does both.
 
 ### Existing Tables
 
@@ -155,13 +186,13 @@ Storage: a private `pdf` bucket holds rendered CVs at `pdf/{user_id}/cv/{cv_id}.
 ## Stripe & Payments
 
 - Webhook handler at `src/app/api/webhooks/route.ts` validates the Stripe signature, then upserts to Supabase via admin client.
-- Use `stripeAdmin` (`src/libs/stripe/stripe-admin.ts`) for server-side Stripe operations.
+- Use `stripeAdmin` (`src/shared/api/stripe/stripe-admin.ts`) for server-side Stripe operations.
 
 ## Styling & UI
 
 - **Tailwind CSS v4:** Config is CSS-first — all theme tokens live in `src/styles/globals.css` using `@theme inline` with oklch colors. No `tailwind.config.js`.
 - Use `tw-animate-css` for animations (not the deprecated `tailwindcss-animate`).
-- **shadcn/ui:** Components in `src/components/ui/`.
+- **shadcn/ui:** Components in `src/shared/ui/`. `components.json` aliases point to `@/shared/ui` and `@/shared/lib/cn`.
 - Toast notifications use `sonner` (not the deprecated shadcn toast component).
 - **Theming:** Light/dark mode via `next-themes`. CSS variables in `:root` and `.dark` sections of `globals.css`. Modify oklch color values to change the color scheme.
 

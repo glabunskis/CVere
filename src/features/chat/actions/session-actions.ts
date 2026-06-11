@@ -11,7 +11,7 @@ import {
   renameSession,
   setLastActiveSession,
 } from '@/features/chat/storage/chat-session-store';
-import { authActionClient } from '@/libs/safe-action';
+import { authActionClient } from '@/shared/lib/safe-action';
 
 const createSessionSchema = z.object({
   title: z.string().trim().max(80).optional(),

@@ -9,34 +9,36 @@ import {
   type UIMessage,
 } from 'ai';
 
+import type { AiProfile } from '@/entities/cv';
+import { getSelectedCv, listCvRows, renderAndUploadCv } from '@/entities/cv';
 import {
   ProSubscriptionRequiredError,
   requireActiveSubscription,
-} from '@/features/account/controllers/require-active-subscription';
-import { chatPostBodySchema } from '@/features/chat/schemas';
-import { appendMessages, loadMessages } from '@/features/chat/storage/chat-message-store';
-import { generateAndSaveSessionTitle } from '@/features/chat/storage/chat-session-store';
-import { CHAT_SYSTEM_PROMPT } from '@/features/chat/system-prompt';
-import { buildAchievementTools } from '@/features/chat/tools/achievement-tools';
-import { buildContentTools } from '@/features/chat/tools/content-tools';
-import { buildCvMetaTools } from '@/features/chat/tools/cv-meta-tools';
-import { buildEntryTools } from '@/features/chat/tools/entry-tools';
-import { buildIdentityTools } from '@/features/chat/tools/identity-tools';
-import { MUTATING_TOOLS } from '@/features/chat/tools/mutating-tools';
-import { buildSectionTools } from '@/features/chat/tools/section-tools';
-import { buildStyleTools } from '@/features/chat/tools/style-tools';
-import { buildVacancyTools } from '@/features/chat/tools/vacancy-tools';
-import type { AiProfile } from '@/features/cv/cv-snapshot';
-import { getSelectedCv, listCvRows } from '@/features/cv/services/cv-service';
-import { loadCvSnapshot, recordCvVersion } from '@/features/cv/services/cv-version-service';
-import { renderAndUploadCv } from '@/features/previewer/render';
-import { getChatModel } from '@/libs/ai/chat-model';
+} from '@/entities/subscription';
+import {
+  appendMessages,
+  buildAchievementTools,
+  buildContentTools,
+  buildCvMetaTools,
+  buildEntryTools,
+  buildIdentityTools,
+  buildSectionTools,
+  buildStyleTools,
+  buildVacancyTools,
+  CHAT_SYSTEM_PROMPT,
+  chatPostBodySchema,
+  generateAndSaveSessionTitle,
+  loadMessages,
+  MUTATING_TOOLS,
+} from '@/features/chat';
+import { loadCvSnapshot, recordCvVersion } from '@/features/cv-history';
+import { getChatModel } from '@/shared/api/ai/chat-model';
 import {
   getChatStreamId,
   getResumableStreamContext,
-} from '@/libs/ai/resumable-stream';
-import { logger } from '@/libs/logger';
-import { createSupabaseServerClient } from '@/libs/supabase/supabase-server-client';
+} from '@/shared/api/ai/resumable-stream';
+import { createSupabaseServerClient } from '@/shared/api/supabase/supabase-server-client';
+import { logger } from '@/shared/lib/logger';
 
 export const maxDuration = 60;
 

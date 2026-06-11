@@ -12,7 +12,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
+import {
+  createChatSession,
+  deleteChatSession,
+  renameChatSession,
+} from '@/features/chat/actions/session-actions';
+import { cn } from '@/shared/lib/cn';
+import { Button } from '@/shared/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -20,20 +26,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/shared/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import {
-  createChatSession,
-  deleteChatSession,
-  renameChatSession,
-} from '@/features/chat/actions/session-actions';
-import { cn } from '@/lib/utils';
+} from '@/shared/ui/dropdown-menu';
+import { Input } from '@/shared/ui/input';
 
 import type { ChatSessionListItem } from '../types';
 

@@ -1,0 +1,41 @@
+---
+description: Feature-Sliced Design (FSD) architectural conventions for frontend code
+globs: src/**/*.ts,src/**/*.tsx
+alwaysApply: false
+---
+
+# Feature-Sliced Design
+
+Full reference: `docs/feature-sliced-design.md` (official `llms-full.txt`). Consult it for edge cases.
+
+## Layers (top → bottom, import direction is downward only)
+
+`app` → `pages` → `widgets` → `features` → `entities` → `shared`
+
+A module may only import from layers strictly below it. Never import upward or sideways within the same layer.
+
+## Structure
+
+- Layer → slice → segment. Example: `features/auth/{ui,model,api,lib,config}`.
+- Slices group code by business domain, not by technical role.
+- `shared` and `app` have no slices (segments only).
+
+## Public API (mandatory)
+
+- Every slice exposes a single entry point via `index.ts`.
+- Import slices through their public API, never reach into internal files.
+
+```ts
+// BAD
+import { LoginForm } from "@/features/auth/ui/LoginForm";
+// GOOD
+import { LoginForm } from "@/features/auth";
+```
+
+## Isolation
+
+- No cross-imports between slices on the same layer. If two slices need shared code, lift it to a lower layer (`entities` or `shared`).
+
+## Note on this repo
+
+This project (CVere) already uses a Next.js `src/app` + `src/features/<domain>` layout. Apply FSD principles (domain slices, public APIs, downward-only imports) within that existing structure; do not restructure folders unless asked.
