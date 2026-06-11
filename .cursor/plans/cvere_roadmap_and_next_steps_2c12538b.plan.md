@@ -33,15 +33,18 @@ todos:
     content: "Chat UX polish (remainder): retry/edit, mobile Sheet, rate limiting, incremental request payload, clear-history, cross-session quoting"
     status: pending
   - id: phase-9
-    content: "Cover letter artefact: schema, chat tools, library/picker, per-letter preview"
+    content: "Prompt quality + configurable reasoning effort: tighten the chat/title system prompts, add OPENAI_REASONING_EFFORT (and title-model effort) env wiring through getChatModel + streamText providerOptions"
     status: pending
   - id: phase-10
-    content: "Interview prep artefact: schema, chat tools, Q&A workspace (no PDF)"
+    content: "Cover letter artefact: schema, chat tools, library/picker, per-letter preview"
     status: pending
   - id: phase-11
-    content: "Connective tissue: profile-form parity, stream-resume partial persistence, manual ↔ chat round-trip, undo on destructive tools"
+    content: "Interview prep artefact: schema, chat tools, Q&A workspace (no PDF)"
     status: pending
   - id: phase-12
+    content: "Connective tissue: profile-form parity, stream-resume partial persistence, manual ↔ chat round-trip, undo on destructive tools"
+    status: pending
+  - id: phase-13
     content: "Infra story: PDFs to Azure Blob, background render via after(), per-user render lock"
     status: pending
   - id: polish-track
@@ -65,7 +68,7 @@ Detours taken alongside phases 1–5 (also ✅ done):
 
 Most recent: **Phase 6 (access-code signup gate) ✅ done**.
 
-Remaining work, in order: **Phase 7** (AI-generated PDF layout), **Phase 8** (chat UX polish), then **Phase 9** (cover letter) and **Phase 10** (interview prep) — both intentionally sequenced *after* UX polish — then **Phase 11** (connective tissue) and **Phase 12** (infra story).
+Remaining work, in order: **Phase 7** (AI-generated PDF layout), **Phase 8** (chat UX polish), **Phase 9** (prompt quality + configurable reasoning effort), then **Phase 10** (cover letter) and **Phase 11** (interview prep) — both intentionally sequenced *after* UX polish — then **Phase 12** (connective tissue) and **Phase 13** (infra story).
 
 ## Recommendation in one line
 
@@ -127,9 +130,9 @@ Implications:
 - New Phase 1 covers visible streaming + visible tool calls; the items moved out of the old "Chat UX polish" phase.
 - Old Phase 1 (deepen master tools) shifts to Phase 2; everything below shifts by one. New Phase 8 (Chat UX polish) keeps only the items that did not move up.
 - Multi-session is Phase 3 — schema is minimal (no surface columns), tool registration is uniform across sessions.
-- Phase 4 (Tailored CV, shipped as the multiple-CV model), Phase 9 (Cover letter), Phase 10 (Interview) each cost one table + one chat-tool group + one view.
+- Phase 4 (Tailored CV, shipped as the multiple-CV model), Phase 10 (Cover letter), Phase 11 (Interview) each cost one table + one chat-tool group + one view.
 - Dashboard layout (Phase 5) shipped after Tailored so it proved itself against ≥1 non-master artefact before the next one lands.
-- Two items were promoted to real phases after Phase 5: Phase 6 (access-code signup gate, done) and Phase 7 (AI-generated PDF layout). Cover letter and Interview were moved to **after** chat UX polish (now Phases 9 and 10, with polish at Phase 8).
+- Two items were promoted to real phases after Phase 5: Phase 6 (access-code signup gate, done) and Phase 7 (AI-generated PDF layout). Cover letter and Interview were moved to **after** chat UX polish (now Phases 10 and 11, with polish at Phase 8 and a prompt-quality/reasoning-effort pass at Phase 9).
 
 ## Why this order
 
@@ -139,8 +142,9 @@ Implications:
 - Tailored CV (Phase 4) is the most-asked artefact and the most pattern-defining: it forces decisions about per-artefact PDF caching, library view shape, and how the current-context hint flows from the preview pane into the chat request.
 - Dashboard layout (Phase 5) shipped after Tailored so the session list, CV library, and current-context hint are validated against a real second artefact kind before Cover letter and Interview pile on.
 - AI-generated PDF layout (Phase 7) is independent of the remaining artefacts and reuses the existing multiple-CV render pipeline, so it slots in right after the access gate.
-- Cover letter (Phase 9) and Interview (Phase 10) reuse the Phase 4 + Phase 5 patterns and now ship **after** chat UX polish (Phase 8), so the chat surface is solid before two more artefact kinds pile on. Interview is last because it has no PDF and is the most experimental.
-- Phases 11–12 carry over the connective-tissue and infra purpose.
+- Prompt quality + reasoning effort (Phase 9) lands right after the chat surface is polished (Phase 8) and before the next artefact kinds, because every later artefact's tool group inherits the same system-prompt scaffolding and model-config seam. Doing it now means cover letter and interview tools are written against an already-tightened prompt and a tunable reasoning knob.
+- Cover letter (Phase 10) and Interview (Phase 11) reuse the Phase 4 + Phase 5 patterns and now ship **after** chat UX polish (Phase 8) and the prompt/reasoning pass (Phase 9), so the chat surface is solid before two more artefact kinds pile on. Interview is last because it has no PDF and is the most experimental.
+- Phases 12–13 carry over the connective-tissue and infra purpose.
 
 ## What I would defer indefinitely
 
@@ -163,8 +167,8 @@ flowchart LR
   Chat -. Phase 2 .-> Vacancies
   Chat -. Phase 2 .-> Skills["skill / education /<br/>certification / language"]
   Chat -- Phase 4 --> Tailored["cv variants<br/>(shipped: multiple-CV)"]
-  Chat -. Phase 9 .-> Letter["cover_letter<br/>(planned)"]
-  Chat -. Phase 10 .-> Interview["interview_prep<br/>(planned)"]
+  Chat -. Phase 10 .-> Letter["cover_letter<br/>(planned)"]
+  Chat -. Phase 11 .-> Interview["interview_prep<br/>(planned)"]
   Master & Tailored & Letter --- Preview["Preview pane<br/>(parametric)"]
   Interview --- Workspace["Q&A workspace"]
 ```
@@ -181,11 +185,12 @@ flowchart LR
 | 5 ✅ | 3 (and ≥1 artefact from 4) | 8 |
 | 6 ✅ | — (auth only) | — |
 | 7 | 4 (multiple-CV render pipeline) | — |
-| 8 | 5 | polish gate for 11 |
-| 9 | 3, 4 | — |
-| 10 | 3 | — |
-| 11 | 2, 4/9/10 (relevant artefact) | — |
-| 12 | none (decoupled) | — |
+| 8 | 5 | polish gate for 12 |
+| 9 | 1 (chat surface), 8 | 10, 11 (shared prompt + reasoning seam) |
+| 10 | 3, 4 | — |
+| 11 | 3 | — |
+| 12 | 2, 4/10/11 (relevant artefact) | — |
+| 13 | none (decoupled) | — |
 | Polish track | runs in parallel from phase 0 onward | each phase's polish gate |
 | Observability | none | — |
 
@@ -302,7 +307,7 @@ Store + route:
 Tool registration:
 
 - Every tool registers on every session. `MUTATING_TOOLS` stays a flat set. The model is trusted to pick the right artefact based on intent + context hint + tool snapshots; tools enforce ownership server-side regardless.
-- System prompt becomes one unified prompt that describes: the master CV, tailored CVs (when Phase 4 lands), cover letters (Phase 9), interview prep (Phase 10), achievements, vacancies, and the rule that the model should reference `context.previewing` when the user uses pronouns ("the summary", "this CV").
+- System prompt becomes one unified prompt that describes: the master CV, tailored CVs (when Phase 4 lands), cover letters (Phase 10), interview prep (Phase 11), achievements, vacancies, and the rule that the model should reference `context.previewing` when the user uses pronouns ("the summary", "this CV").
 
 UI minimum:
 
@@ -363,14 +368,14 @@ With Phase 3 + Phase 4 in hand, restructure the dashboard.
 - Two-column dashboard: preview/workspace on the left, chat on the right. Today both live inside `src/features/previewer/components/previewer-sidebar.tsx` under a tabs control with "Library" + "Chat". Tabs disappear.
 - Move the current "Library" tab content (template picker, import-tex, links) into a collapsible left rail or a top-toolbar popover.
 - **Session list.** Plain chronological list with new-chat / rename / delete actions. Auto-generated titles from Phase 3 make this useful without grouping. No surface badges — sessions are generic. Optional: a "search sessions" input once the count gets high.
-- **CV library.** If Phase 4 shipped it as a panel, lift it to a dedicated `/cvs` route once the count justifies it. Lists master + all tailored CVs with thumbnail + last-updated + source vacancy. Selecting a row swaps the preview target (which becomes the next request's `context.previewing`). Cover letters and interview prep get their own library entries in Phases 9 and 10.
+- **CV library.** If Phase 4 shipped it as a panel, lift it to a dedicated `/cvs` route once the count justifies it. Lists master + all tailored CVs with thumbnail + last-updated + source vacancy. Selecting a row swaps the preview target (which becomes the next request's `context.previewing`). Cover letters and interview prep get their own library entries in Phases 10 and 11.
 - **Decoupled preview / session.** Switching CVs in the library swaps the preview pane but does **not** change the chat session. Switching chat sessions does not swap the preview. The chat tools read `context.previewing` to figure out what the user is referring to.
 - **Empty state per session.** Profile-completeness + pending-achievements + saved-vacancies + saved-CVs counts (all loadable server-side on dashboard mount). Suggested prompts pivot off whatever the user is currently previewing.
 - **Handoffs.** Every handoff lands in the **current active session** by default. The user controls whether to stay in the same chat or start a new one — the chat panel exposes a clearly visible "New chat" affordance next to the input, so the deliberate action of starting fresh is always one click away.
   - From `/achievements`, a per-row "Send to chat" populates the input of the active session with a templated `integrateAchievement` prompt (not auto-sent — the user reviews and submits).
   - From `/vacancies`, "Tailor my CV for this" populates the active session's input with a templated `createTailoredCv` prompt.
-  - From `/vacancies`, "Draft cover letter" populates with a templated `createCoverLetter` prompt (Phase 9).
-  - From `/vacancies`, "Prep for interview" populates with a templated `createInterviewPrep` prompt (Phase 10).
+  - From `/vacancies`, "Draft cover letter" populates with a templated `createCoverLetter` prompt (Phase 10).
+  - From `/vacancies`, "Prep for interview" populates with a templated `createInterviewPrep` prompt (Phase 11).
   - From the manual profile editor, per-section "Ask chat to rewrite this" populates with a templated prompt referencing the section.
   - All handoffs prefill, not send. The user can edit the prompt, hit "New chat" first if they want a clean thread, or send as-is to keep iterating in the current conversation.
 - Persist `cv_preferences.last_active_session_id` and `cv_preferences.last_previewed_*` so reload restores both independently.
@@ -418,7 +423,38 @@ The streaming + tool-card items that used to live here are now Phase 1. What sta
 
 Done when: chat feels good on a fresh laptop, on a slow connection, and on a phone, across all surface kinds.
 
-### Phase 9 — Cover letter artefact
+### Phase 9 — Prompt quality + configurable reasoning effort
+
+Two related model-config concerns that are cheap to ship together and that every later artefact's tool group inherits: tighten the system prompts, and expose the model's reasoning effort as an env-configured knob instead of the provider default.
+
+Current state (verified):
+
+- `CHAT_SYSTEM_PROMPT` (`src/features/chat/system-prompt.ts`) is a single hand-maintained string covering CV targeting, hard rules, the tool-group catalogue, bullet style, confirmation rules, and vacancy-aware editing. It has grown organically across Phases 2–4 and duplicates some guidance (e.g. "never invent facts" appears in both Hard rules and vacancy editing).
+- The title prompt lives inside `generateAndSaveSessionTitle` (`src/features/chat`); the chat route also appends a one-line `Context: selected CV id is …` suffix.
+- `getChatModel()` / `getTitleModel()` (`src/shared/api/ai/chat-model.ts`) build the model from `OPENAI_API_KEY`, `OPENAI_CHAT_MODEL`, `OPENAI_TITLE_MODEL` (default `gpt-5.4-mini`), `OPENAI_BASE_URL`. There is **no** reasoning-effort configuration anywhere; `streamText` in `src/app/api/chat/route.ts` is called with no `providerOptions`, so reasoning models run at the provider default.
+
+Reasoning effort via env:
+
+- Add `OPENAI_REASONING_EFFORT` (one of `minimal | low | medium | high`, default `medium`) and optionally `OPENAI_TITLE_REASONING_EFFORT` (default `minimal`, since titles are a cheap one-shot). Read and validate them in `readOpenAiEnv()` with a small Zod enum so a bad value fails loudly in dev and falls back to the default in prod.
+- Plumb the effort into the AI SDK via `providerOptions.openai.reasoningEffort` on the `streamText` call in `route.ts` (and on the `generateText` title call). Keep the value resolution in `chat-model.ts` so there is a single source of truth — export a `getReasoningEffort()` / `getTitleReasoningEffort()` helper rather than reading `process.env` in the route.
+- Document the new vars in `.env.local.example`, `.env.vercel`, and `README.md` alongside the existing `OPENAI_*` entries. Note that effort only applies to reasoning-capable models; non-reasoning models ignore it.
+- The mock dev/test model path is unaffected (no provider options needed).
+
+Prompt quality pass:
+
+- De-duplicate and tighten `CHAT_SYSTEM_PROMPT`: collapse the repeated "never invent facts" guidance, group the rules so the model reads targeting → hard rules → tools → style → confirmations in one pass, and make the destructive-tool confirmation rules unambiguous (they currently mix "confirm before" with inline exceptions).
+- Align the prompt with the actual tool surface (it must list exactly what `build*Tools` register — drift here causes the model to hallucinate or skip tools). Cross-check against `content-tools.ts`, `entry-tools.ts`, `section-tools.ts`, `identity-tools.ts`, `achievement-tools.ts`, `vacancy-tools.ts`, `style-tools.ts`, `cv-meta-tools.ts`.
+- Tighten the title prompt for short, descriptive, role/company-oriented titles with no trailing punctuation or quotes.
+- Optional: move the prompt into a small composable builder (sections as functions) so Phases 10/11 can append their artefact-specific tool descriptions without editing one giant string. Keep it server-only; the prompt never reaches the client bundle.
+
+Guardrails:
+
+- This is **not** a new AI surface — it only changes how the existing chat/title calls are configured and worded. Respects "chat is the only AI surface".
+- No schema changes. No new tools. Behaviour change is limited to model config + prompt text.
+
+Done when: setting `OPENAI_REASONING_EFFORT=high` (or `minimal`) visibly changes how hard the chat model thinks on a complex multi-tool edit; the system prompt has no duplicated rules and lists exactly the registered tools; and the env vars are documented in all three env files plus the README.
+
+### Phase 10 — Cover letter artefact
 
 Pattern reuse from Phase 4.
 
@@ -451,7 +487,7 @@ Views:
 
 Done when: in any session the user can say "draft a cover letter for vacancy X", iterate paragraph by paragraph (referring to "the letter" or "the second paragraph" without re-naming the artefact), and the letter shows up in the library with its own preview.
 
-### Phase 10 — Interview prep artefact
+### Phase 11 — Interview prep artefact
 
 Most experimental of the three. No PDF — this is a chat-driven Q&A workspace.
 
@@ -481,7 +517,7 @@ View:
 
 Done when: the user can spin up an interview prep from a vacancy, talk through answers in any chat session, and have the workspace persist questions / answers / reviews. PDF export is intentionally out of scope.
 
-### Phase 11 — Connective tissue
+### Phase 12 — Connective tissue
 
 Pull in opportunistically alongside the matching surface.
 
@@ -489,9 +525,9 @@ Pull in opportunistically alongside the matching surface.
 - Stream resume hardening: persist partial assistant turns every N tokens, not only in `onFinish`. Without this, a crash mid-render loses the assistant message.
 - "Diff against master" view on the tailored CV preview — uses `tailored_cv.source_profile_snapshot` for the comparison; cheap because the snapshot is on the row.
 - Undo on destructive chat tool calls (`removeExperience`, `removeProject`, `deleteTailoredCv`, `deleteCoverLetter`, `deleteInterviewPrep`). A simple inverse-tool "Undo last change" suffices.
-- Voice input for interview answers (transcribe via the AI SDK's audio APIs). Out of scope until Phase 10 is solid.
+- Voice input for interview answers (transcribe via the AI SDK's audio APIs). Out of scope until Phase 11 is solid.
 
-### Phase 12 — Infra story
+### Phase 13 — Infra story
 
 No critical-path trigger. Pick this up only after Phase 8 is solid.
 
@@ -530,6 +566,7 @@ Trigger: any non-trivial real usage or a recruiter-facing dashboard need.
 8. Phase 6 access-code signup gate. ✅ Shipped.
 9. Phase 7 AI-generated PDF layout as one PR: `cv.layout_json` column + `LayoutSpec` schema + executor in `Cv.tsx` + `setLayout` chat tool + system-prompt guidance.
 10. Phase 8 chat UX polish.
-11. Phase 9 cover letter artefact, then Phase 10 interview prep artefact (both after UX polish).
-12. Phase 11 connective tissue in parallel with the surface work as time allows.
-13. Phase 12 (Azure Blob) only after Phase 8 feels finished.
+11. Phase 9 prompt quality + reasoning effort as one PR: `OPENAI_REASONING_EFFORT` (+ title effort) env wiring through `chat-model.ts` + `route.ts` `providerOptions`, system-prompt de-dup/tool-sync, env-file + README docs.
+12. Phase 10 cover letter artefact, then Phase 11 interview prep artefact (both after UX polish).
+13. Phase 12 connective tissue in parallel with the surface work as time allows.
+14. Phase 13 (Azure Blob) only after Phase 8 feels finished.
