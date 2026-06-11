@@ -10,7 +10,7 @@ import {
 } from 'ai';
 
 import type { AiProfile } from '@/entities/cv';
-import { getSelectedCv, listCvRows, renderAndUploadCv } from '@/entities/cv';
+import { getSelectedCv, renderAndUploadCv } from '@/entities/cv';
 import {
   ProSubscriptionRequiredError,
   requireActiveSubscription,
@@ -144,30 +144,35 @@ export async function POST(req: Request): Promise<Response> {
   // CV the agent created mid-turn.
   const createdCvEvents: { cvId: string; title: string }[] = [];
 
-  // Per-turn version capture. Snapshot each touched CV's state before this
-  // turn's edits so onFinish can record one reversible version that collapses
+  // Per-turn version capture. We snapshot a CV's pre-edit state lazily — on the
+  // first mutating tool call that targets it — rather than snapshotting every
+  // CV up front. Eager snapshotting blocked time-to-first-token behind N CV
+  // reads before the stream could even start; lazy capture lets generation
+  // begin immediately and only pays for the CVs actually touched this turn.
+  // onFinish then records one reversible version per touched CV, collapsing
   // every tool call in the assistant reply.
   const beforeSnapshots = new Map<string, AiProfile>();
-  try {
-    const cvRows = await listCvRows(user.id);
-    await Promise.all(
-      cvRows.map(async (row) => {
-        try {
-          beforeSnapshots.set(row.id, await loadCvSnapshot(user, row.id));
-        } catch (err) {
-          logger.error(
-            { err, userId: user.id, cvId: row.id },
-            'chat-route failed to snapshot CV before turn',
-          );
-        }
-      }),
-    );
-  } catch (err) {
-    logger.error(
-      { err, userId: user.id },
-      'chat-route failed to list CVs before turn',
-    );
-  }
+  const beforeSnapshotInFlight = new Map<string, Promise<void>>();
+  const ensureBeforeSnapshot = (cvId: string): Promise<void> => {
+    if (beforeSnapshots.has(cvId)) return Promise.resolve();
+    const existing = beforeSnapshotInFlight.get(cvId);
+    if (existing) return existing;
+    // Capture before the mutation runs. Concurrent tool calls targeting the
+    // same CV share this single in-flight read, so the baseline reflects the
+    // pre-turn state regardless of execution order.
+    const pending = loadCvSnapshot(user, cvId)
+      .then((snapshot) => {
+        beforeSnapshots.set(cvId, snapshot);
+      })
+      .catch((err) => {
+        logger.error(
+          { err, userId: user.id, cvId },
+          'chat-route failed to snapshot CV before edit',
+        );
+      });
+    beforeSnapshotInFlight.set(cvId, pending);
+    return pending;
+  };
 
   // Snapshot of message ids already in the DB, used in onFinish to diff what
   // streamText produced and persist only the new (assistant) messages.
@@ -186,16 +191,7 @@ export async function POST(req: Request): Promise<Response> {
           createdCvEvents.push(info);
           // Capture the freshly created copy's baseline before any subsequent
           // tool call edits it, so its version diff covers only this turn.
-          if (!beforeSnapshots.has(info.cvId)) {
-            try {
-              beforeSnapshots.set(info.cvId, await loadCvSnapshot(user, info.cvId));
-            } catch (err) {
-              logger.error(
-                { err, userId: user.id, cvId: info.cvId },
-                'chat-route failed to snapshot created CV',
-              );
-            }
-          }
+          await ensureBeforeSnapshot(info.cvId);
         }),
         ...buildContentTools(user, activeCvRef),
         ...buildEntryTools(user, activeCvRef),
@@ -204,6 +200,22 @@ export async function POST(req: Request): Promise<Response> {
         ...buildAchievementTools(user, activeCvRef),
         ...buildVacancyTools(user, activeCvRef),
       };
+
+      // Capture each touched CV's pre-edit baseline on the first mutating tool
+      // call that targets it. `createCv` is excluded: it captures the freshly
+      // created copy's baseline itself via the onCvCreated callback above (its
+      // edits land on the new CV, not the source).
+      for (const [name, toolDef] of Object.entries(tools)) {
+        if (name === 'createCv' || !MUTATING_TOOLS.has(name)) continue;
+        const entry = toolDef as { execute?: (...args: unknown[]) => unknown };
+        const original = entry.execute;
+        if (typeof original !== 'function') continue;
+        entry.execute = async (...args: unknown[]) => {
+          const cvId = readCvIdFromToolCall(args[0]) ?? activeCvRef.current;
+          await ensureBeforeSnapshot(cvId);
+          return original(...args);
+        };
+      }
 
       const result = streamText({
         model: getChatModel(),
