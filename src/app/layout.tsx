@@ -30,12 +30,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: PropsWithChildren) {
   return (
     <html lang='en' className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      {/* Browser extensions (Urban VPN, Grammarly, password managers, etc.)
-          inject attributes/elements into <body> before React hydrates, which
-          would otherwise throw a hydration mismatch (#418) in production and
-          tear down the subtree — breaking live UI like chat streaming. This
-          tolerates body-level injection only (one level deep). */}
-      <body className='flex min-h-full flex-col' suppressHydrationWarning>
+      <body className='flex min-h-full flex-col'>
         <NuqsAdapter>
           <div className='m-auto flex w-full max-w-5xl flex-1 flex-col px-4'>
             <AppBar />
