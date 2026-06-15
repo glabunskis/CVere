@@ -30,7 +30,7 @@ export const createSignedPreviewUrl = authActionClient
     const supabase = await createSupabaseServerClient();
     const { data: cvRow, error: cvError } = await supabase
       .from('cv')
-      .select('pdf_path')
+      .select('pdf_path, template')
       .eq('id', parsedInput.cvId)
       .eq('user_id', ctx.user.id)
       .maybeSingle();
@@ -44,5 +44,5 @@ export const createSignedPreviewUrl = authActionClient
 
     const { data, error } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(path, 60);
     if (error || !data) throw new Error(error?.message ?? 'Failed to sign URL');
-    return { ok: true as const, url: data.signedUrl, path };
+    return { ok: true as const, url: data.signedUrl, path, template: cvRow.template ?? null };
   });

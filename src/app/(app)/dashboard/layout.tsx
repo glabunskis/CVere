@@ -20,7 +20,11 @@ export default async function DashboardLayout({ children }: PropsWithChildren) {
   const signedUrl = await signPdfUrl(pdfPath);
 
   return (
-    <PreviewStoreProvider initialSignedUrl={signedUrl} initialPreviewTarget={initialPreviewTarget}>
+    <PreviewStoreProvider
+      initialSignedUrl={signedUrl}
+      initialPreviewTarget={initialPreviewTarget}
+      initialTemplate={selectedCv.template}
+    >
       <section className='grid h-[calc(100vh-9rem)] gap-4 lg:grid-cols-[minmax(0,1fr)_360px]'>
         <PreviewerPane />
         {children}

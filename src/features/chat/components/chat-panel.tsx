@@ -55,12 +55,16 @@ export function ChatPanel({
 }: Props) {
   const router = useRouter();
   const [activeSessionId, setActiveSessionId] = useState(initialActiveSessionId);
-  const [activeSessionMessages, setActiveSessionMessages] = useState(initialMessages);
   const [sessionList, setSessionList] = useState(sessions);
   const [prefillText, setPrefillText] = useState<string | null>(initialPrefill);
   const contentRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   const activeSessionIdRef = useRef(initialActiveSessionId);
+  // Refs the Chat instance's closures read without forcing it to be recreated.
+  // The Chat is keyed only on `activeSessionId`, so a `router.refresh()` or a
+  // changed prop mid-stream cannot tear down an in-flight stream.
+  const routerRef = useRef(router);
+  const initialCvIdRef = useRef(initialCvId);
   const setMessagesRef = useRef<
     (messages: ChatUIMessage[] | ((messages: ChatUIMessage[]) => ChatUIMessage[])) => void
   >(() => undefined);
@@ -70,14 +74,29 @@ export function ChatPanel({
   useEffect(() => {
     activeSessionIdRef.current = activeSessionId;
   }, [activeSessionId]);
+  useEffect(() => {
+    routerRef.current = router;
+  }, [router]);
+  useEffect(() => {
+    initialCvIdRef.current = initialCvId;
+  }, [initialCvId]);
 
   useEffect(() => {
     setSessionList(sessions);
   }, [sessions]);
 
+  // Adopt a server-provided active session only when it genuinely changes
+  // (e.g. URL `?session=` navigation that re-rendered the server tree). A bare
+  // `router.refresh()` re-runs the dashboard server component and passes a
+  // fresh `initialMessages` array for the *same* session — we must not reset
+  // then, or the in-flight assistant stream (not yet persisted) is discarded.
   useEffect(() => {
-    messagesCacheRef.current[initialActiveSessionId] = initialMessages;
-    setActiveSessionMessages(initialMessages);
+    if (initialActiveSessionId === activeSessionIdRef.current) return;
+    if (!messagesCacheRef.current[initialActiveSessionId]) {
+      messagesCacheRef.current[initialActiveSessionId] = initialMessages;
+    }
+    activeSessionIdRef.current = initialActiveSessionId;
+    setActiveSessionId(initialActiveSessionId);
   }, [initialActiveSessionId, initialMessages]);
 
   useEffect(() => {
@@ -93,12 +112,12 @@ export function ChatPanel({
     () =>
       new Chat<ChatUIMessage>({
         id: activeSessionId,
-        messages: activeSessionMessages,
+        messages: messagesCacheRef.current[activeSessionId] ?? [],
         transport: new DefaultChatTransport({
           api: `/api/chat?sessionId=${encodeURIComponent(activeSessionId)}`,
           body: () => {
             const currentPreviewing = usePreviewStore.getState().previewTarget;
-            const cvId = currentPreviewing?.cvId ?? initialCvId;
+            const cvId = currentPreviewing?.cvId ?? initialCvIdRef.current;
             return {
               sessionId: activeSessionId,
               context: {
@@ -129,23 +148,27 @@ export function ChatPanel({
             // The agent created a new CV (e.g. a tailoring copy) and made it
             // selected server-side. Point the previewer at it so the
             // end-of-turn render is visible, and refresh server-rendered CV
-            // lists (library, selection highlight).
+            // lists so the new row appears in the Library. The Chat instance is
+            // keyed only on the session id, so this refresh cannot tear down
+            // the in-flight stream.
             usePreviewStore.getState().setPreviewTarget({ cvId: dataPart.data.cvId });
-            router.refresh();
+            routerRef.current.refresh();
             return;
           }
           if (dataPart.type === 'data-preview-dirty') {
-            const current = usePreviewStore.getState().previewTarget ?? { cvId: initialCvId };
+            const current = usePreviewStore.getState().previewTarget ?? {
+              cvId: initialCvIdRef.current,
+            };
             const shouldRefresh = isPreviewTargetMatch({
               current,
               incoming: dataPart.data,
             });
             if (!shouldRefresh) return;
+            // Re-sign the preview URL and reconcile the Library template/layout
+            // selector from the server, all client-side. No `router.refresh()`:
+            // a full server re-render on every CV edit is disruptive and is what
+            // previously discarded the streaming message.
             void usePreviewStore.getState().markPreviewDirty();
-            // Re-render server components too, so Library state that the chat
-            // turn changed server-side (template/column preset, accent, title)
-            // reflects without a manual reload.
-            router.refresh();
             return;
           }
           if (dataPart.type === 'data-preview-error') {
@@ -157,7 +180,12 @@ export function ChatPanel({
           toast.error(err?.message ?? 'Chat request failed');
         },
       }),
-    [activeSessionId, activeSessionMessages, initialCvId, router],
+    // Only re-create the Chat when the active session changes. Everything else
+    // the closures need is read live from refs / the preview store, so an
+    // incidental re-render (router.refresh, prop change) never interrupts a
+    // streaming turn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeSessionId],
   );
 
   const { messages, sendMessage, status, stop, error, setMessages } = useChat<ChatUIMessage>({
@@ -191,7 +219,6 @@ export function ChatPanel({
     if (nextSessionId === activeSessionIdRef.current) return;
 
     activeSessionIdRef.current = nextSessionId;
-    setActiveSessionMessages(messagesCacheRef.current[nextSessionId] ?? []);
     setActiveSessionId(nextSessionId);
     window.history.replaceState(null, '', `/dashboard?session=${encodeURIComponent(nextSessionId)}`);
     persistActiveSession({ sessionId: nextSessionId });

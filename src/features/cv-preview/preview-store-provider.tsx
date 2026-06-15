@@ -11,6 +11,7 @@ import { usePreviewStore } from './preview-store';
 type Props = {
   initialSignedUrl: string | null;
   initialPreviewTarget: PreviewTarget;
+  initialTemplate: string | null;
   children: React.ReactNode;
 };
 
@@ -20,7 +21,12 @@ type Props = {
  * which the chat's `data-preview-dirty` part (P5) and any other client-side
  * "preview is stale" signal can ask the iframe to reload.
  */
-export function PreviewStoreProvider({ initialSignedUrl, initialPreviewTarget, children }: Props) {
+export function PreviewStoreProvider({
+  initialSignedUrl,
+  initialPreviewTarget,
+  initialTemplate,
+  children,
+}: Props) {
   const setRefresher = usePreviewStore((s) => s.setRefresher);
   const { executeAsync: signPreview } = useAction(createSignedPreviewUrl);
 
@@ -28,6 +34,7 @@ export function PreviewStoreProvider({ initialSignedUrl, initialPreviewTarget, c
     usePreviewStore.setState({
       signedUrl: initialSignedUrl,
       previewTarget: initialPreviewTarget,
+      template: initialTemplate,
     });
   });
 
@@ -36,7 +43,9 @@ export function PreviewStoreProvider({ initialSignedUrl, initialPreviewTarget, c
       const current = usePreviewStore.getState().previewTarget;
       if (!current) return null;
       const result = await signPreview({ cvId: current.cvId });
-      return result?.data?.url ?? null;
+      const data = result?.data;
+      if (!data) return null;
+      return { url: data.url ?? null, template: data.template ?? null };
     });
   }, [setRefresher, signPreview]);
 

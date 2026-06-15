@@ -27,6 +27,12 @@ const TEMPLATES: { id: CvTemplate; label: string; description: string }[] = [
 export function TemplatePicker({ template, accentHex, educationDateFormat, certificationDateFormat }: Props) {
   const [localAccent, setLocalAccent] = useState(accentHex);
   const [isPending, startTransition] = useTransition();
+  // The selected template is reactive client state (kept in the preview store)
+  // so chat-driven layout changes and manual picks reflect without a full
+  // server refresh. Falls back to the server prop before hydration.
+  const storeTemplate = usePreviewStore((s) => s.template);
+  const setStoreTemplate = usePreviewStore((s) => s.setTemplate);
+  const activeTemplate = (storeTemplate as CvTemplate | null) ?? template;
 
   const { execute } = useAction(updateCvStyle, {
     onSuccess: () => {
@@ -37,6 +43,7 @@ export function TemplatePicker({ template, accentHex, educationDateFormat, certi
   });
 
   function pickTemplate(next: CvTemplate) {
+    setStoreTemplate(next);
     startTransition(() => execute({ template: next }));
   }
 
@@ -60,7 +67,7 @@ export function TemplatePicker({ template, accentHex, educationDateFormat, certi
         <Label className='text-xs uppercase tracking-wide text-muted-foreground'>Template</Label>
         <div className='grid grid-cols-2 gap-2'>
           {TEMPLATES.map((opt) => {
-            const active = template === opt.id;
+            const active = activeTemplate === opt.id;
             return (
               <button
                 key={opt.id}
