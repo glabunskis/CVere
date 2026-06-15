@@ -442,7 +442,12 @@ export async function GET(req: Request): Promise<Response> {
       return new Response(null, { status: 204 });
     }
 
-    return new Response(resumed, {
+    // `resumed` is a stream of SSE *strings* (`data: {...}\n\n`). A Response
+    // body must be a byte stream, so encode it — mirroring how the AI SDK's
+    // POST path pipes its SSE stream through TextEncoderStream before
+    // responding. Without this the framing is mangled and the client's SSE
+    // parser never emits an event (the resumed stream hangs at "submitted").
+    return new Response(resumed.pipeThrough(new TextEncoderStream()), {
       headers: {
         ...UI_MESSAGE_STREAM_HEADERS,
         // See POST: `no-transform` so no intermediary compresses (and buffers)

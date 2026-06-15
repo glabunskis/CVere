@@ -13,11 +13,32 @@ type UpstashSubscriber = ReturnType<ReturnType<typeof getRedis>['subscribe']>;
 
 let cached: ResumableStreamContext | null = null;
 
+// Upstash's REST `subscribe` transport is line-based: it splits the delivered
+// SSE stream on `\n` and only forwards lines beginning with `data: ` to the
+// message callback (see @upstash/redis HttpClient event-stream reader). The
+// resumable-stream library publishes raw SSE frames whose payloads contain
+// `\n\n` separators (and a `DONE_MESSAGE` sentinel that itself starts with
+// newlines), so any newline in the payload gets shredded by that transport —
+// the backlog frame is lost and the client's SSE parser hangs forever waiting
+// for a `\n\n` terminator. base64 has no `\n` (or `,`, which Upstash uses as a
+// `type,channel,message` field separator), so encoding on publish and decoding
+// on delivery makes arbitrary payloads survive the transport unchanged. The
+// encoding is symmetric and fully transparent to resumable-stream: it only ever
+// sees the original strings, so its `message === DONE_MESSAGE` comparison and
+// `JSON.parse` of the request channel keep working.
+function encodePayload(message: string): string {
+  return Buffer.from(message, 'utf8').toString('base64');
+}
+
+function decodePayload(encoded: string): string {
+  return Buffer.from(encoded, 'base64').toString('utf8');
+}
+
 function buildPublisher(): Publisher {
   const redis = getRedis();
   return {
     connect: async () => undefined,
-    publish: (channel, message) => redis.publish(channel, message),
+    publish: (channel, message) => redis.publish(channel, encodePayload(message)),
     set: (key, value, options) => {
       if (options?.EX != null) {
         return redis.set(key, value, { ex: options.EX }) as Promise<unknown>;
@@ -44,8 +65,9 @@ function buildSubscriber(): Subscriber {
       const sub = redis.subscribe<string>(channel);
       sub.on('message', (event) => {
         // automaticDeserialization is disabled, so event.message is the raw
-        // string published by the producer side.
-        callback(event.message);
+        // (base64-encoded) string published by the producer side. Decode it
+        // back to the original SSE frame before handing it to resumable-stream.
+        callback(decodePayload(event.message));
       });
       sub.on('error', (err) => {
         logger.error({ err, channel }, 'resumable-stream: redis subscriber error');
