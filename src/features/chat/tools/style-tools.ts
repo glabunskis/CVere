@@ -1,17 +1,21 @@
 import { tool } from 'ai';
 
 import {
+  clearFontSizes,
   setAccentHex,
   setDateFormat,
+  setFontSizes,
   setTemplate,
 } from '@/entities/cv';
 import { logger } from '@/shared/lib/logger';
 import type { User } from '@supabase/supabase-js';
 
 import {
+  resetFontSizesInputSchema,
   setAccentHexInputSchema,
   setCertificationDateFormatInputSchema,
   setEducationDateFormatInputSchema,
+  setFontSizesInputSchema,
   setTemplateInputSchema,
 } from '../schemas';
 
@@ -96,6 +100,40 @@ export function buildStyleTools(user: User, activeCv: ActiveCvRef) {
         return `Set certification date format to ${format}.`;
       },
     }),
+
+    setFontSizes: tool({
+      description:
+        'Set the font size (in points) of individual CV elements: "header" (the name), ' +
+        '"sectionTitle" (section headings), and "body" (main text). Pass only the ' +
+        'elements you want to change; others keep their current size. Use when the user ' +
+        'asks to make text bigger/smaller for a specific part. Omit cvId to target the ' +
+        'selected CV.',
+      inputSchema: setFontSizesInputSchema,
+      execute: async ({ cvId, fontSizes }) => {
+        const targetCvId = cvId ?? activeCv.current;
+        await setFontSizes({ userId: user.id, cvId: targetCvId, fontSizes });
+        logger.info({ userId: user.id, fontSizes }, 'chat-tool setFontSizes');
+        const parts = [
+          fontSizes.header != null ? `header ${fontSizes.header}pt` : null,
+          fontSizes.sectionTitle != null ? `section titles ${fontSizes.sectionTitle}pt` : null,
+          fontSizes.body != null ? `body ${fontSizes.body}pt` : null,
+        ].filter(Boolean);
+        return `Set font sizes: ${parts.join(', ')}.`;
+      },
+    }),
+
+    resetFontSizes: tool({
+      description:
+        'Remove all font size overrides and revert every element to its default size. ' +
+        'Omit cvId to target the selected CV.',
+      inputSchema: resetFontSizesInputSchema,
+      execute: async ({ cvId }) => {
+        const targetCvId = cvId ?? activeCv.current;
+        await clearFontSizes({ userId: user.id, cvId: targetCvId });
+        logger.info({ userId: user.id }, 'chat-tool resetFontSizes');
+        return 'Reset font sizes to defaults.';
+      },
+    }),
   } as const;
 }
 
@@ -104,4 +142,6 @@ export const STYLE_TOOL_NAMES = [
   'setAccentHex',
   'setEducationDateFormat',
   'setCertificationDateFormat',
+  'setFontSizes',
+  'resetFontSizes',
 ] as const;

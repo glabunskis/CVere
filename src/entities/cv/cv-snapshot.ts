@@ -4,6 +4,8 @@ import type { CvRow } from '@/entities/cv/cv-service';
 import type { ProfileChildren } from '@/entities/cv/get-cv-children';
 import { jsonToStringArray } from '@/shared/lib/cv-json';
 
+import { layoutSpecSchema } from './pdf/layout-spec';
+
 export const aiProfileSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
@@ -23,6 +25,10 @@ export const aiProfileSchema = z.object({
     educationDateFormat: z.string(),
     certificationDateFormat: z.string(),
   }),
+  // Raw persisted AI layout (cv.layout_json). null means "no AI layout — use
+  // the template-derived default". Included in the snapshot so undo/redo
+  // reverts layout changes exactly as stored.
+  layout: layoutSpecSchema.nullable().default(null),
   experience: z
     .array(
       z.object({
@@ -100,10 +106,12 @@ export const aiProfileSchema = z.object({
 export type AiProfile = z.infer<typeof aiProfileSchema>;
 
 export function buildCvSnapshot(cv: CvRow, children: ProfileChildren): AiProfile {
+  const parsedLayout = cv.layout_json ? layoutSpecSchema.safeParse(cv.layout_json) : null;
   return {
     id: cv.id,
     title: cv.title,
     summary: cv.summary,
+    layout: parsedLayout?.success ? parsedLayout.data : null,
     identity: {
       fullName: cv.full_name,
       location: cv.location,

@@ -142,6 +142,10 @@ export function ChatPanel({
             });
             if (!shouldRefresh) return;
             void usePreviewStore.getState().markPreviewDirty();
+            // Re-render server components too, so Library state that the chat
+            // turn changed server-side (template/column preset, accent, title)
+            // reflects without a manual reload.
+            router.refresh();
             return;
           }
           if (dataPart.type === 'data-preview-error') {

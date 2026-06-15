@@ -2,6 +2,8 @@ import path from 'node:path';
 
 import { Font, StyleSheet } from '@react-pdf/renderer';
 
+import type { FontSizes } from './font-spec';
+
 export const DEFAULT_ACCENT = '#0066CC';
 const LATIN_MODERN_ROMAN = 'Latin Modern Roman';
 const lmFamily = path.join(process.cwd(), 'src', 'entities', 'cv', 'pdf', 'fonts', 'lm_roman');
@@ -45,33 +47,68 @@ export const pdfTheme = {
   },
 };
 
+export type PdfDensity = 'compact' | 'normal' | 'relaxed';
+
+const DENSITY_SCALE: Record<PdfDensity, number> = {
+  compact: 0.9,
+  normal: 1,
+  relaxed: 1.12,
+};
+
 export type PdfStyles = ReturnType<typeof createStyles>;
 
-export function createStyles(accent: string = DEFAULT_ACCENT) {
+export function createStyles(
+  accent: string = DEFAULT_ACCENT,
+  density: PdfDensity = 'normal',
+  fontSizes?: FontSizes,
+) {
+  const scale = DENSITY_SCALE[density];
+  // Resolve per-element base sizes from the optional overrides, falling back to
+  // the theme defaults. Item titles and meta derive from `body` so the type
+  // hierarchy (h2 = body + 1, small = body - 1) stays consistent when the user
+  // only adjusts the body size. Density scaling (`fs`) is applied on top.
+  const base = pdfTheme.type.sizes;
+  const bodySize = fontSizes?.body ?? base.body;
+  const sizes = {
+    title: fontSizes?.header ?? base.title,
+    h1: fontSizes?.sectionTitle ?? base.h1,
+    h2: fontSizes?.body != null ? bodySize + 1 : base.h2,
+    body: bodySize,
+    small: fontSizes?.body != null ? Math.max(6, bodySize - 1) : base.small,
+  };
+  // `fs` scales font sizes; `sp` scales vertical/horizontal spacing (margins,
+  // paddings, gaps). Both use the same density factor so type and whitespace
+  // breathe together — 'compact' tightens both, 'relaxed' loosens both.
+  const fs = (n: number) => Math.round(n * scale * 100) / 100;
+  const sp = (n: number) => Math.round(n * scale * 100) / 100;
+  // Line-height scales more gently than spacing so text stays legible at the
+  // extremes (compact never crowds glyphs; relaxed never looks double-spaced).
+  const lineScale = 1 + (scale - 1) * 0.5;
+  const lh = (n: number) => Math.round(n * lineScale * 1000) / 1000;
   return StyleSheet.create({
     page: {
-      paddingTop: pdfTheme.page.margin,
-      paddingBottom: pdfTheme.page.margin,
-      paddingLeft: pdfTheme.page.margin,
-      paddingRight: pdfTheme.page.margin,
+      paddingTop: sp(pdfTheme.page.margin),
+      paddingBottom: sp(pdfTheme.page.margin),
+      paddingLeft: sp(pdfTheme.page.margin),
+      paddingRight: sp(pdfTheme.page.margin),
       fontFamily: pdfTheme.type.family,
-      fontSize: pdfTheme.type.sizes.body,
+      fontSize: fs(sizes.body),
       color: pdfTheme.colors.text,
-      lineHeight: 1.15,
+      lineHeight: lh(1.15),
     },
     title: {
-      fontSize: pdfTheme.type.sizes.title,
+      fontSize: fs(sizes.title),
       fontWeight: 'bold',
       color: pdfTheme.colors.text,
       lineHeight: 1,
-      marginBottom: 8,
+      marginBottom: sp(8),
       textAlign: 'center',
       letterSpacing: 0.3,
     },
     subtitle: {
-      fontSize: pdfTheme.type.sizes.small,
+      fontSize: fs(sizes.small),
       color: pdfTheme.colors.muted,
-      marginBottom: 6,
+      marginBottom: sp(6),
       textAlign: 'center',
     },
     headerContactRow: {
@@ -79,8 +116,8 @@ export function createStyles(accent: string = DEFAULT_ACCENT) {
       flexWrap: 'wrap',
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 6,
-      rowGap: 2,
+      marginBottom: sp(6),
+      rowGap: sp(2),
     },
     headerContactItem: {
       flexDirection: 'row',
@@ -90,83 +127,84 @@ export function createStyles(accent: string = DEFAULT_ACCENT) {
       marginRight: 3,
     },
     headerContactText: {
-      fontSize: pdfTheme.type.sizes.small,
+      fontSize: fs(sizes.small),
       color: pdfTheme.colors.text,
     },
     headerContactLink: {
-      fontSize: pdfTheme.type.sizes.small,
+      fontSize: fs(sizes.small),
       color: accent,
       textDecoration: 'none',
     },
     headerContactSeparator: {
-      fontSize: pdfTheme.type.sizes.small,
+      fontSize: fs(sizes.small),
       color: pdfTheme.colors.muted,
       marginHorizontal: 5,
     },
     headerRule: {
-      marginTop: 4,
-      marginBottom: 8,
+      marginTop: sp(4),
+      marginBottom: sp(8),
       borderBottomWidth: 1,
       borderBottomColor: accent,
     },
     sectionTitle: {
-      fontSize: pdfTheme.type.sizes.h1,
+      fontSize: fs(sizes.h1),
       fontWeight: 'bold',
       color: accent,
-      marginTop: 6,
-      marginBottom: 4,
+      marginTop: sp(6),
+      marginBottom: sp(4),
       borderBottomWidth: 1,
       borderBottomColor: accent,
-      paddingBottom: 7,
+      paddingBottom: sp(7),
     },
     itemTitle: {
-      fontSize: pdfTheme.type.sizes.h2,
+      fontSize: fs(sizes.h2),
       fontWeight: 'bold',
     },
     itemMeta: {
-      fontSize: pdfTheme.type.sizes.small,
+      fontSize: fs(sizes.small),
       color: pdfTheme.colors.muted,
-      marginBottom: 1,
+      marginBottom: sp(1),
     },
     dateMeta: {
       fontStyle: 'italic',
     },
     paragraph: {
-      marginBottom: 2,
+      marginBottom: sp(2),
     },
     bulletRow: {
       flexDirection: 'row',
-      marginBottom: 1,
+      marginBottom: sp(1),
     },
     bulletDot: {
       width: 8,
-      fontSize: pdfTheme.type.sizes.body,
+      fontSize: fs(sizes.body),
       color: pdfTheme.colors.text,
     },
     bulletText: {
       flex: 1,
     },
     group: {
-      marginBottom: 6,
+      marginBottom: sp(6),
     },
     itemGroup: {
-      marginBottom: 3,
+      marginBottom: sp(3),
     },
     inlineMuted: {
       color: pdfTheme.colors.muted,
     },
     letterBody: {
-      marginTop: 8,
+      marginTop: sp(8),
     },
     twoColumnRow: {
       flexDirection: 'row',
-      gap: 12,
+      gap: sp(12),
     },
-    columnLeft: {
-      flex: 1,
-    },
-    columnRight: {
-      flex: 1,
+    // Column width is driven by the LayoutSpec `leftRatio` via inline flexGrow.
+    // flexBasis:0 + minWidth:0 makes the columns share the row proportionally
+    // and lets long text wrap instead of overflowing.
+    column: {
+      flexBasis: 0,
+      minWidth: 0,
     },
     accentLink: {
       color: accent,

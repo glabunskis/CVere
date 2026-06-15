@@ -22,6 +22,7 @@ import {
   buildCvMetaTools,
   buildEntryTools,
   buildIdentityTools,
+  buildLayoutTools,
   buildSectionTools,
   buildStyleTools,
   buildVacancyTools,
@@ -187,6 +188,7 @@ export async function POST(req: Request): Promise<Response> {
       // Kept as one flat object — tools are never gated by session kind.
       const tools = {
         ...buildStyleTools(user, activeCvRef),
+        ...buildLayoutTools(user, activeCvRef),
         ...buildCvMetaTools(user, activeCvRef, async (info) => {
           createdCvEvents.push(info);
           // Capture the freshly created copy's baseline before any subsequent

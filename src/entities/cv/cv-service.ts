@@ -2,6 +2,9 @@ import { createSupabaseServerClient } from '@/shared/api/supabase/supabase-serve
 import type { Database, Json, Tables, TablesInsert, TablesUpdate } from '@/shared/api/supabase/types';
 import type { User } from '@supabase/supabase-js';
 
+import { type FontSizes, fontSizesSchema } from './pdf/font-spec';
+import { layoutSpecSchema } from './pdf/layout-spec';
+
 import 'server-only';
 
 export type CvRow = Tables<'cv'>;
@@ -830,12 +833,108 @@ export async function setTemplate({
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('cv')
-    .update({ template })
+    .update({ template, layout_json: null })
     .eq('id', cvId)
     .eq('user_id', userId)
     .select('*')
     .single();
   if (error || !data) throw new Error(error?.message ?? 'Failed to update template');
+  return data;
+}
+
+export async function setLayout({
+  userId,
+  cvId,
+  layoutJson,
+}: {
+  userId: string;
+  cvId: string;
+  layoutJson: unknown;
+}): Promise<CvRow> {
+  await getOwnedCv(userId, cvId);
+  const supabase = await createSupabaseServerClient();
+  // Mirror the layout's column count onto cv.template so the Library template
+  // preset reflects and persists the AI layout choice. layout_json still wins
+  // at render; template is the coarse single/two-column indicator the UI reads.
+  const parsed = layoutSpecSchema.safeParse(layoutJson);
+  const update: TablesUpdate<'cv'> = { layout_json: layoutJson as Json };
+  if (parsed.success) {
+    update.template = parsed.data.columns === 'two' ? 'two-column' : 'single-column';
+  }
+  const { data, error } = await supabase
+    .from('cv')
+    .update(update)
+    .eq('id', cvId)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Failed to update layout');
+  return data;
+}
+
+export async function clearLayout({
+  userId,
+  cvId,
+}: {
+  userId: string;
+  cvId: string;
+}): Promise<CvRow> {
+  await getOwnedCv(userId, cvId);
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from('cv')
+    .update({ layout_json: null })
+    .eq('id', cvId)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Failed to clear layout');
+  return data;
+}
+
+export async function setFontSizes({
+  userId,
+  cvId,
+  fontSizes,
+}: {
+  userId: string;
+  cvId: string;
+  fontSizes: FontSizes;
+}): Promise<CvRow> {
+  // Merge with any existing overrides so the caller can adjust one element
+  // (e.g. just the header) without resetting the others.
+  const existing = await getOwnedCv(userId, cvId);
+  const current = fontSizesSchema.safeParse(existing.font_sizes ?? {});
+  const merged: FontSizes = { ...(current.success ? current.data : {}), ...fontSizes };
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from('cv')
+    .update({ font_sizes: merged as Json })
+    .eq('id', cvId)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Failed to update font sizes');
+  return data;
+}
+
+export async function clearFontSizes({
+  userId,
+  cvId,
+}: {
+  userId: string;
+  cvId: string;
+}): Promise<CvRow> {
+  await getOwnedCv(userId, cvId);
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from('cv')
+    .update({ font_sizes: null })
+    .eq('id', cvId)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Failed to clear font sizes');
   return data;
 }
 

@@ -179,6 +179,7 @@ export async function restoreCvToSnapshot(
         .educationDateFormat as TablesInsert<'cv'>['education_date_format'],
       certification_date_format: target.style
         .certificationDateFormat as TablesInsert<'cv'>['certification_date_format'],
+      layout_json: (target.layout ?? null) as unknown as Json,
     })
     .eq('id', cvId)
     .eq('user_id', user.id);

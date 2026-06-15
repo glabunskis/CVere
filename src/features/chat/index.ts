@@ -25,6 +25,7 @@ export { buildEntryTools, ENTRY_TOOL_NAMES } from './tools/entry-tools';
 export { buildIdentityTools, IDENTITY_TOOL_NAMES } from './tools/identity-tools';
 export { MUTATING_TOOLS } from './tools/mutating-tools';
 export { buildSectionTools, SECTION_TOOL_NAMES } from './tools/section-tools';
+export { buildLayoutTools, LAYOUT_TOOL_NAMES } from './tools/layout-tools';
 export { buildStyleTools, STYLE_TOOL_NAMES } from './tools/style-tools';
 export { buildVacancyTools, VACANCY_TOOL_NAMES } from './tools/vacancy-tools';
 export * from './types';

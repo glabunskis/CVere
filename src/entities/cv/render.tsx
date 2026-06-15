@@ -3,6 +3,8 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import type { User } from '@supabase/supabase-js';
 
 import { Cv } from './pdf/Cv';
+import { fontSizesSchema } from './pdf/font-spec';
+import { layoutSpecSchema } from './pdf/layout-spec';
 import type { ProfileContact } from './pdf/primitives';
 import { DEFAULT_ACCENT } from './pdf/theme';
 import { buildCvSnapshot } from './cv-snapshot';
@@ -53,6 +55,12 @@ export async function renderAndUploadCv({
   const children = await getCvChildren(cv.id);
   const snapshot = buildCvSnapshot(cv, children);
 
+  const parsedLayout = cv.layout_json ? layoutSpecSchema.safeParse(cv.layout_json) : null;
+  const layout = parsedLayout?.success ? parsedLayout.data : null;
+
+  const parsedFonts = cv.font_sizes ? fontSizesSchema.safeParse(cv.font_sizes) : null;
+  const fontSizes = parsedFonts?.success ? parsedFonts.data : undefined;
+
   const userMetadata = (user.user_metadata ?? {}) as { full_name?: string };
   const identity = cv.full_name ?? userMetadata.full_name ?? user.email ?? '[MISSING] name';
   const contact = buildProfileContact(cv, user.email ?? null);
@@ -60,6 +68,8 @@ export async function renderAndUploadCv({
   const buffer = await renderToBuffer(
     <Cv
       template={cv.template}
+      layout={layout}
+      fontSizes={fontSizes}
       snapshot={snapshot}
       sections={{}}
       identityName={identity}

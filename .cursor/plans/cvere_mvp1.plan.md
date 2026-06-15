@@ -24,7 +24,7 @@ todos:
     content: "✅ Detours alongside Phase 1-5: Feature-Sliced Design restructure, Vercel deployment, multiple-CV introduction (incl. cv_version undo/redo)"
     status: completed
   - id: phase-6
-    content: "✅ Access-code gate at signup (hardcoded SIGNUP_ACCESS_CODE env, validated in signUpWithPassword + UI field). Stripe left dormant."
+    content: ✅ Access-code gate at signup (hardcoded SIGNUP_ACCESS_CODE env, validated in signUpWithPassword + UI field). Stripe left dormant.
     status: completed
   - id: phase-7
     content: "AI-generated PDF layout: chat model emits a structured LayoutSpec (section order, column assignment, density), deterministic react-pdf executor renders it; no length constraint; stays within chat-only-AI rule"

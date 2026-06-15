@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { achievementSectionSchema } from '@/entities/achievement';
+import { fontSizesSchema, layoutSpecSchema } from '@/entities/cv';
 import {
   accentHexSchema,
   cvDateFormatSchema,
@@ -34,8 +35,8 @@ const optionalCvIdSchema = z
 export const setTemplateInputSchema = z.object({
   cvId: optionalCvIdSchema,
   template: cvTemplateSchema.describe(
-    'The CV template to apply. "single-column" is the default; "two-column" splits ' +
-      'sidebar content (skills, education, certifications) from the main column.',
+    'The CV template to apply. "single-column" is the default; "two-column" arranges ' +
+      'sections into two equal-width columns.',
   ),
 });
 
@@ -61,6 +62,48 @@ export const setCertificationDateFormatInputSchema = z.object({
     'Date format used for certification entries. Same options as the education ' +
       'date format.',
   ),
+});
+
+export const setLayoutInputSchema = z.object({
+  cvId: optionalCvIdSchema,
+  layout: layoutSpecSchema.describe(
+    'The layout plan. "columns": "single" stacks every section in one column top ' +
+      'to bottom; "two" renders an asymmetric sidebar + main. "density": "compact" ' +
+      'fits more per page (prefer it for two-column), "relaxed" adds breathing room. ' +
+      '"leftRatio" (0.25–0.6, default 0.34) is the width fraction of the left column; ' +
+      '~0.33 gives a narrow sidebar + wide main. "full" sections render full width ' +
+      'above the columns — put long-form prose (summary) here. "left" is the narrow ' +
+      'sidebar: short, scannable sections (skills, languages, education, ' +
+      'certifications). "right" is the wide main: long-form sections (experience, ' +
+      'projects). Each kind appears at most once across "full", "left", and "right". ' +
+      'For "single", put everything in "left". Keep columns compact and roughly ' +
+      'balanced in height. Valid kinds: summary, experience, projects, skills, ' +
+      'education, certifications, languages. Omit sections the CV has no data for.',
+  ),
+});
+
+export const resetLayoutInputSchema = z.object({
+  cvId: optionalCvIdSchema,
+});
+
+export const setFontSizesInputSchema = z.object({
+  cvId: optionalCvIdSchema,
+  fontSizes: fontSizesSchema
+    .refine((v) => v.header != null || v.sectionTitle != null || v.body != null, {
+      message: 'Provide at least one of header, sectionTitle, or body.',
+    })
+    .describe(
+      'Font sizes in points for individual CV elements. Only include the elements ' +
+        'you want to change; omitted elements keep their current size. "header" is the ' +
+        'name at the top (default 18, range 8–48). "sectionTitle" is section headings ' +
+        'like "Professional Experience" (default 14, range 6–36). "body" is the main ' +
+        'text — paragraphs, bullets, contact line (default 10, range 6–24); item titles ' +
+        'and meta text scale with it. Values are scaled further by the layout density.',
+    ),
+});
+
+export const resetFontSizesInputSchema = z.object({
+  cvId: optionalCvIdSchema,
 });
 
 // =============================================================================

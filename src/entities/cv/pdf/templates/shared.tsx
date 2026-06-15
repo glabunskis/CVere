@@ -2,6 +2,7 @@ import type { AiProfile } from '@/entities/cv/cv-snapshot';
 import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/shared/lib/format-date';
 import { Text, View } from '@react-pdf/renderer';
 
+import type { FontSizes } from '../font-spec';
 import { Bullet, type ProfileContact, Section } from '../primitives';
 import type { PdfStyles } from '../theme';
 
@@ -31,6 +32,7 @@ export type TemplateProps = {
   contactLine?: string;
   accent: string;
   dateFormats?: DateFormats;
+  fontSizes?: FontSizes;
 };
 
 export function applyOrder<T extends { id: string }>(items: T[], order: string[] | undefined): T[] {

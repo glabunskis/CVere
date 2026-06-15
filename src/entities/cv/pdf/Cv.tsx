@@ -1,12 +1,16 @@
 import type { Database } from '@/shared/api/supabase/types';
 
+import { defaultLayoutForTemplate, type LayoutSpec } from './layout-spec';
 import type { TemplateProps } from './templates/shared';
-import { SingleColumnCv } from './templates/single-column';
-import { TwoColumnCv } from './templates/two-column';
+import { LayoutCv } from './templates/layout-executor';
 
 export type CvTemplate = Database['public']['Enums']['cv_template'];
 
-export function Cv({ template = 'single-column', ...props }: TemplateProps & { template?: CvTemplate }) {
-  if (template === 'two-column') return <TwoColumnCv {...props} />;
-  return <SingleColumnCv {...props} />;
+export function Cv({
+  template = 'single-column',
+  layout = null,
+  ...props
+}: TemplateProps & { template?: CvTemplate; layout?: LayoutSpec | null }) {
+  const resolved = layout ?? defaultLayoutForTemplate(template);
+  return <LayoutCv layout={resolved} {...props} />;
 }
