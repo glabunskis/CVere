@@ -35,7 +35,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/shared/ui/select';
 
 import { CvRow } from './cv-row';
@@ -311,7 +310,7 @@ export function CvLibraryPanel({ library }: Props) {
                 onValueChange={(value) => setSourceCvId(value as string)}
               >
                 <SelectTrigger className='w-full'>
-                  <SelectValue />
+                  {library.items.find((cv) => cv.id === (sourceCvId || activeCvId))?.title ?? ''}
                 </SelectTrigger>
                 <SelectContent>
                   {library.items.map((cv) => (

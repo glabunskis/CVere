@@ -164,7 +164,7 @@ export function createStyles(
       fontSize: fs(sizes.h1),
       fontWeight: 'bold',
       color: accent,
-      marginTop: sp(6),
+      marginTop: sp(3),
       marginBottom: sp(4),
       borderBottomWidth: 1,
       borderBottomColor: accent,
@@ -198,7 +198,7 @@ export function createStyles(
       flex: 1,
     },
     group: {
-      marginBottom: sp(6),
+      marginBottom: sp(4),
     },
     itemGroup: {
       marginBottom: sp(3),
