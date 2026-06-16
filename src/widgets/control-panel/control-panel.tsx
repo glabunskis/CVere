@@ -24,6 +24,7 @@ type Props = {
   accentHex: string;
   educationDateFormat: CvDateFormat;
   certificationDateFormat: CvDateFormat;
+  experienceDateFormat: CvDateFormat;
   cvLibrary: CvLibraryData;
   achievements: AchievementRow[];
   summary: string | null;
@@ -42,6 +43,7 @@ export function ControlPanel({
   accentHex,
   educationDateFormat,
   certificationDateFormat,
+  experienceDateFormat,
   cvLibrary,
   achievements,
   summary,
@@ -113,6 +115,7 @@ export function ControlPanel({
                 skillCategories={skillCategories}
                 educationDateFormat={educationDateFormat}
                 certificationDateFormat={certificationDateFormat}
+                experienceDateFormat={experienceDateFormat}
               />
             </div>
           </ScrollArea>
@@ -126,6 +129,7 @@ export function ControlPanel({
                 accentHex={accentHex}
                 educationDateFormat={educationDateFormat}
                 certificationDateFormat={certificationDateFormat}
+                experienceDateFormat={experienceDateFormat}
               />
             </div>
           </ScrollArea>

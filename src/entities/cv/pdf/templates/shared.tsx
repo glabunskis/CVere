@@ -17,11 +17,13 @@ export type TailoredSections = {
 export type DateFormats = {
   education: CvDateFormat;
   certification: CvDateFormat;
+  experience: CvDateFormat;
 };
 
 export const DEFAULT_DATE_FORMATS: DateFormats = {
   education: DEFAULT_CV_DATE_FORMAT,
   certification: DEFAULT_CV_DATE_FORMAT,
+  experience: DEFAULT_CV_DATE_FORMAT,
 };
 
 export type TemplateProps = {
@@ -53,14 +55,21 @@ export function applyOrder<T extends { id: string }>(items: T[], order: string[]
 export function ExperienceSection({
   experiences,
   styles,
+  dateFormat = DEFAULT_CV_DATE_FORMAT,
 }: {
   experiences: AiProfile['experience'];
   styles: PdfStyles;
+  dateFormat?: CvDateFormat;
 }) {
   if (!experiences.length) return null;
   return (
     <Section title='Professional Experience' styles={styles}>
-      {experiences.map((exp) => (
+      {experiences.map((exp) => {
+        const start = formatCvDate(exp.startDate, dateFormat) ?? exp.startDate ?? '[MISSING]';
+        const end = exp.isCurrent
+          ? 'Present'
+          : (formatCvDate(exp.endDate, dateFormat) ?? exp.endDate ?? '[MISSING]');
+        return (
         <View key={exp.id} style={styles.itemGroup} wrap={false}>
           <Text style={styles.itemTitle}>
             {exp.role}
@@ -69,7 +78,7 @@ export function ExperienceSection({
           </Text>
           <Text style={styles.itemMeta}>
             <Text style={styles.dateMeta}>
-              {exp.startDate ?? '[MISSING]'} - {exp.isCurrent ? 'Present' : (exp.endDate ?? '[MISSING]')}
+              {start} - {end}
             </Text>
             {exp.location ? ` - ${exp.location}` : ''}
           </Text>
@@ -81,7 +90,8 @@ export function ExperienceSection({
           ))}
           {exp.stack.length ? <Text style={styles.itemMeta}>Stack: {exp.stack.join(', ')}</Text> : null}
         </View>
-      ))}
+        );
+      })}
     </Section>
   );
 }
@@ -183,7 +193,7 @@ export function EducationSection({
       {education.map((edu) => {
         const start = formatCvDate(edu.startDate, dateFormat);
         const end = formatCvDate(edu.endDate, dateFormat);
-        const range = start && end ? `${start} -> ${end}` : (start ?? end ?? null);
+        const range = start && end ? `${start} - ${end}` : (start ?? end ?? null);
         return (
           <View key={edu.id} style={styles.itemGroup} wrap={false}>
             <Text style={styles.itemTitle}>{edu.institution}</Text>

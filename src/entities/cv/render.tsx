@@ -78,6 +78,7 @@ export async function renderAndUploadCv({
       dateFormats={{
         education: cv.education_date_format,
         certification: cv.certification_date_format,
+        experience: cv.experience_date_format,
       }}
     />,
   );

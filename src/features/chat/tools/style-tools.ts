@@ -15,6 +15,7 @@ import {
   setAccentHexInputSchema,
   setCertificationDateFormatInputSchema,
   setEducationDateFormatInputSchema,
+  setExperienceDateFormatInputSchema,
   setFontSizesInputSchema,
   setTemplateInputSchema,
 } from '../schemas';
@@ -101,6 +102,27 @@ export function buildStyleTools(user: User, activeCv: ActiveCvRef) {
       },
     }),
 
+    setExperienceDateFormat: tool({
+      description:
+        'Pick how experience entry dates are rendered: "year", "mm_yyyy", "mon_yyyy", or ' +
+        '"mon_d_yyyy". Omit cvId to target the selected CV.',
+      inputSchema: setExperienceDateFormatInputSchema,
+      execute: async ({ cvId, format }) => {
+        const targetCvId = cvId ?? activeCv.current;
+        await setDateFormat({
+          userId: user.id,
+          cvId: targetCvId,
+          section: 'experience',
+          format,
+        });
+        logger.info(
+          { userId: user.id, experienceDateFormat: format },
+          'chat-tool setExperienceDateFormat',
+        );
+        return `Set experience date format to ${format}.`;
+      },
+    }),
+
     setFontSizes: tool({
       description:
         'Set the font size (in points) of individual CV elements: "header" (the name), ' +
@@ -142,6 +164,7 @@ export const STYLE_TOOL_NAMES = [
   'setAccentHex',
   'setEducationDateFormat',
   'setCertificationDateFormat',
+  'setExperienceDateFormat',
   'setFontSizes',
   'resetFontSizes',
 ] as const;

@@ -82,6 +82,7 @@ export const TOOL_REGISTRY: ToolRegistryEntry[] = [
   { name: 'setAccentHex', mutates: true, label: 'Set accent color' },
   { name: 'setEducationDateFormat', mutates: true, label: 'Set education date format' },
   { name: 'setCertificationDateFormat', mutates: true, label: 'Set certification date format' },
+  { name: 'setExperienceDateFormat', mutates: true, label: 'Set experience date format' },
   { name: 'setLayout', mutates: true, label: 'Set layout' },
   { name: 'resetLayout', mutates: true, label: 'Reset layout' },
   { name: 'setFontSizes', mutates: true, label: 'Set font sizes' },

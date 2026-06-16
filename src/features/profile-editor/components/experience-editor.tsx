@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import type { ExperienceRow } from '@/entities/cv';
 import { jsonToStringArray } from '@/shared/lib/cv-json';
+import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/shared/lib/format-date';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -25,9 +26,10 @@ type DraftState =
 type Props = {
   items: ExperienceRow[];
   readOnly?: boolean;
+  dateFormat?: CvDateFormat;
 };
 
-export function ExperienceEditor({ items, readOnly = false }: Props) {
+export function ExperienceEditor({ items, readOnly = false, dateFormat = DEFAULT_CV_DATE_FORMAT }: Props) {
   const [draft, setDraft] = useState<DraftState>({ kind: 'idle' });
 
   return (
@@ -91,6 +93,7 @@ export function ExperienceEditor({ items, readOnly = false }: Props) {
             key={item.id}
             row={item}
             readOnly={readOnly}
+            dateFormat={dateFormat}
             onEdit={() => setDraft({ kind: 'editing', id: item.id })}
           />
         ),
@@ -102,10 +105,12 @@ export function ExperienceEditor({ items, readOnly = false }: Props) {
 function ExperienceCard({
   row,
   readOnly,
+  dateFormat,
   onEdit,
 }: {
   row: ExperienceRow;
   readOnly: boolean;
+  dateFormat: CvDateFormat;
   onEdit: () => void;
 }) {
   const { execute: del, isExecuting: deleting } = useAction(deleteProfileChild, {
@@ -117,6 +122,10 @@ function ExperienceCard({
   });
   const bullets = jsonToStringArray(row.bullets);
   const stack = jsonToStringArray(row.stack);
+  const startLabel = formatCvDate(row.start_date, dateFormat) ?? row.start_date ?? '[MISSING]';
+  const endLabel = row.is_current
+    ? 'Present'
+    : (formatCvDate(row.end_date, dateFormat) ?? row.end_date ?? '[MISSING]');
 
   return (
     <article className='flex flex-col gap-2 rounded-lg border p-3'>
@@ -126,7 +135,7 @@ function ExperienceCard({
             {row.role} <span className='text-muted-foreground'>at {row.company}</span>
           </p>
           <p className='text-xs text-muted-foreground'>
-            {row.start_date ?? '[MISSING]'} - {row.is_current ? 'Present' : (row.end_date ?? '[MISSING]')}
+            {startLabel} - {endLabel}
             {row.location ? ` - ${row.location}` : ''}
           </p>
         </div>

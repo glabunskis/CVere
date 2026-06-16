@@ -190,6 +190,7 @@ export type Database = {
           contact_email: string | null
           created_at: string
           education_date_format: Database["public"]["Enums"]["cv_date_format"]
+          experience_date_format: Database["public"]["Enums"]["cv_date_format"]
           font_sizes: Json | null
           full_name: string | null
           github_url: string | null
@@ -218,6 +219,7 @@ export type Database = {
           contact_email?: string | null
           created_at?: string
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
+          experience_date_format?: Database["public"]["Enums"]["cv_date_format"]
           font_sizes?: Json | null
           full_name?: string | null
           github_url?: string | null
@@ -246,6 +248,7 @@ export type Database = {
           contact_email?: string | null
           created_at?: string
           education_date_format?: Database["public"]["Enums"]["cv_date_format"]
+          experience_date_format?: Database["public"]["Enums"]["cv_date_format"]
           font_sizes?: Json | null
           full_name?: string | null
           github_url?: string | null

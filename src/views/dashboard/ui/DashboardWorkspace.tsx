@@ -35,6 +35,7 @@ type Props = {
   accentHex: string;
   educationDateFormat: CvDateFormat;
   certificationDateFormat: CvDateFormat;
+  experienceDateFormat: CvDateFormat;
   activeSessionId: string;
   sessions: ChatSessionListItem[];
   initialChatMessages: ChatUIMessage[];
@@ -61,6 +62,7 @@ export function DashboardWorkspace({
   accentHex,
   educationDateFormat,
   certificationDateFormat,
+  experienceDateFormat,
   activeSessionId,
   sessions,
   initialChatMessages,
@@ -245,6 +247,7 @@ export function DashboardWorkspace({
               accentHex={accentHex}
               educationDateFormat={educationDateFormat}
               certificationDateFormat={certificationDateFormat}
+              experienceDateFormat={experienceDateFormat}
               cvLibrary={cvLibrary}
               achievements={achievements}
               summary={summary}

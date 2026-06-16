@@ -683,6 +683,7 @@ export async function createCv({
     accent_hex: source?.accent_hex ?? '#000000',
     education_date_format: source?.education_date_format ?? 'mon_yyyy',
     certification_date_format: source?.certification_date_format ?? 'mon_yyyy',
+    experience_date_format: source?.experience_date_format ?? 'mon_yyyy',
     skill_categories: source?.skill_categories ?? [],
     pdf_path: null,
   };
@@ -966,14 +967,16 @@ export async function setDateFormat({
 }: {
   userId: string;
   cvId: string;
-  section: 'education' | 'certification';
+  section: 'education' | 'certification' | 'experience';
   format: Database['public']['Enums']['cv_date_format'];
 }): Promise<CvRow> {
   await getOwnedCv(userId, cvId);
   const patch: TablesUpdate<'cv'> =
     section === 'education'
       ? { education_date_format: format }
-      : { certification_date_format: format };
+      : section === 'certification'
+        ? { certification_date_format: format }
+        : { experience_date_format: format };
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('cv')

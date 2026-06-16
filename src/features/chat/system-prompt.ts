@@ -56,7 +56,7 @@ Tool groups you have available:
   dismissAchievement.
 - Vacancies (read-only): listVacancies, readVacancy.
 - Style: setTemplate, setAccentHex, setEducationDateFormat,
-  setCertificationDateFormat, setFontSizes (per-element font size),
+  setCertificationDateFormat, setExperienceDateFormat, setFontSizes (per-element font size),
   resetFontSizes (back to default sizes).
 - Layout: setLayout (AI-designed page layout), resetLayout (back to the
   standard template).

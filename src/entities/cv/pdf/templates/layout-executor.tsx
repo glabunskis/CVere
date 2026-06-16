@@ -41,7 +41,14 @@ export function LayoutCv({
       case 'summary':
         return <SummaryBlock key='summary' summary={summary} styles={styles} />;
       case 'experience':
-        return <ExperienceSection key='experience' experiences={experiences} styles={styles} />;
+        return (
+          <ExperienceSection
+            key='experience'
+            experiences={experiences}
+            styles={styles}
+            dateFormat={dateFormats.experience}
+          />
+        );
       case 'projects':
         return <ProjectsSection key='projects' projects={projects} styles={styles} />;
       case 'skills':

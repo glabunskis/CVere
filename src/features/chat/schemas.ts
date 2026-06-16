@@ -61,6 +61,14 @@ export const setCertificationDateFormatInputSchema = z.object({
   ),
 });
 
+export const setExperienceDateFormatInputSchema = z.object({
+  cvId: optionalCvIdSchema,
+  format: cvDateFormatSchema.describe(
+    'Date format used for experience entries. Same options as the education ' +
+      'date format.',
+  ),
+});
+
 export const setLayoutInputSchema = z.object({
   cvId: optionalCvIdSchema,
   layout: layoutSpecSchema.describe(

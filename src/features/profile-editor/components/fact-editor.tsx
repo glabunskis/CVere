@@ -26,6 +26,7 @@ type Props = {
   mode?: 'edit' | 'read';
   educationDateFormat?: CvDateFormat;
   certificationDateFormat?: CvDateFormat;
+  experienceDateFormat?: CvDateFormat;
 };
 
 export function FactEditor({
@@ -38,6 +39,7 @@ export function FactEditor({
   mode = 'edit',
   educationDateFormat = DEFAULT_CV_DATE_FORMAT,
   certificationDateFormat = DEFAULT_CV_DATE_FORMAT,
+  experienceDateFormat = DEFAULT_CV_DATE_FORMAT,
 }: Props) {
   const readOnly = mode === 'read';
 
@@ -52,7 +54,7 @@ export function FactEditor({
         fallbackFullName={fallbackFullName}
         readOnly={readOnly}
       />
-      <ExperienceEditor items={sections.experience} readOnly={readOnly} />
+      <ExperienceEditor items={sections.experience} readOnly={readOnly} dateFormat={experienceDateFormat} />
       <ProjectEditor items={sections.project} readOnly={readOnly} />
       <SkillEditor items={sections.skill} skillCategories={skillCategories} readOnly={readOnly} />
       <EducationEditor items={sections.education} readOnly={readOnly} dateFormat={educationDateFormat} />

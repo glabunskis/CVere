@@ -12,6 +12,7 @@ type DashboardViewProps = {
   accentHex: string;
   educationDateFormat: CvDateFormat;
   certificationDateFormat: CvDateFormat;
+  experienceDateFormat: CvDateFormat;
   activeSessionId: string;
   sessions: ChatSessionListItem[];
   initialChatMessages: ChatUIMessage[];

@@ -15,6 +15,7 @@ export const updateCvStyleSchema = z.object({
   accentHex: accentHexSchema.optional(),
   educationDateFormat: cvDateFormatSchema.optional(),
   certificationDateFormat: cvDateFormatSchema.optional(),
+  experienceDateFormat: cvDateFormatSchema.optional(),
 });
 export type UpdateCvStyleInput = z.infer<typeof updateCvStyleSchema>;
 

@@ -47,6 +47,14 @@ export const updateCvStyle = authActionClient
         format: parsedInput.certificationDateFormat,
       });
     }
+    if (parsedInput.experienceDateFormat) {
+      await setDateFormat({
+        userId: ctx.user.id,
+        cvId: selectedCv.id,
+        section: 'experience',
+        format: parsedInput.experienceDateFormat,
+      });
+    }
 
     await renderAndUploadCv({ user: ctx.user, cvId: selectedCv.id });
 

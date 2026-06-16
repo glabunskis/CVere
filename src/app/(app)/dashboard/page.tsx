@@ -65,6 +65,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       accentHex={selectedCv.accent_hex}
       educationDateFormat={selectedCv.education_date_format ?? DEFAULT_CV_DATE_FORMAT}
       certificationDateFormat={selectedCv.certification_date_format ?? DEFAULT_CV_DATE_FORMAT}
+      experienceDateFormat={selectedCv.experience_date_format ?? DEFAULT_CV_DATE_FORMAT}
       activeSessionId={activeSession.id}
       sessions={sessions}
       initialChatMessages={initialChatMessages}

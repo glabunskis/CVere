@@ -24,6 +24,7 @@ export const aiProfileSchema = z.object({
     accentHex: z.string(),
     educationDateFormat: z.string(),
     certificationDateFormat: z.string(),
+    experienceDateFormat: z.string().default('mon_yyyy'),
   }),
   // Raw persisted AI layout (cv.layout_json). null means "no AI layout — use
   // the template-derived default". Included in the snapshot so undo/redo
@@ -130,6 +131,7 @@ export function buildCvSnapshot(cv: CvRow, children: ProfileChildren): AiProfile
       accentHex: cv.accent_hex,
       educationDateFormat: cv.education_date_format,
       certificationDateFormat: cv.certification_date_format,
+      experienceDateFormat: cv.experience_date_format,
     },
     experience: children.experience.map((row) => ({
       id: row.id,

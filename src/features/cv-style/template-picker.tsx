@@ -24,6 +24,7 @@ type Props = {
   accentHex: string;
   educationDateFormat: CvDateFormat;
   certificationDateFormat: CvDateFormat;
+  experienceDateFormat: CvDateFormat;
 };
 
 const TEMPLATES: { id: CvTemplate; label: string; description: string }[] = [
@@ -42,7 +43,13 @@ const ACCENT_PRESETS = [
   '#DB2777',
 ];
 
-export function TemplatePicker({ template, accentHex, educationDateFormat, certificationDateFormat }: Props) {
+export function TemplatePicker({
+  template,
+  accentHex,
+  educationDateFormat,
+  certificationDateFormat,
+  experienceDateFormat,
+}: Props) {
   const [localAccent, setLocalAccent] = useState(accentHex);
   const [isPending, startTransition] = useTransition();
   // The selected template is reactive client state (kept in the preview store)
@@ -77,6 +84,10 @@ export function TemplatePicker({ template, accentHex, educationDateFormat, certi
 
   function pickCertificationDateFormat(next: CvDateFormat) {
     startTransition(() => execute({ certificationDateFormat: next }));
+  }
+
+  function pickExperienceDateFormat(next: CvDateFormat) {
+    startTransition(() => execute({ experienceDateFormat: next }));
   }
 
   return (
@@ -157,6 +168,12 @@ export function TemplatePicker({ template, accentHex, educationDateFormat, certi
 
       <div className='flex flex-col gap-3'>
         <Label className='text-xs uppercase tracking-wide text-muted-foreground'>Date formats</Label>
+        <DateFormatField
+          label='Experience'
+          value={experienceDateFormat}
+          disabled={isPending}
+          onChange={pickExperienceDateFormat}
+        />
         <DateFormatField
           label='Education'
           value={educationDateFormat}

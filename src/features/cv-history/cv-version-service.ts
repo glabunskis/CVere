@@ -178,6 +178,8 @@ export async function restoreCvToSnapshot(
         .educationDateFormat as TablesInsert<'cv'>['education_date_format'],
       certification_date_format: target.style
         .certificationDateFormat as TablesInsert<'cv'>['certification_date_format'],
+      experience_date_format: target.style
+        .experienceDateFormat as TablesInsert<'cv'>['experience_date_format'],
       layout_json: (target.layout ?? null) as unknown as Json,
       skill_categories: (target.skillCategories ?? []) as unknown as Json,
     })
