@@ -307,6 +307,7 @@ export function SkillEditor({ items, skillCategories, readOnly = false }: Props)
       {skills.length === 0 ? <p className='text-sm text-muted-foreground'>No skills yet.</p> : null}
 
       <DndContext
+        id='skill-editor-dnd'
         sensors={sensors}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}

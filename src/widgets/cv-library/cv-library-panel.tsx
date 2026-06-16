@@ -30,7 +30,13 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu';
 import { Input } from '@/shared/ui/input';
-import { Select } from '@/shared/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select';
 
 import { CvRow } from './cv-row';
 
@@ -302,13 +308,18 @@ export function CvLibraryPanel({ library }: Props) {
               <p className='text-xs font-medium text-muted-foreground'>Source CV</p>
               <Select
                 value={sourceCvId || activeCvId}
-                onChange={(event) => setSourceCvId(event.target.value)}
+                onValueChange={(value) => setSourceCvId(value as string)}
               >
-                {library.items.map((cv) => (
-                  <option key={cv.id} value={cv.id}>
-                    {cv.title}
-                  </option>
-                ))}
+                <SelectTrigger className='w-full'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {library.items.map((cv) => (
+                    <SelectItem key={cv.id} value={cv.id}>
+                      {cv.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
             <DialogFooter>

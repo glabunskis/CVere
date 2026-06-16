@@ -9,7 +9,13 @@ import { integrableSectionSchema } from '@/entities/achievement/schemas';
 import { useHasMounted } from '@/shared/lib/use-has-mounted';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
-import { Select } from '@/shared/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select';
 
 import { dismissAchievement, integrateAchievement } from '../actions/achievement-actions';
 
@@ -59,14 +65,18 @@ export function AchievementCard({ row }: { row: AchievementRow }) {
         <div className='flex flex-wrap items-center justify-end gap-2'>
           <Select
             value={section}
-            onChange={(event) => setSection(event.target.value as IntegrableSection)}
-            className='w-auto'
+            onValueChange={(value) => setSection(value as IntegrableSection)}
           >
-            {SECTIONS.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
+            <SelectTrigger className='min-w-[140px] capitalize'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SECTIONS.map((value) => (
+                <SelectItem key={value} value={value} className='capitalize'>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
           <Button
             size='sm'

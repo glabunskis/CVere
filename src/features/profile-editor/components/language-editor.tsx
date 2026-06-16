@@ -8,7 +8,13 @@ import type { LanguageRow } from '@/entities/cv';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
-import { Select } from '@/shared/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select';
 
 import { deleteProfileChild, updateProfileSection } from '../actions/update-profile-section';
 import { refreshCvPreview } from '../lib/refresh-preview';
@@ -156,17 +162,22 @@ function LanguageForm({
       </Field>
       <Field label='Proficiency'>
         <Select
-          value={draft.proficiency ?? ''}
-          onChange={(event) =>
-            setDraft({ ...draft, proficiency: (event.target.value || null) as LanguageInput['proficiency'] })
+          value={draft.proficiency}
+          onValueChange={(value) =>
+            setDraft({ ...draft, proficiency: value as LanguageInput['proficiency'] })
           }
         >
-          <option value=''>--</option>
-          {PROFICIENCIES.map((value) => (
-            <option key={value ?? ''} value={value ?? ''}>
-              {value}
-            </option>
-          ))}
+          <SelectTrigger className='w-full'>
+            <SelectValue placeholder='--' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={null}>--</SelectItem>
+            {PROFICIENCIES.map((value) => (
+              <SelectItem key={value ?? ''} value={value}>
+                {value}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </Field>
       <div className='flex justify-end gap-2 sm:col-span-2'>

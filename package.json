@@ -10,6 +10,7 @@
     "email:build": "email build",
     "email:dev": "email dev --dir ./src/features/emails --port 3001",
     "email:export": "email export",
+    "fonts:strip-ligatures": "py scripts/strip-font-ligatures.py",
     "stripe:listen": "stripe listen --forward-to=localhost:3000/api/webhooks --project-name=cvere",
     "generate-types": "npx supabase gen types typescript --project-id vjklhmtexivjfxzpsciz --schema public > src/shared/api/supabase/types.ts",
     "supabase:link": "env-cmd -f ./.env.local supabase link --project-ref vjklhmtexivjfxzpsciz",

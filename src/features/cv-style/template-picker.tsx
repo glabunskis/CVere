@@ -226,7 +226,7 @@ function DateFormatField({
       <DropdownMenu>
         <DropdownMenuTrigger
           disabled={disabled}
-          className='flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-border-strong bg-card px-3 text-sm outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50'
+          className='flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-full border border-border-strong bg-card px-3 text-sm outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50'
         >
           <span className='flex-1 truncate text-left'>
             {active ? `${active.label} (${active.example})` : value}
