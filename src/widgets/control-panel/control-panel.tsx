@@ -75,7 +75,7 @@ export function ControlPanel({
               onClick={onCollapse}
               aria-label='Collapse control panel'
             >
-              <PanelRightIcon />
+              <PanelRightIcon className='size-5' strokeWidth={2} />
             </Button>
           )}
         </div>

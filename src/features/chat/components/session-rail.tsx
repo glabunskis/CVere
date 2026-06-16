@@ -3,8 +3,8 @@
 import { useMemo, useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 import {
+  MenuIcon,
   MessageSquareIcon,
-  PanelLeftIcon,
   PencilIcon,
   Trash2Icon,
 } from 'lucide-react';
@@ -137,7 +137,7 @@ export function SessionRail({
               onClick={() => setCollapsed((v) => !v)}
               aria-label={collapsed ? 'Expand chat list' : 'Collapse chat list'}
             >
-              <PanelLeftIcon className={cn('transition-transform motion-reduce:transition-none', collapsed && 'rotate-180')} />
+              <MenuIcon className='size-5' strokeWidth={2} />
             </Button>
           </div>
         </div>

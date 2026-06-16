@@ -389,7 +389,7 @@ export function ChatPanel({
               onClick={onCollapse}
               aria-label='Collapse chat panel'
             >
-              <PanelLeftIcon />
+              <PanelLeftIcon className='size-5' strokeWidth={2} />
             </Button>
           )}
         </div>

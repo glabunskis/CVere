@@ -116,7 +116,7 @@ export function DashboardWorkspace({
                     />
                   }
                 >
-                  <PanelRightIcon />
+                  <PanelRightIcon className='size-5' strokeWidth={2} />
                 </TooltipTrigger>
                 <TooltipContent side='right'>Expand chat</TooltipContent>
               </Tooltip>
@@ -133,7 +133,7 @@ export function DashboardWorkspace({
                     />
                   }
                 >
-                  <PlusIcon />
+                  <PlusIcon className='size-5' strokeWidth={2} />
                 </TooltipTrigger>
                 <TooltipContent side='right'>New chat</TooltipContent>
               </Tooltip>
@@ -206,7 +206,7 @@ export function DashboardWorkspace({
                     />
                   }
                 >
-                  <PanelLeftIcon />
+                  <PanelLeftIcon className='size-5' strokeWidth={2} />
                 </TooltipTrigger>
                 <TooltipContent side='left'>Expand panel</TooltipContent>
               </Tooltip>
@@ -230,7 +230,7 @@ export function DashboardWorkspace({
                       />
                     }
                   >
-                    <Icon />
+                    <Icon className='size-5' strokeWidth={2} />
                   </TooltipTrigger>
                   <TooltipContent side='left'>{label}</TooltipContent>
                 </Tooltip>
