@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 
@@ -18,7 +18,6 @@ type Props = {
 
 export function SummaryEditor({ initialSummary, readOnly = false }: Props) {
   const [value, setValue] = useState(initialSummary ?? '');
-  const [, startTransition] = useTransition();
 
   const { execute, isExecuting } = useAction(updateProfileSection, {
     onSuccess: () => {
@@ -42,12 +41,10 @@ export function SummaryEditor({ initialSummary, readOnly = false }: Props) {
   return (
     <form
       className='flex flex-col gap-2'
-      onSubmit={(event) => {
-        event.preventDefault();
-        startTransition(() => {
+        onSubmit={(event) => {
+          event.preventDefault();
           execute({ section: 'summary', payload: { summary: value.trim() === '' ? null : value } });
-        });
-      }}
+        }}
     >
       <Label htmlFor='profile-summary'>Summary</Label>
       <Textarea

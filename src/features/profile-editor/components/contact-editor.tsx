@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 
@@ -53,7 +53,6 @@ export function ContactEditor({
   readOnly = false,
 }: Props) {
   const [draft, setDraft] = useState<ContactDraft>(() => toDraft(profile));
-  const [, startTransition] = useTransition();
 
   const { execute, isExecuting } = useAction(updateProfileSection, {
     onSuccess: () => {
@@ -84,19 +83,17 @@ export function ContactEditor({
         className='grid gap-3 sm:grid-cols-2'
         onSubmit={(event) => {
           event.preventDefault();
-          startTransition(() => {
-            execute({
-              section: 'contact',
-              payload: {
-                fullName: draft.fullName || null,
-                location: draft.location || null,
-                phone: draft.phone || null,
-                contactEmail: draft.contactEmail || null,
-                linkedinUrl: draft.linkedinUrl || null,
-                githubUrl: draft.githubUrl || null,
-                websiteUrl: draft.websiteUrl || null,
-              },
-            });
+          execute({
+            section: 'contact',
+            payload: {
+              fullName: draft.fullName || null,
+              location: draft.location || null,
+              phone: draft.phone || null,
+              contactEmail: draft.contactEmail || null,
+              linkedinUrl: draft.linkedinUrl || null,
+              githubUrl: draft.githubUrl || null,
+              websiteUrl: draft.websiteUrl || null,
+            },
           });
         }}
       >
