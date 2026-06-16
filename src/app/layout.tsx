@@ -6,8 +6,11 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { APP_DESCRIPTION, APP_DISPLAY_NAME } from '@/shared/config';
 import { Logo } from '@/shared/ui/logo';
 import { Toaster } from '@/shared/ui/sonner';
+import { ThemeProvider } from '@/shared/ui/theme-provider';
+import { TooltipProvider } from '@/shared/ui/tooltip';
 import { Analytics } from '@vercel/analytics/react';
 
+import { HeaderGate } from './header-gate';
 import { Navigation } from './navigation';
 
 import '@/styles/globals.css';
@@ -29,19 +32,27 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: PropsWithChildren) {
   return (
-    <html lang='en' className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className='flex min-h-full flex-col'>
-        <NuqsAdapter>
-          <div className='m-auto flex w-full max-w-5xl flex-1 flex-col px-4'>
-            <AppBar />
-            <main className='relative flex-1'>
-              <div className='relative h-full'>{children}</div>
-            </main>
-            <Footer />
-          </div>
-          <Toaster />
-          <Analytics />
-        </NuqsAdapter>
+    <html
+      lang='en'
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className='flex h-dvh flex-col'>
+        <ThemeProvider attribute='class' defaultTheme='dark' enableSystem={false} disableTransitionOnChange>
+          <NuqsAdapter>
+            <TooltipProvider>
+              <div className='flex h-full w-full flex-col'>
+                <HeaderGate>
+                  <AppBar />
+                </HeaderGate>
+                <main className='relative flex min-h-0 flex-1 flex-col overflow-y-auto'>{children}</main>
+                <Footer />
+              </div>
+            </TooltipProvider>
+            <Toaster />
+            <Analytics />
+          </NuqsAdapter>
+        </ThemeProvider>
       </body>
     </html>
   );
@@ -49,7 +60,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
 
 async function AppBar() {
   return (
-    <header className='flex items-center justify-between py-6'>
+    <header className='flex shrink-0 items-center justify-between px-4 py-3'>
       <Logo />
       <Navigation />
     </header>
@@ -58,7 +69,7 @@ async function AppBar() {
 
 function Footer() {
   return (
-    <footer className='mt-16 border-t py-8 text-center text-sm text-muted-foreground'>
+    <footer className='shrink-0 border-t px-4 py-3 text-center text-sm text-muted-foreground'>
       <p>
         &copy; {new Date().getFullYear()} {APP_DISPLAY_NAME}. All rights reserved.
       </p>

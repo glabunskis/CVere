@@ -16,6 +16,8 @@ export type TexImportResult = {
   experience: ExperienceInput[];
   projects: ProjectInput[];
   skills: SkillInput[];
+  /** Distinct skill category names in first-seen order (seeds cv.skill_categories). */
+  skillCategories: string[];
   education: EducationInput[];
   certifications: CertificationInput[];
   languages: LanguageInput[];
@@ -42,6 +44,7 @@ export function parseTexImport(files: TexImportFile[]): TexImportResult {
     experience: [],
     projects: [],
     skills: [],
+    skillCategories: [],
     education: [],
     certifications: [],
     languages: [],
@@ -78,6 +81,14 @@ export function parseTexImport(files: TexImportFile[]): TexImportResult {
   const skillsContent = byBasename.get('skills') ?? byBasename.get('skill');
   if (skillsContent) {
     result.skills = parseSkills(skillsContent, warnings);
+    const seen = new Set<string>();
+    for (const skill of result.skills) {
+      const category = skill.category?.trim();
+      if (category && !seen.has(category)) {
+        seen.add(category);
+        result.skillCategories.push(category);
+      }
+    }
   }
 
   const educationContent = byBasename.get('education');
@@ -442,7 +453,7 @@ function parseSkills(content: string, warnings: string[]): SkillInput[] {
       .map((s) => s.trim())
       .filter(Boolean);
     for (const name of items) {
-      out.push({ position: position++, name: name.slice(0, 120), category, level: null });
+      out.push({ position: position++, name: name.slice(0, 120), category });
     }
   }
   if (out.length === 0) {
@@ -452,7 +463,7 @@ function parseSkills(content: string, warnings: string[]): SkillInput[] {
       .map((s) => s.trim())
       .filter((s) => s.length > 0 && s.length <= 120);
     if (flat.length > 0) {
-      flat.forEach((name, i) => out.push({ position: i, name, category: null, level: null }));
+      flat.forEach((name, i) => out.push({ position: i, name, category: null }));
     } else {
       warnings.push('No skills detected.');
     }

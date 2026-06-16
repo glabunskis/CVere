@@ -27,5 +27,9 @@ export default async function VacancyPage({ params }: PageProps) {
     ? `/dashboard?session=${encodeURIComponent(activeSession.id)}&prefill=${prefill}`
     : `/dashboard?prefill=${prefill}`;
 
-  return <VacancyDetailView job={job} tailorHref={tailorHref} />;
+  return (
+    <div className='mx-auto w-full max-w-5xl'>
+      <VacancyDetailView job={job} tailorHref={tailorHref} />
+    </div>
+  );
 }

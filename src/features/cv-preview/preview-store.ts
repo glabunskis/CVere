@@ -22,6 +22,12 @@ type PreviewState = {
    * on a server re-render.
    */
   template: string | null;
+  /**
+   * True while the signed preview URL is being re-fetched (re-signed). Every
+   * edit path (chat turn, style change, fact-editor save) renders the PDF
+   * server-side, then calls `markPreviewDirty()` to re-sign and reload the
+   * iframe; the toolbar surfaces this window as a transient "Updating…" hint.
+   */
   isRefreshing: boolean;
   /**
    * Bumped on every `markPreviewDirty`. History controls watch this to

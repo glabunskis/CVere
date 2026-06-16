@@ -27,10 +27,10 @@ todos:
     content: ✅ Access-code gate at signup (hardcoded SIGNUP_ACCESS_CODE env, validated in signUpWithPassword + UI field). Stripe left dormant.
     status: completed
   - id: phase-7
-    content: "AI-generated PDF layout: chat model emits a structured LayoutSpec (section order, column assignment, density), deterministic react-pdf executor renders it; no length constraint; stays within chat-only-AI rule"
-    status: pending
+    content: "✅ AI-generated PDF layout: chat model emits a structured LayoutSpec (section order, column assignment, density), deterministic react-pdf executor renders it; no length constraint; stays within chat-only-AI rule"
+    status: completed
   - id: phase-8
-    content: "Chat UX polish (remainder): retry/edit, mobile Sheet, rate limiting, incremental request payload, clear-history, cross-session quoting"
+    content: "Chat UX polish (remainder) — tracked in a separate plan"
     status: pending
   - id: phase-9
     content: "Prompt quality + configurable reasoning effort: tighten the chat/title system prompts, add OPENAI_REASONING_EFFORT (and title-model effort) env wiring through getChatModel + streamText providerOptions"
@@ -66,9 +66,9 @@ Detours taken alongside phases 1–5 (also ✅ done):
 - **Vercel deployment** — app is deployed.
 - **Multiple-CV introduction** — the planned Phase 4 "tailored CV" artefact shipped instead as a general multiple-CV model: normalized `cv` root + section rows, user-created variants, `cv-meta-tools` (`listCvs` + `cvId`-scoped edit tools), a CV library widget, parametric preview, per-CV PDF render, plus `cv_version` reversible-diff undo/redo (the old separate `tailored_cv` table was not needed).
 
-Most recent: **Phase 6 (access-code signup gate) ✅ done**.
+Most recent: **Phase 7 (AI-generated PDF layout) ✅ done**.
 
-Remaining work, in order: **Phase 7** (AI-generated PDF layout), **Phase 8** (chat UX polish), **Phase 9** (prompt quality + configurable reasoning effort), then **Phase 10** (cover letter) and **Phase 11** (interview prep) — both intentionally sequenced *after* UX polish — then **Phase 12** (connective tissue) and **Phase 13** (infra story).
+Remaining work, in order: **Phase 8** (chat UX polish — tracked in a separate plan), **Phase 9** (prompt quality + configurable reasoning effort), then **Phase 10** (cover letter) and **Phase 11** (interview prep) — both intentionally sequenced *after* UX polish — then **Phase 12** (connective tissue) and **Phase 13** (infra story).
 
 ## Recommendation in one line
 
@@ -141,7 +141,7 @@ Implications:
 - Multi-session (Phase 3) is mandatory before any non-master artefact — users need to keep multiple parallel conversations alive (one per vacancy they're chasing, typically) and the singleton thread won't scale to that.
 - Tailored CV (Phase 4) is the most-asked artefact and the most pattern-defining: it forces decisions about per-artefact PDF caching, library view shape, and how the current-context hint flows from the preview pane into the chat request.
 - Dashboard layout (Phase 5) shipped after Tailored so the session list, CV library, and current-context hint are validated against a real second artefact kind before Cover letter and Interview pile on.
-- AI-generated PDF layout (Phase 7) is independent of the remaining artefacts and reuses the existing multiple-CV render pipeline, so it slots in right after the access gate.
+- AI-generated PDF layout (Phase 7, done) is independent of the remaining artefacts and reuses the existing multiple-CV render pipeline, so it slotted in right after the access gate.
 - Prompt quality + reasoning effort (Phase 9) lands right after the chat surface is polished (Phase 8) and before the next artefact kinds, because every later artefact's tool group inherits the same system-prompt scaffolding and model-config seam. Doing it now means cover letter and interview tools are written against an already-tightened prompt and a tunable reasoning knob.
 - Cover letter (Phase 10) and Interview (Phase 11) reuse the Phase 4 + Phase 5 patterns and now ship **after** chat UX polish (Phase 8) and the prompt/reasoning pass (Phase 9), so the chat surface is solid before two more artefact kinds pile on. Interview is last because it has no PDF and is the most experimental.
 - Phases 12–13 carry over the connective-tissue and infra purpose.
@@ -184,8 +184,8 @@ flowchart LR
 | 4 ✅ | 2, 3 | 5 (real second artefact), 9 (artefact pattern) |
 | 5 ✅ | 3 (and ≥1 artefact from 4) | 8 |
 | 6 ✅ | — (auth only) | — |
-| 7 | 4 (multiple-CV render pipeline) | — |
-| 8 | 5 | polish gate for 12 |
+| 7 ✅ | 4 (multiple-CV render pipeline) | — |
+| 8 | 5 | polish gate for 12 (tracked in a separate plan) |
 | 9 | 1 (chat surface), 8 | 10, 11 (shared prompt + reasoning seam) |
 | 10 | 3, 4 | — |
 | 11 | 3 | — |
@@ -393,7 +393,7 @@ Outcome:
 - `AuthUI` (`src/features/auth/auth-ui.tsx`) renders an "Access code" field in signup mode only, with a friendly error ("Invalid access code") via `getAuthErrorMessage`.
 - Not a real security boundary (single shared secret, no rate limit beyond Supabase's) — just a friction gate. Revisit if abused.
 
-### Phase 7 — AI-generated PDF layout (chat-driven layout plan)
+### ✅ Phase 7 — AI-generated PDF layout (chat-driven layout plan) (DONE)
 
 Replaces the two hardcoded react-pdf templates with a model-produced **layout plan** executed deterministically, so item allocation on the page is content-aware. Decisions: the chat model emits the plan (no new AI surface — respects "chat is the only AI surface"); a deterministic react-pdf executor renders it; **no page-length constraint** (allocate attractively across as many pages as needed).
 
@@ -411,17 +411,7 @@ Done when: in any chat session the user can say "lay this CV out better / make i
 
 ### Phase 8 — Chat UX polish (remainder)
 
-The streaming + tool-card items that used to live here are now Phase 1. What stays:
-
-- Retry on last assistant turn, edit/resend on last user turn (AI SDK v6 supports both — just wire UI).
-- Re-run on individual tool calls. Phase 1 leaves the re-run button behind a feature flag; turn it on here once we have a clear UX for "re-run with the same args" vs "re-run and let the model rebuild args".
-- Mobile: surface chat in a `Sheet` below `lg`; preview switches to a tab beside the workspace.
-- Rate limiting per session (and per user across sessions) via Upstash (`messages/minute` and `maxOutputTokens` cap on `streamText`). Redis client is already wired in `src/libs/ai/resumable-stream.ts`.
-- Switch `useChat` to incremental request payload (`prepareSendMessagesRequest`) once histories grow.
-- Clear-history affordance per session, with confirmation. `clearMessages` already exists in `src/features/chat/storage/chat-message-store.ts`; scope it to a session id once Phase 3 lands.
-- Cross-session "send to other session" action for sharing context (paste a message into another session as a quote).
-
-Done when: chat feels good on a fresh laptop, on a slow connection, and on a phone, across all surface kinds.
+Tracked in a separate plan. The streaming + tool-card items that used to live here are now Phase 1; the remaining chat UX polish (retry/edit, re-run on tool calls, mobile Sheet, rate limiting, incremental request payload, clear-history, cross-session quoting) is scoped and implemented there.
 
 ### Phase 9 — Prompt quality + configurable reasoning effort
 
@@ -564,8 +554,8 @@ Trigger: any non-trivial real usage or a recruiter-facing dashboard need.
 6. Phase 4 as one or two PRs: schema + tools + parametric preview + library/picker (the latter can land as a panel first, route later). ✅ Shipped as the multiple-CV model.
 7. Phase 5 layout rework, bundled with the handoffs. ✅ Shipped.
 8. Phase 6 access-code signup gate. ✅ Shipped.
-9. Phase 7 AI-generated PDF layout as one PR: `cv.layout_json` column + `LayoutSpec` schema + executor in `Cv.tsx` + `setLayout` chat tool + system-prompt guidance.
-10. Phase 8 chat UX polish.
+9. Phase 7 AI-generated PDF layout as one PR: `cv.layout_json` column + `LayoutSpec` schema + executor in `Cv.tsx` + `setLayout` chat tool + system-prompt guidance. ✅ Shipped.
+10. Phase 8 chat UX polish — tracked in a separate plan.
 11. Phase 9 prompt quality + reasoning effort as one PR: `OPENAI_REASONING_EFFORT` (+ title effort) env wiring through `chat-model.ts` + `route.ts` `providerOptions`, system-prompt de-dup/tool-sync, env-file + README docs.
 12. Phase 10 cover letter artefact, then Phase 11 interview prep artefact (both after UX polish).
 13. Phase 12 connective tissue in parallel with the surface work as time allows.

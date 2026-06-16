@@ -22,20 +22,23 @@ export function AddAchievementForm() {
 
   return (
     <form
-      className='flex flex-col gap-2 rounded-xl border bg-card p-4'
+      className='flex flex-col gap-2'
       onSubmit={(event) => {
         event.preventDefault();
         if (!value.trim()) return;
         execute({ rawText: value });
       }}
     >
-      <Label htmlFor='achievement-raw'>Capture an achievement</Label>
+      <Label htmlFor='achievement-raw' className='sr-only'>
+        Capture an achievement
+      </Label>
       <Textarea
         id='achievement-raw'
         rows={3}
         value={value}
         placeholder='Plain text. Anything from a one-liner to a paragraph.'
         onChange={(event) => setValue(event.target.value)}
+        className='bg-card-2'
       />
       <div className='flex justify-end'>
         <Button type='submit' size='sm' disabled={isExecuting || !value.trim()}>

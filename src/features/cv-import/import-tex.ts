@@ -38,6 +38,22 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
     if (parsed.contact.githubUrl) profileUpdate.github_url = parsed.contact.githubUrl;
     if (parsed.contact.websiteUrl) profileUpdate.website_url = parsed.contact.websiteUrl;
   }
+  // Seed the persisted category list. Replace mode resets it to the parsed
+  // categories; append mode merges them onto the existing list (preserving
+  // order, no duplicates).
+  if (parsed.skillCategories.length > 0) {
+    const existing =
+      parsedInput.mode === 'replace'
+        ? []
+        : Array.isArray(cv.skill_categories)
+          ? cv.skill_categories.filter((item): item is string => typeof item === 'string')
+          : [];
+    const merged = [...existing];
+    for (const category of parsed.skillCategories) {
+      if (!merged.includes(category)) merged.push(category);
+    }
+    profileUpdate.skill_categories = merged;
+  }
   if (Object.keys(profileUpdate).length > 0) {
     const { error } = await supabase
       .from('cv')
@@ -102,7 +118,6 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
         position: row.position,
         name: row.name,
         category: row.category ?? null,
-        level: row.level ?? null,
       })),
     );
     if (error) throw new Error(`Insert skills failed: ${error.message}`);

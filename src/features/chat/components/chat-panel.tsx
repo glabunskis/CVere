@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { DefaultChatTransport } from 'ai';
-import { MessageSquareIcon } from 'lucide-react';
+import { ArrowDownIcon, MessageSquareIcon, PanelLeftIcon, PlusIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
+  createChatSession,
   loadChatSessionMessages,
   setActiveChatSession,
 } from '@/features/chat/actions/session-actions';
@@ -15,6 +16,7 @@ import { usePreviewStore } from '@/features/cv-preview/preview-store';
 import {
   isPreviewTargetMatch,
 } from '@/features/cv-preview/preview-target';
+import { Button } from '@/shared/ui/button';
 import {
   Empty,
   EmptyDescription,
@@ -30,6 +32,7 @@ import type { ChatSessionListItem, ChatUIMessage } from '../types';
 import { ChatInput } from './chat-input';
 import { ChatMessage } from './chat-message';
 import { SessionRail } from './session-rail';
+import { WorkingIndicator } from './working-indicator';
 
 type Props = {
   initialActiveSessionId: string;
@@ -37,6 +40,7 @@ type Props = {
   sessions: ChatSessionListItem[];
   initialMessages: ChatUIMessage[];
   initialPrefill: string | null;
+  onCollapse?: () => void;
 };
 
 /**
@@ -52,11 +56,13 @@ export function ChatPanel({
   sessions,
   initialMessages,
   initialPrefill,
+  onCollapse,
 }: Props) {
   const router = useRouter();
   const [activeSessionId, setActiveSessionId] = useState(initialActiveSessionId);
   const [sessionList, setSessionList] = useState(sessions);
   const [prefillText, setPrefillText] = useState<string | null>(initialPrefill);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   const activeSessionIdRef = useRef(initialActiveSessionId);
@@ -108,6 +114,9 @@ export function ChatPanel({
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
   }, [initialPrefill]);
 
+  /* eslint-disable react-hooks/refs -- refs are read inside useMemo intentionally:
+     messagesCacheRef seeds the initial message list for the new session; callbacks
+     that read initialCvIdRef / routerRef do so at invocation time, not during render. */
   const chat = useMemo(
     () =>
       new Chat<ChatUIMessage>({
@@ -164,11 +173,16 @@ export function ChatPanel({
               incoming: dataPart.data,
             });
             if (!shouldRefresh) return;
-            // Re-sign the preview URL and reconcile the Library template/layout
-            // selector from the server, all client-side. No `router.refresh()`:
-            // a full server re-render on every CV edit is disruptive and is what
-            // previously discarded the streaming message.
+            // The turn already re-rendered the PDF server-side; re-sign the URL
+            // so the iframe reloads the fresh render.
             void usePreviewStore.getState().markPreviewDirty();
+            // Also re-run the dashboard server component so the CV editor (and
+            // Library titles) reflect the chat-driven edit. This event fires in
+            // the route's end-of-turn `onFinish`, so the assistant message is
+            // already generated; and the Chat is keyed only on the session id
+            // while reading everything else from refs, so the refresh cannot
+            // tear down the in-flight stream or reset the streamed message.
+            routerRef.current.refresh();
             return;
           }
           if (dataPart.type === 'data-preview-error') {
@@ -184,9 +198,9 @@ export function ChatPanel({
     // the closures need is read live from refs / the preview store, so an
     // incidental re-render (router.refresh, prop change) never interrupts a
     // streaming turn.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeSessionId],
   );
+  /* eslint-enable react-hooks/refs */
 
   const { messages, sendMessage, status, stop, error, setMessages } = useChat<ChatUIMessage>({
     chat,
@@ -203,6 +217,16 @@ export function ChatPanel({
   useEffect(() => {
     messagesCacheRef.current[activeSessionId] = messages;
   }, [activeSessionId, messages]);
+
+  const { execute: createSession, isExecuting: creatingSession } = useAction(createChatSession, {
+    onSuccess: ({ data }) => {
+      const session = data?.session;
+      if (!session) return;
+      handleCreated(session);
+      toast.success('New chat created.');
+    },
+    onError: ({ error }) => toast.error(error.serverError ?? 'Failed to create chat.'),
+  });
 
   const { executeAsync: fetchMessages } = useAction(loadChatSessionMessages, {
     onError: ({ error }) => {
@@ -276,12 +300,24 @@ export function ChatPanel({
     const updateStick = () => {
       const distanceFromBottom =
         viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
-      stickToBottomRef.current = distanceFromBottom <= STICKY_BOTTOM_THRESHOLD_PX;
+      const atBottom = distanceFromBottom <= STICKY_BOTTOM_THRESHOLD_PX;
+      stickToBottomRef.current = atBottom;
+      setIsAtBottom(atBottom);
     };
 
     updateStick();
     viewport.addEventListener('scroll', updateStick, { passive: true });
-    return () => viewport.removeEventListener('scroll', updateStick);
+
+    // New streamed content grows the scroll height without firing a scroll
+    // event. Observe size changes so the jump-to-latest button shows/hides
+    // correctly even when the user is parked above the bottom.
+    const resizeObserver = new ResizeObserver(updateStick);
+    resizeObserver.observe(node);
+
+    return () => {
+      viewport.removeEventListener('scroll', updateStick);
+      resizeObserver.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -293,9 +329,20 @@ export function ChatPanel({
     viewport.scrollTop = viewport.scrollHeight;
   }, [messages, status]);
 
+  const scrollToBottom = () => {
+    const node = contentRef.current;
+    if (!node) return;
+    const viewport = node.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
+    if (!viewport) return;
+    stickToBottomRef.current = true;
+    setIsAtBottom(true);
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+  };
+
   const isEmpty = messages.length === 0;
   const showRetry = status === 'error' && error != null;
   const isStreaming = status === 'streaming';
+  const isWorking = status === 'submitted' || status === 'streaming';
 
   // Index of the last assistant message — used to scope the streaming caret.
   let lastAssistantIndex = -1;
@@ -314,14 +361,40 @@ export function ChatPanel({
         onSwitch={(sessionId) => {
           void switchSession(sessionId);
         }}
-        onCreated={handleCreated}
         onRenamed={handleRenamed}
         onDeleted={handleDeleted}
       />
 
       <div className='flex min-w-0 flex-1 flex-col'>
-        <ScrollArea className='min-h-0 flex-1'>
-          <div ref={contentRef} className='flex h-full flex-col gap-3 p-3'>
+        <div className='flex h-[52px] shrink-0 items-center gap-2 border-b border-border bg-card px-4'>
+          <span className='min-w-0 flex-1 truncate text-sm font-medium text-foreground'>
+            {sessionList.find((s) => s.id === activeSessionId)?.title ?? 'Chat'}
+          </span>
+          <Button
+            type='button'
+            size='icon-xs'
+            variant='ghost'
+            onClick={() => createSession({})}
+            disabled={creatingSession}
+            aria-label='New chat'
+          >
+            <PlusIcon />
+          </Button>
+          {onCollapse && (
+            <Button
+              type='button'
+              size='icon-xs'
+              variant='ghost'
+              onClick={onCollapse}
+              aria-label='Collapse chat panel'
+            >
+              <PanelLeftIcon />
+            </Button>
+          )}
+        </div>
+        <div className='relative min-h-0 flex-1'>
+          <ScrollArea className='h-full'>
+          <div ref={contentRef} className='flex min-h-full flex-col gap-3 px-3 pt-3 pb-8'>
             {isEmpty ? (
               <Empty className='m-auto border-0'>
                 <EmptyHeader>
@@ -345,13 +418,28 @@ export function ChatPanel({
                 />
               ))
             )}
+            {isWorking ? <WorkingIndicator /> : null}
             {showRetry ? (
               <p className='px-1 text-xs text-destructive'>
                 {error?.message ?? 'Something went wrong.'}
               </p>
             ) : null}
           </div>
-        </ScrollArea>
+          </ScrollArea>
+
+          {!isEmpty && !isAtBottom ? (
+            <Button
+              type='button'
+              size='icon-sm'
+              variant='secondary'
+              onClick={scrollToBottom}
+              aria-label='Scroll to latest messages'
+              className='absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-border shadow-md'
+            >
+              <ArrowDownIcon />
+            </Button>
+          ) : null}
+        </div>
 
         <ChatInput
           key={prefillText ?? 'chat-input'}

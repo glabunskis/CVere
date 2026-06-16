@@ -7,13 +7,11 @@ import {
   MoreHorizontalIcon,
   PanelLeftIcon,
   PencilIcon,
-  PlusIcon,
   Trash2Icon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
-  createChatSession,
   deleteChatSession,
   renameChatSession,
 } from '@/features/chat/actions/session-actions';
@@ -42,7 +40,6 @@ type Props = {
   sessions: ChatSessionListItem[];
   activeSessionId: string;
   onSwitch: (sessionId: string) => void;
-  onCreated: (session: ChatSessionListItem) => void;
   onRenamed: (session: ChatSessionListItem) => void;
   onDeleted: (deletedSessionId: string, nextSession: ChatSessionListItem) => void;
 };
@@ -53,7 +50,6 @@ export function SessionRail({
   sessions,
   activeSessionId,
   onSwitch,
-  onCreated,
   onRenamed,
   onDeleted,
 }: Props) {
@@ -62,16 +58,6 @@ export function SessionRail({
   const [pendingDelete, setPendingDelete] = useState<ChatSessionListItem | null>(null);
   const [pendingRename, setPendingRename] = useState<ChatSessionListItem | null>(null);
   const [renameTitle, setRenameTitle] = useState('');
-
-  const { execute: create, isExecuting: creating } = useAction(createChatSession, {
-    onSuccess: ({ data }) => {
-      const session = data?.session;
-      if (!session) return;
-      onCreated(session);
-      toast.success('New chat created.');
-    },
-    onError: ({ error }) => toast.error(error.serverError ?? 'Failed to create chat.'),
-  });
 
   const { execute: rename, isExecuting: renaming } = useAction(renameChatSession, {
     onSuccess: ({ data }) => {
@@ -131,33 +117,21 @@ export function SessionRail({
     <>
       <aside
         className={cn(
-          'flex h-full shrink-0 flex-col border-r bg-card/60 transition-[width]',
-          collapsed ? 'w-12' : 'w-[220px]',
+          'flex h-full shrink-0 flex-col border-r bg-card-2 transition-[width] motion-reduce:transition-none',
+          collapsed ? 'w-12' : 'w-[188px]',
         )}
       >
-        <div className='flex items-center justify-between gap-1 border-b p-2'>
-          {!collapsed ? <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>Chats</p> : null}
+        <div className='flex h-[52px] shrink-0 items-center justify-between gap-1 border-b border-border bg-card-2 px-3'>
+          {!collapsed ? <p className='text-xs font-semibold uppercase tracking-widest text-muted-foreground'>Chats</p> : null}
           <div className='flex items-center gap-1'>
             <Button
               type='button'
               size='icon-xs'
               variant='ghost'
-              onClick={() => create({})}
-              disabled={creating}
-              title='New chat'
-            >
-              <PlusIcon />
-              <span className='sr-only'>New chat</span>
-            </Button>
-            <Button
-              type='button'
-              size='icon-xs'
-              variant='ghost'
               onClick={() => setCollapsed((v) => !v)}
-              title={collapsed ? 'Expand chats' : 'Collapse chats'}
+              aria-label={collapsed ? 'Expand chat list' : 'Collapse chat list'}
             >
-              <PanelLeftIcon className={cn('transition-transform', collapsed && 'rotate-180')} />
-              <span className='sr-only'>{collapsed ? 'Expand chat list' : 'Collapse chat list'}</span>
+              <PanelLeftIcon className={cn('transition-transform motion-reduce:transition-none', collapsed && 'rotate-180')} />
             </Button>
           </div>
         </div>
@@ -172,17 +146,16 @@ export function SessionRail({
                 variant={session.id === activeSessionId ? 'secondary' : 'ghost'}
                 className='w-full'
                 onClick={() => openSession(session.id)}
-                title={session.title}
+                aria-label={session.title}
               >
                 <span className='text-xs font-semibold'>{initials(session.title)}</span>
-                <span className='sr-only'>{session.title}</span>
               </Button>
             ) : (
               <div
                 key={session.id}
                 className={cn(
                   'group flex items-center gap-1 rounded-md border px-1 py-1',
-                  session.id === activeSessionId ? 'border-primary/30 bg-primary/5' : 'border-transparent hover:bg-muted/60',
+                  session.id === activeSessionId ? 'border-primary-soft-bd bg-primary-soft' : 'border-transparent hover:bg-muted',
                 )}
               >
                 <button
@@ -287,7 +260,7 @@ export function SessionRail({
             <DialogDescription>Give this chat a short descriptive title.</DialogDescription>
           </DialogHeader>
           <form
-            className='space-y-4'
+            className='flex flex-col gap-4'
             onSubmit={(event) => {
               event.preventDefault();
               submitRename();

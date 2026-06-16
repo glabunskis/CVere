@@ -7,10 +7,7 @@ import {
   cvDateFormatSchema,
   cvTemplateSchema,
 } from '@/features/cv-style';
-import {
-  languageProficiencySchema,
-  skillLevelSchema,
-} from '@/features/profile-editor';
+import { languageProficiencySchema } from '@/features/profile-editor';
 
 /**
  * Zod schemas for chat tool inputs (consumed by `streamText`'s `tools` map)
@@ -383,13 +380,6 @@ const languageIdSchema = z
   .uuid()
   .describe('UUID of the target language. Get it from `readProfile`; never invent ids.');
 
-const chatSkillLevelSchema = skillLevelSchema
-  .nullable()
-  .optional()
-  .describe(
-    'Optional skill level: "beginner", "intermediate", "advanced", or "expert". Pass null to clear.',
-  );
-
 const chatLanguageProficiencySchema = languageProficiencySchema
   .nullable()
   .optional()
@@ -401,7 +391,6 @@ export const addSkillInputSchema = z.object({
   cvId: optionalCvIdSchema,
   name: z.string().min(1).max(120).describe('Skill name (e.g. "PostgreSQL"). Required.'),
   category: optionalShortText(80),
-  level: chatSkillLevelSchema,
 });
 
 export const editSkillInputSchema = z.object({
@@ -409,7 +398,6 @@ export const editSkillInputSchema = z.object({
   skillId: skillIdSchema,
   name: z.string().min(1).max(120).optional(),
   category: optionalShortText(80),
-  level: chatSkillLevelSchema,
 });
 
 export const removeSkillInputSchema = z.object({ cvId: optionalCvIdSchema, skillId: skillIdSchema });

@@ -42,7 +42,7 @@ type CvTableColumns = {
     | 'bullets'
     | 'stack'
   >;
-  skill: Pick<TablesInsert<'skill'>, 'user_id' | 'cv_id' | 'position' | 'name' | 'category' | 'level'>;
+  skill: Pick<TablesInsert<'skill'>, 'user_id' | 'cv_id' | 'position' | 'name' | 'category'>;
   education: Pick<
     TablesInsert<'education'>,
     | 'user_id'
@@ -89,7 +89,6 @@ type OrderedTable =
   | 'certification'
   | 'language';
 
-type SkillLevel = NonNullable<TablesInsert<'skill'>['level']>;
 type LanguageProficiency = NonNullable<TablesInsert<'language'>['proficiency']>;
 
 type ProfileIdentityPatch = {
@@ -123,7 +122,6 @@ type ProjectPatch = {
 type SkillPatch = {
   name?: string;
   category?: string | null;
-  level?: SkillLevel | null;
 };
 
 type EducationPatch = {
@@ -323,7 +321,6 @@ async function cloneSectionRows({
       position: row.position,
       name: row.name,
       category: row.category,
-      level: row.level,
     }));
     const { error } = await supabase.from('skill').insert(insertable);
     if (error) throw new Error(error.message);
@@ -686,6 +683,7 @@ export async function createCv({
     accent_hex: source?.accent_hex ?? '#000000',
     education_date_format: source?.education_date_format ?? 'mon_yyyy',
     certification_date_format: source?.certification_date_format ?? 'mon_yyyy',
+    skill_categories: source?.skill_categories ?? [],
     pdf_path: null,
   };
   const { data, error } = await supabase.from('cv').insert(insertable).select('*').single();
@@ -1492,17 +1490,17 @@ export async function addSkill({
 }: {
   user: User;
   cvId: string;
-  payload: { name: string; category?: string | null; level?: SkillLevel | null };
+  payload: { name: string; category?: string | null };
 }): Promise<SkillRow> {
   await assertOwnedCv(user, cvId);
   const nextPosition = await assertCapAndNextPosition({ user, cvId, table: 'skill' });
+  const category = normaliseNullableString(payload.category ?? null);
   const insertable: TablesInsert<'skill'> = {
     user_id: user.id,
     cv_id: cvId,
     position: nextPosition,
     name: payload.name.trim(),
-    category: normaliseNullableString(payload.category ?? null),
-    level: payload.level ?? null,
+    category,
   };
   if (insertable.name.length === 0) {
     throw new ProfileContentError('Skill name cannot be empty.');
@@ -1512,6 +1510,7 @@ export async function addSkill({
   if (error || !data) {
     throw new ProfileContentError(error?.message ?? 'Failed to add skill.');
   }
+  await ensureSkillCategory({ user, cvId, category });
   return data;
 }
 
@@ -1537,7 +1536,6 @@ export async function editSkill({
   if (patch.category !== undefined) {
     update.category = normaliseNullableString(patch.category);
   }
-  if (patch.level !== undefined) update.level = patch.level;
   if (Object.keys(update).length === 0) {
     throw new ProfileContentError('No fields provided to edit.');
   }
@@ -1553,7 +1551,190 @@ export async function editSkill({
   if (error || !data) {
     throw new ProfileContentError(error?.message ?? 'Failed to update skill.');
   }
+  if (update.category !== undefined) {
+    await ensureSkillCategory({ user, cvId, category: update.category ?? null });
+  }
   return data;
+}
+
+/**
+ * Reads the persisted, ordered list of skill category names for a CV.
+ */
+export async function getSkillCategories(user: User, cvId: string): Promise<string[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from('cv')
+    .select('skill_categories')
+    .eq('id', cvId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (error) throw new ProfileContentError(error.message);
+  if (!data) throw new ProfileContentError(`CV ${cvId} not found.`);
+  if (!Array.isArray(data.skill_categories)) return [];
+  return data.skill_categories.filter((item): item is string => typeof item === 'string');
+}
+
+async function writeSkillCategories(user: User, cvId: string, categories: string[]): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from('cv')
+    .update({ skill_categories: categories as unknown as Json })
+    .eq('id', cvId)
+    .eq('user_id', user.id);
+  if (error) throw new ProfileContentError(error.message);
+}
+
+/**
+ * Appends `category` to `cv.skill_categories` when it is non-null and not
+ * already present, so chat- and editor-created categories stay visible and
+ * persisted. Order is preserved (new categories land at the end).
+ */
+async function ensureSkillCategory({
+  user,
+  cvId,
+  category,
+}: {
+  user: User;
+  cvId: string;
+  category: string | null;
+}): Promise<void> {
+  if (!category) return;
+  const current = await getSkillCategories(user, cvId);
+  if (current.includes(category)) return;
+  await writeSkillCategories(user, cvId, [...current, category]);
+}
+
+/**
+ * Replaces the persisted category list. Any skill whose `category` is not in
+ * the new list is reset to uncategorised (null) so the PDF/editor never show a
+ * dangling group.
+ */
+export async function setSkillCategories({
+  user,
+  cvId,
+  categories,
+}: {
+  user: User;
+  cvId: string;
+  categories: string[];
+}): Promise<string[]> {
+  await assertOwnedCv(user, cvId);
+  // De-duplicate while preserving order; drop empties.
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const raw of categories) {
+    const name = raw.trim();
+    if (name.length === 0 || seen.has(name)) continue;
+    seen.add(name);
+    next.push(name);
+  }
+  await writeSkillCategories(user, cvId, next);
+
+  const supabase = await createSupabaseServerClient();
+  const { data: orphans, error: orphanError } = await supabase
+    .from('skill')
+    .select('id, category')
+    .eq('user_id', user.id)
+    .eq('cv_id', cvId)
+    .not('category', 'is', null);
+  if (orphanError) throw new ProfileContentError(orphanError.message);
+  const toClear = (orphans ?? []).filter((row) => row.category && !seen.has(row.category));
+  if (toClear.length > 0) {
+    const { error: clearError } = await supabase
+      .from('skill')
+      .update({ category: null })
+      .eq('user_id', user.id)
+      .eq('cv_id', cvId)
+      .in(
+        'id',
+        toClear.map((row) => row.id),
+      );
+    if (clearError) throw new ProfileContentError(clearError.message);
+  }
+  return next;
+}
+
+/**
+ * Renames a category: updates the list entry (in place) and re-points every
+ * skill in `from` to `to`. No-op when `from` is missing from the list.
+ */
+export async function renameSkillCategory({
+  user,
+  cvId,
+  from,
+  to,
+}: {
+  user: User;
+  cvId: string;
+  from: string;
+  to: string;
+}): Promise<string[]> {
+  await assertOwnedCv(user, cvId);
+  const target = to.trim();
+  if (target.length === 0) throw new ProfileContentError('Category name cannot be empty.');
+  const current = await getSkillCategories(user, cvId);
+  const fromIndex = current.indexOf(from);
+  if (fromIndex === -1) return current;
+
+  // Merge into an existing category if `to` already exists; otherwise rename.
+  const next = current.filter((name, index) => {
+    if (name === target && name !== from) return false; // collapse duplicate target
+    return index !== fromIndex;
+  });
+  next.splice(fromIndex, 0, target);
+  // Re-dedupe defensively (in case target already existed elsewhere).
+  const deduped = next.filter((name, index) => next.indexOf(name) === index);
+  await writeSkillCategories(user, cvId, deduped);
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from('skill')
+    .update({ category: target })
+    .eq('user_id', user.id)
+    .eq('cv_id', cvId)
+    .eq('category', from);
+  if (error) throw new ProfileContentError(error.message);
+  return deduped;
+}
+
+/**
+ * Rewrites skill `position` (0..n) and `category` densely in one pass. Used by
+ * the editor's drag-and-drop, handling both reorder and cross-group moves.
+ * `items` must list every skill in the CV in the desired final order.
+ */
+export async function reorderSkills({
+  user,
+  cvId,
+  items,
+}: {
+  user: User;
+  cvId: string;
+  items: { id: string; category: string | null }[];
+}): Promise<void> {
+  await assertOwnedCv(user, cvId);
+  const supabase = await createSupabaseServerClient();
+
+  const { data: existing, error: existingError } = await supabase
+    .from('skill')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('cv_id', cvId);
+  if (existingError) throw new ProfileContentError(existingError.message);
+  const existingIds = new Set((existing ?? []).map((row) => row.id));
+  if (items.length !== existingIds.size || !items.every((item) => existingIds.has(item.id))) {
+    throw new ProfileContentError('reorderSkills items must match the CV skills exactly.');
+  }
+
+  for (let index = 0; index < items.length; index++) {
+    const item = items[index];
+    const { error } = await supabase
+      .from('skill')
+      .update({ position: index, category: normaliseNullableString(item.category) })
+      .eq('id', item.id)
+      .eq('user_id', user.id)
+      .eq('cv_id', cvId);
+    if (error) throw new ProfileContentError(error.message);
+  }
 }
 
 export async function removeSkill({

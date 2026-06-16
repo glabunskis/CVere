@@ -1,8 +1,8 @@
 import type { Database } from '@/shared/api/supabase/types';
 
-import { defaultLayoutForTemplate, type LayoutSpec } from './layout-spec';
-import type { TemplateProps } from './templates/shared';
 import { LayoutCv } from './templates/layout-executor';
+import type { TemplateProps } from './templates/shared';
+import { defaultLayoutForTemplate, type LayoutSpec } from './layout-spec';
 
 export type CvTemplate = Database['public']['Enums']['cv_template'];
 

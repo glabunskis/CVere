@@ -11,6 +11,7 @@ import { Label } from '@/shared/ui/label';
 import { Select } from '@/shared/ui/select';
 
 import { deleteProfileChild, updateProfileSection } from '../actions/update-profile-section';
+import { refreshCvPreview } from '../lib/refresh-preview';
 import type { LanguageInput } from '../schemas';
 
 import { SectionShell } from './section-shell';
@@ -32,6 +33,7 @@ export function LanguageEditor({ items, readOnly = false }: Props) {
     <SectionShell
       title='Languages'
       description='Spoken languages and proficiency.'
+      count={items.length}
       action={
         !readOnly && !adding ? (
           <Button size='sm' variant='outline' onClick={() => setAdding(true)}>
@@ -62,7 +64,10 @@ export function LanguageEditor({ items, readOnly = false }: Props) {
 function LanguageRowItem({ row, readOnly }: { row: LanguageRow; readOnly: boolean }) {
   const [editing, setEditing] = useState(false);
   const { execute: del, isExecuting: deleting } = useAction(deleteProfileChild, {
-    onSuccess: () => toast.success('Deleted'),
+    onSuccess: () => {
+      toast.success('Deleted');
+      refreshCvPreview();
+    },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to delete'),
   });
 
@@ -91,7 +96,8 @@ function LanguageRowItem({ row, readOnly }: { row: LanguageRow; readOnly: boolea
           </Button>
           <Button
             size='xs'
-            variant='destructive'
+            variant='ghost'
+            className='hover:bg-destructive/10 hover:text-destructive'
             disabled={deleting}
             onClick={() => del({ section: 'language', id: row.id })}
           >
@@ -123,6 +129,7 @@ function LanguageForm({
   const { execute, isExecuting } = useAction(updateProfileSection, {
     onSuccess: () => {
       toast.success('Saved');
+      refreshCvPreview();
       onSaved();
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to save'),

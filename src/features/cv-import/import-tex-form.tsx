@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/shared/ui/button';
 import { Label } from '@/shared/ui/label';
+import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group';
 
 import { importTex } from './import-tex';
 
@@ -95,7 +96,7 @@ export function ImportTexForm() {
   const disabled = busy || isExecuting;
 
   return (
-    <div className='flex flex-col gap-3 rounded-lg border bg-card p-3'>
+    <div className='flex flex-col gap-3 rounded-lg border border-dashed border-border-strong p-3'>
       <div className='flex flex-col gap-1'>
         <Label className='text-sm font-medium'>Import CV (.tex)</Label>
         <p className='text-xs text-muted-foreground'>
@@ -109,7 +110,7 @@ export function ImportTexForm() {
         multiple
         disabled={disabled}
         onChange={(e) => handleFiles(e.target.files)}
-        className='block w-full text-xs file:mr-2 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-foreground'
+        className='block w-full text-xs file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-foreground'
       />
 
       {pickedNames.length > 0 ? (
@@ -119,30 +120,24 @@ export function ImportTexForm() {
         </p>
       ) : null}
 
-      <div className='flex items-center gap-2 text-xs'>
-        <span className='text-muted-foreground'>Mode:</span>
-        <label className='flex items-center gap-1'>
-          <input
-            type='radio'
-            name='import-mode'
-            value='append'
-            checked={mode === 'append'}
-            onChange={() => setMode('append')}
+      <div className='flex items-center gap-2'>
+        <span className='text-xs text-muted-foreground'>Mode:</span>
+        <ToggleGroup variant='outline' size='sm' spacing={0}>
+          <ToggleGroupItem
+            pressed={mode === 'append'}
+            onPressedChange={(next) => { if (next) setMode('append'); }}
             disabled={disabled}
-          />
-          Append
-        </label>
-        <label className='flex items-center gap-1'>
-          <input
-            type='radio'
-            name='import-mode'
-            value='replace'
-            checked={mode === 'replace'}
-            onChange={() => setMode('replace')}
+          >
+            Append
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            pressed={mode === 'replace'}
+            onPressedChange={(next) => { if (next) setMode('replace'); }}
             disabled={disabled}
-          />
-          Replace
-        </label>
+          >
+            Replace
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       <Button size='sm' onClick={submit} disabled={disabled || stagedFiles.length === 0}>

@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
+import { CheckIcon, ChevronDownIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { createCvAction, setSelectedCvAction } from '@/features/cv-management';
@@ -18,6 +19,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu';
 import { Input } from '@/shared/ui/input';
 import { Select } from '@/shared/ui/select';
 
@@ -49,7 +56,7 @@ export function AppNav({ cvs, selectedCvId }: Props) {
   const shouldShowCvSelector = pathname.startsWith('/dashboard') || pathname.startsWith('/profile');
 
   const activeCvId = selectedCvId ?? cvs[0]?.id ?? '';
-  const sourceOptions = useMemo(() => cvs, [cvs]);
+  const activeCvTitle = cvs.find((cv) => cv.id === activeCvId)?.title ?? 'My CV';
 
   const { execute: selectCv, isExecuting: switchingCv } = useAction(setSelectedCvAction, {
     onSuccess: ({ input }) => {
@@ -82,7 +89,7 @@ export function AppNav({ cvs, selectedCvId }: Props) {
 
   return (
     <>
-      <nav className='flex w-full items-center justify-between gap-4 overflow-x-auto pb-1'>
+      <nav className='flex items-center gap-4 overflow-x-auto py-1.5 pr-1.5'>
         <div className='flex items-center gap-1 overflow-x-auto'>
           {items.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -92,10 +99,10 @@ export function AppNav({ cvs, selectedCvId }: Props) {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'rounded-md px-3 py-1.5 text-sm whitespace-nowrap transition-colors',
+                  'border-b-2 px-3 py-1.5 text-sm whitespace-nowrap transition-colors duration-150',
                   active
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    ? 'border-primary text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground',
                 )}
               >
                 {item.label}
@@ -105,23 +112,51 @@ export function AppNav({ cvs, selectedCvId }: Props) {
         </div>
 
         {shouldShowCvSelector && cvs.length > 0 ? (
-          <div className='flex min-w-[280px] items-center gap-2'>
-            <Select
-              value={activeCvId}
-              disabled={switchingCv}
-              onChange={(event) => {
-                const cvId = event.target.value;
-                if (!cvId || cvId === activeCvId) return;
-                selectCv({ cvId });
-              }}
+          <div className='flex items-center gap-2'>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                disabled={switchingCv}
+                className={cn(
+                  'flex h-8 min-w-0 items-center gap-1.5 rounded-full border border-border-strong bg-card px-3 text-sm transition-colors',
+                  'hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+                  switchingCv && 'pointer-events-none opacity-50',
+                )}
+              >
+                <span className='size-2 shrink-0 rounded-full bg-primary' />
+                <span className='max-w-[140px] truncate font-medium text-foreground'>
+                  {activeCvTitle}
+                </span>
+                <span className='shrink-0 font-mono text-xs text-muted-foreground'>
+                  {activeCvId.slice(0, 8)}
+                </span>
+                <ChevronDownIcon className='size-3 shrink-0 text-muted-foreground' />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='start' className='min-w-[240px]'>
+                {cvs.map((cv) => (
+                  <DropdownMenuItem
+                    key={cv.id}
+                    onClick={() => {
+                      if (cv.id === activeCvId) return;
+                      selectCv({ cvId: cv.id });
+                    }}
+                  >
+                    <span
+                      className={cn('flex-1 truncate', cv.id === activeCvId && 'font-medium')}
+                    >
+                      {cv.title}
+                    </span>
+                    {cv.id === activeCvId && (
+                      <CheckIcon className='ml-2 size-3 shrink-0 opacity-60' />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              type='button'
+              className='shadow-[0_0_0_4px_var(--primary-soft)]'
+              onClick={() => setIsCreateOpen(true)}
             >
-              {cvs.map((cv) => (
-                <option key={cv.id} value={cv.id}>
-                  {cv.title}
-                </option>
-              ))}
-            </Select>
-            <Button type='button' variant='outline' onClick={() => setIsCreateOpen(true)}>
               New CV
             </Button>
           </div>
@@ -137,7 +172,7 @@ export function AppNav({ cvs, selectedCvId }: Props) {
             </DialogDescription>
           </DialogHeader>
           <form
-            className='space-y-4'
+            className='flex flex-col gap-4'
             onSubmit={(event) => {
               event.preventDefault();
               const title = newTitle.trim();
@@ -148,7 +183,7 @@ export function AppNav({ cvs, selectedCvId }: Props) {
               });
             }}
           >
-            <div className='space-y-2'>
+            <div className='flex flex-col gap-2'>
               <p className='text-xs font-medium text-muted-foreground'>Title</p>
               <Input
                 autoFocus
@@ -158,10 +193,10 @@ export function AppNav({ cvs, selectedCvId }: Props) {
                 maxLength={120}
               />
             </div>
-            <div className='space-y-2'>
+            <div className='flex flex-col gap-2'>
               <p className='text-xs font-medium text-muted-foreground'>Source CV</p>
               <Select value={sourceCvId || activeCvId} onChange={(event) => setSourceCvId(event.target.value)}>
-                {sourceOptions.map((cv) => (
+                {cvs.map((cv) => (
                   <option key={cv.id} value={cv.id}>
                     {cv.title}
                   </option>

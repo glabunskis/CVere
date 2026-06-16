@@ -45,7 +45,14 @@ export function LayoutCv({
       case 'projects':
         return <ProjectsSection key='projects' projects={projects} styles={styles} />;
       case 'skills':
-        return <SkillsSection key='skills' skills={skills} styles={styles} />;
+        return (
+          <SkillsSection
+            key='skills'
+            skills={skills}
+            skillCategories={snapshot.skillCategories ?? []}
+            styles={styles}
+          />
+        );
       case 'education':
         return (
           <EducationSection

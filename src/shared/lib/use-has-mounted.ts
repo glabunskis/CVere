@@ -11,6 +11,8 @@ import { useEffect, useState } from 'react';
 export function useHasMounted(): boolean {
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect -- intentional hydration
+       guard: the effect runs once after mount and the setState is the entire point. */
     setHasMounted(true);
   }, []);
   return hasMounted;

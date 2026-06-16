@@ -10,7 +10,11 @@ export default async function AchievementsPage({ searchParams }: { searchParams:
 
   const items = await listAchievements({ status: statusFilter, section: sectionFilter });
 
-  return <AchievementsView items={items} />;
+  return (
+    <div className='mx-auto w-full max-w-5xl'>
+      <AchievementsView items={items} />
+    </div>
+  );
 }
 
 function parseStatus(value: string | undefined) {

@@ -202,6 +202,7 @@ export type Database = {
           location: string | null
           pdf_path: string | null
           phone: string | null
+          skill_categories: Json
           source_cv_id: string | null
           source_vacancy_id: string | null
           summary: string | null
@@ -229,6 +230,7 @@ export type Database = {
           location?: string | null
           pdf_path?: string | null
           phone?: string | null
+          skill_categories?: Json
           source_cv_id?: string | null
           source_vacancy_id?: string | null
           summary?: string | null
@@ -256,6 +258,7 @@ export type Database = {
           location?: string | null
           pdf_path?: string | null
           phone?: string | null
+          skill_categories?: Json
           source_cv_id?: string | null
           source_vacancy_id?: string | null
           summary?: string | null
@@ -690,7 +693,6 @@ export type Database = {
           created_at: string
           cv_id: string
           id: string
-          level: Database["public"]["Enums"]["skill_level"] | null
           name: string
           position: number
           updated_at: string
@@ -701,7 +703,6 @@ export type Database = {
           created_at?: string
           cv_id: string
           id?: string
-          level?: Database["public"]["Enums"]["skill_level"] | null
           name: string
           position?: number
           updated_at?: string
@@ -712,7 +713,6 @@ export type Database = {
           created_at?: string
           cv_id?: string
           id?: string
-          level?: Database["public"]["Enums"]["skill_level"] | null
           name?: string
           position?: number
           updated_at?: string
@@ -842,7 +842,6 @@ export type Database = {
         | "native"
       pricing_plan_interval: "day" | "week" | "month" | "year"
       pricing_type: "one_time" | "recurring"
-      skill_level: "beginner" | "intermediate" | "advanced" | "expert"
       subscription_status:
         | "trialing"
         | "active"
@@ -1001,7 +1000,6 @@ export const Constants = {
       ],
       pricing_plan_interval: ["day", "week", "month", "year"],
       pricing_type: ["one_time", "recurring"],
-      skill_level: ["beginner", "intermediate", "advanced", "expert"],
       subscription_status: [
         "trialing",
         "active",

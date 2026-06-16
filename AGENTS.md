@@ -59,7 +59,7 @@ src/
 ├── widgets/                      # Multi-feature composed UI blocks
 │   ├── app-nav/                  # App shell nav + account-menu
 │   ├── cv-library/               # CV list panel
-│   └── previewer-sidebar/        # Sidebar tabs (Library + Chat)
+│   └── control-panel/           # Right-column tabs (Library | CV editor | Style)
 ├── features/                     # User-action slices
 │   ├── auth/                     # Login/signup UI + server actions
 │   ├── chat/                     # Chat agent: tools, storage, system-prompt, UI

@@ -3,8 +3,8 @@ import type { PropsWithChildren } from 'react';
 
 import { listCvs } from '@/entities/cv';
 import { getSession } from '@/entities/user';
-import { Separator } from '@/shared/ui/separator';
-import { AppNav } from '@/widgets/app-nav';
+import { Logo } from '@/shared/ui/logo';
+import { AccountMenu, AppNav, ThemeToggle } from '@/widgets/app-nav';
 
 export default async function AppLayout({ children }: PropsWithChildren) {
   const session = await getSession();
@@ -14,17 +14,26 @@ export default async function AppLayout({ children }: PropsWithChildren) {
   const cvLibrary = await listCvs();
 
   return (
-    <div className='flex flex-1 flex-col gap-6 py-6'>
-      <div className='flex flex-col gap-2'>
-        <div className='flex items-center justify-between gap-4'>
-          <AppNav
-            cvs={cvLibrary.items.map((item) => ({ id: item.id, title: item.title }))}
-            selectedCvId={cvLibrary.selectedCvId}
-          />
-        </div>
-        <Separator />
+    <div className='flex min-h-0 flex-1 flex-col'>
+      {/* 56px header: 3px accent hairline + 53px bar */}
+      <div className='flex shrink-0 flex-col'>
+        <div className='h-[3px] bg-primary' />
+        <header className='grid h-[53px] grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-border px-4'>
+          <Logo />
+          <div className='flex min-w-0 items-center gap-3 justify-self-center'>
+            <AppNav
+              cvs={cvLibrary.items.map((item) => ({ id: item.id, title: item.title }))}
+              selectedCvId={cvLibrary.selectedCvId}
+            />
+          </div>
+          <div className='flex items-center gap-2 justify-self-end'>
+            <ThemeToggle />
+            <AccountMenu />
+          </div>
+        </header>
       </div>
-      <div className='flex-1'>{children}</div>
+      {/* Content fills the viewport flush; columns are divided by hairlines */}
+      <div className='min-h-0 flex-1'>{children}</div>
     </div>
   );
 }

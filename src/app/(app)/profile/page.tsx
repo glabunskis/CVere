@@ -1,5 +1,6 @@
 import { getCvChildren, getSelectedCv } from '@/entities/cv';
 import { createSupabaseServerClient } from '@/shared/api/supabase/supabase-server-client';
+import { jsonToStringArray } from '@/shared/lib/cv-json';
 import { DEFAULT_CV_DATE_FORMAT } from '@/shared/lib/format-date';
 import { ProfileView } from '@/views/profile';
 
@@ -21,15 +22,18 @@ export default async function ProfilePage() {
   const userMetadata = (user?.user_metadata ?? {}) as { full_name?: string };
 
   return (
-    <ProfileView
-      profileTitle={profile.title}
-      summary={profile.summary}
-      contact={profile}
-      fallbackEmail={user.email ?? null}
-      fallbackFullName={userMetadata.full_name ?? null}
-      sections={sections}
-      educationDateFormat={profile.education_date_format ?? DEFAULT_CV_DATE_FORMAT}
-      certificationDateFormat={profile.certification_date_format ?? DEFAULT_CV_DATE_FORMAT}
-    />
+    <div className='mx-auto w-full max-w-5xl'>
+      <ProfileView
+        profileTitle={profile.title}
+        summary={profile.summary}
+        contact={profile}
+        fallbackEmail={user.email ?? null}
+        fallbackFullName={userMetadata.full_name ?? null}
+        sections={sections}
+        skillCategories={jsonToStringArray(profile.skill_categories)}
+        educationDateFormat={profile.education_date_format ?? DEFAULT_CV_DATE_FORMAT}
+        certificationDateFormat={profile.certification_date_format ?? DEFAULT_CV_DATE_FORMAT}
+      />
+    </div>
   );
 }

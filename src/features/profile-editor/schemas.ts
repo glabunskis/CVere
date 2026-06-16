@@ -79,16 +79,48 @@ export const projectSchema = z.object({
 });
 export type ProjectInput = z.infer<typeof projectSchema>;
 
-export const skillLevelSchema = z.enum(['beginner', 'intermediate', 'advanced', 'expert']);
-
 export const skillSchema = z.object({
   id: z.uuid().optional(),
   position: z.number().int().min(0).default(0),
   name: z.string().min(1, 'Name is required').max(120),
   category: z.string().max(80).nullable().optional(),
-  level: skillLevelSchema.nullable().optional(),
 });
 export type SkillInput = z.infer<typeof skillSchema>;
+
+// Inline skill editor actions.
+export const quickAddSkillSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(120),
+});
+export type QuickAddSkillInput = z.infer<typeof quickAddSkillSchema>;
+
+export const renameSkillSchema = z.object({
+  id: z.uuid(),
+  name: z.string().min(1, 'Name is required').max(120),
+});
+export type RenameSkillInput = z.infer<typeof renameSkillSchema>;
+
+export const reorderSkillsSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        id: z.uuid(),
+        category: z.string().max(80).nullable(),
+      }),
+    )
+    .max(50),
+});
+export type ReorderSkillsInput = z.infer<typeof reorderSkillsSchema>;
+
+export const setSkillCategoriesSchema = z.object({
+  categories: z.array(z.string().max(80)).max(50),
+});
+export type SetSkillCategoriesInput = z.infer<typeof setSkillCategoriesSchema>;
+
+export const renameSkillCategorySchema = z.object({
+  from: z.string().min(1).max(80),
+  to: z.string().min(1, 'Name is required').max(80),
+});
+export type RenameSkillCategoryInput = z.infer<typeof renameSkillCategorySchema>;
 
 export const educationSchema = z.object({
   id: z.uuid().optional(),

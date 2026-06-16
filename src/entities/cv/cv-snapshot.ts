@@ -29,6 +29,10 @@ export const aiProfileSchema = z.object({
   // the template-derived default". Included in the snapshot so undo/redo
   // reverts layout changes exactly as stored.
   layout: layoutSpecSchema.nullable().default(null),
+  // Ordered, persisted list of skill category names (cv.skill_categories).
+  // Grouping/order in the PDF and editor follows this list; skills whose
+  // `category` is null or not in the list render under "Uncategorised".
+  skillCategories: z.array(z.string()).default([]),
   experience: z
     .array(
       z.object({
@@ -63,7 +67,6 @@ export const aiProfileSchema = z.object({
         id: z.uuid(),
         name: z.string(),
         category: z.string().nullable().optional(),
-        level: z.string().nullable().optional(),
       }),
     )
     .default([]),
@@ -112,6 +115,7 @@ export function buildCvSnapshot(cv: CvRow, children: ProfileChildren): AiProfile
     title: cv.title,
     summary: cv.summary,
     layout: parsedLayout?.success ? parsedLayout.data : null,
+    skillCategories: jsonToStringArray(cv.skill_categories),
     identity: {
       fullName: cv.full_name,
       location: cv.location,
@@ -151,7 +155,6 @@ export function buildCvSnapshot(cv: CvRow, children: ProfileChildren): AiProfile
       id: row.id,
       name: row.name,
       category: row.category,
-      level: row.level,
     })),
     education: children.education.map((row) => ({
       id: row.id,

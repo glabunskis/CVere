@@ -10,5 +10,9 @@ export default async function VacanciesPage() {
     user ? getOrCreateDefaultSession(user.id) : Promise.resolve(null),
   ]);
 
-  return <VacanciesView jobs={jobs} activeSessionId={activeSession?.id ?? null} />;
+  return (
+    <div className='mx-auto w-full max-w-5xl'>
+      <VacanciesView jobs={jobs} activeSessionId={activeSession?.id ?? null} />
+    </div>
+  );
 }

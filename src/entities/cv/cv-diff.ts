@@ -43,6 +43,7 @@ export type CvDiff = {
     identity?: ScalarDiff<IdentityDiff>;
     style?: ScalarDiff<StyleDiff>;
     layout?: ScalarDiff<LayoutDiff>;
+    skillCategories?: ScalarDiff<string[]>;
   };
   sections: Partial<Record<SectionKey, SectionDiff>>;
 };
@@ -128,6 +129,12 @@ export function computeCvDiff(before: AiProfile, after: AiProfile): CvDiff {
   if (!deepEqual(before.layout ?? null, after.layout ?? null)) {
     scalars.layout = { from: clone(before.layout ?? null), to: clone(after.layout ?? null) };
   }
+  if (!deepEqual(before.skillCategories ?? [], after.skillCategories ?? [])) {
+    scalars.skillCategories = {
+      from: clone(before.skillCategories ?? []),
+      to: clone(after.skillCategories ?? []),
+    };
+  }
 
   const sections: CvDiff['sections'] = {};
   for (const key of SECTION_KEYS) {
@@ -191,6 +198,12 @@ export function applyCvDiff(
   if (diff.scalars.layout) {
     next.layout =
       direction === 'forward' ? clone(diff.scalars.layout.to) : clone(diff.scalars.layout.from);
+  }
+  if (diff.scalars.skillCategories) {
+    next.skillCategories =
+      direction === 'forward'
+        ? clone(diff.scalars.skillCategories.to)
+        : clone(diff.scalars.skillCategories.from);
   }
 
   for (const key of SECTION_KEYS) {

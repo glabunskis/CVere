@@ -46,13 +46,13 @@ export function ChatInput({
 
   return (
     <form
-      className='border-t bg-background p-3'
+      className='border-t bg-card p-3'
       onSubmit={(event) => {
         event.preventDefault();
         submit();
       }}
     >
-      <InputGroup className='h-auto'>
+      <InputGroup className='h-auto focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50'>
         <InputGroupTextarea
           value={value}
           onChange={(event) => setValue(event.target.value)}

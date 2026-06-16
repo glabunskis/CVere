@@ -1,8 +1,10 @@
-import type { CvLibraryData } from '@/entities/cv';
+import type { AchievementRow } from '@/entities/achievement';
+import type { CvLibraryData, CvRow, ProfileChildren } from '@/entities/cv';
 import type { ChatSessionListItem, ChatUIMessage } from '@/features/chat';
 import type { CvTemplate } from '@/features/cv-style';
 import type { CvDateFormat } from '@/shared/lib/format-date';
-import { PreviewerSidebar } from '@/widgets/previewer-sidebar';
+
+import { DashboardWorkspace } from './DashboardWorkspace';
 
 type DashboardViewProps = {
   selectedCvId: string;
@@ -10,14 +12,19 @@ type DashboardViewProps = {
   accentHex: string;
   educationDateFormat: CvDateFormat;
   certificationDateFormat: CvDateFormat;
-  pendingAchievements: number;
   activeSessionId: string;
   sessions: ChatSessionListItem[];
   initialChatMessages: ChatUIMessage[];
   initialPrefill: string | null;
   cvLibrary: CvLibraryData;
+  achievements: AchievementRow[];
+  summary: string | null;
+  contact: CvRow;
+  fallbackEmail: string | null;
+  fallbackFullName: string | null;
+  sections: ProfileChildren;
 };
 
 export function DashboardView(props: DashboardViewProps) {
-  return <PreviewerSidebar {...props} />;
+  return <DashboardWorkspace {...props} />;
 }

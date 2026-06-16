@@ -20,7 +20,6 @@ const HISTORY_RETENTION = 100;
 
 export type CvHistoryState = { canUndo: boolean; canRedo: boolean };
 
-type SkillLevel = NonNullable<TablesInsert<'skill'>['level']>;
 type LanguageProficiency = NonNullable<TablesInsert<'language'>['proficiency']>;
 
 export async function loadCvSnapshot(user: User, cvId: string): Promise<AiProfile> {
@@ -180,6 +179,7 @@ export async function restoreCvToSnapshot(
       certification_date_format: target.style
         .certificationDateFormat as TablesInsert<'cv'>['certification_date_format'],
       layout_json: (target.layout ?? null) as unknown as Json,
+      skill_categories: (target.skillCategories ?? []) as unknown as Json,
     })
     .eq('id', cvId)
     .eq('user_id', user.id);
@@ -234,7 +234,6 @@ export async function restoreCvToSnapshot(
       position: index,
       name: row.name,
       category: row.category ?? null,
-      level: (row.level ?? null) as SkillLevel | null,
     })),
   });
 

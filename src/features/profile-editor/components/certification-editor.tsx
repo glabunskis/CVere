@@ -11,6 +11,7 @@ import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 
 import { deleteProfileChild, updateProfileSection } from '../actions/update-profile-section';
+import { refreshCvPreview } from '../lib/refresh-preview';
 
 import { SectionShell } from './section-shell';
 
@@ -24,6 +25,7 @@ export function CertificationEditor({ items, readOnly = false, dateFormat = DEFA
     <SectionShell
       title='Certifications'
       description='External credentials with issuer and dates.'
+      count={items.length}
       action={
         !readOnly && draft.kind === 'idle' ? (
           <Button size='sm' variant='outline' onClick={() => setDraft({ kind: 'creating' })}>
@@ -86,7 +88,10 @@ function CertificationCard({
   onEdit: () => void;
 }) {
   const { execute: del, isExecuting: deleting } = useAction(deleteProfileChild, {
-    onSuccess: () => toast.success('Deleted'),
+    onSuccess: () => {
+      toast.success('Deleted');
+      refreshCvPreview();
+    },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to delete'),
   });
   const issuedLabel = formatCvDate(row.issued_at, dateFormat) ?? row.issued_at;
@@ -114,7 +119,8 @@ function CertificationCard({
           </Button>
           <Button
             size='xs'
-            variant='destructive'
+            variant='ghost'
+            className='hover:bg-destructive/10 hover:text-destructive'
             disabled={deleting}
             onClick={() => del({ section: 'certification', id: row.id })}
           >
@@ -149,6 +155,7 @@ function CertificationForm({
   const { execute, isExecuting } = useAction(updateProfileSection, {
     onSuccess: () => {
       toast.success('Saved');
+      refreshCvPreview();
       onSaved();
     },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to save'),

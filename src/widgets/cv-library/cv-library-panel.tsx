@@ -86,7 +86,6 @@ export function CvLibraryPanel({ library }: Props) {
   return (
     <>
       <div className='flex flex-col gap-2'>
-        <h4 className='text-sm font-medium text-foreground'>CVs</h4>
         {library.items.length === 0 ? (
           <p className='rounded-md border border-dashed px-3 py-3 text-xs text-muted-foreground'>
             No CVs yet.
@@ -151,7 +150,7 @@ export function CvLibraryPanel({ library }: Props) {
             <DialogDescription>Use a short, descriptive title.</DialogDescription>
           </DialogHeader>
           <form
-            className='space-y-4'
+            className='flex flex-col gap-4'
             onSubmit={(event) => {
               event.preventDefault();
               if (!pendingRename) return;

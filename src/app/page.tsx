@@ -10,5 +10,9 @@ export default async function HomePage() {
     redirect('/dashboard');
   }
 
-  return <HomeView />;
+  return (
+    <div className='mx-auto w-full max-w-5xl'>
+      <HomeView />
+    </div>
+  );
 }

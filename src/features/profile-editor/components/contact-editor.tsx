@@ -10,6 +10,7 @@ import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 
 import { updateProfileSection } from '../actions/update-profile-section';
+import { refreshCvPreview } from '../lib/refresh-preview';
 
 import { SectionShell } from './section-shell';
 
@@ -55,7 +56,10 @@ export function ContactEditor({
   const [, startTransition] = useTransition();
 
   const { execute, isExecuting } = useAction(updateProfileSection, {
-    onSuccess: () => toast.success('Contact saved'),
+    onSuccess: () => {
+      toast.success('Contact saved');
+      refreshCvPreview();
+    },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to save contact'),
   });
 

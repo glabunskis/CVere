@@ -22,6 +22,7 @@ type Props = {
   fallbackEmail?: string | null;
   fallbackFullName?: string | null;
   sections: ProfileChildren;
+  skillCategories: string[];
   mode?: 'edit' | 'read';
   educationDateFormat?: CvDateFormat;
   certificationDateFormat?: CvDateFormat;
@@ -33,6 +34,7 @@ export function FactEditor({
   fallbackEmail,
   fallbackFullName,
   sections,
+  skillCategories,
   mode = 'edit',
   educationDateFormat = DEFAULT_CV_DATE_FORMAT,
   certificationDateFormat = DEFAULT_CV_DATE_FORMAT,
@@ -52,7 +54,7 @@ export function FactEditor({
       />
       <ExperienceEditor items={sections.experience} readOnly={readOnly} />
       <ProjectEditor items={sections.project} readOnly={readOnly} />
-      <SkillEditor items={sections.skill} readOnly={readOnly} />
+      <SkillEditor items={sections.skill} skillCategories={skillCategories} readOnly={readOnly} />
       <EducationEditor items={sections.education} readOnly={readOnly} dateFormat={educationDateFormat} />
       <CertificationEditor
         items={sections.certification}

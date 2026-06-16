@@ -58,9 +58,9 @@ export function buildSectionTools(user: User, activeCv: ActiveCvRef) {
         'Append a new skill. Call `readProfile` first if the user might already have a ' +
         'similar skill, to avoid duplicates. Omit cvId to target the selected CV.',
       inputSchema: addSkillInputSchema,
-      execute: async ({ cvId, name, category, level }) => {
+      execute: async ({ cvId, name, category }) => {
         const targetCvId = cvId ?? activeCv.current;
-        const row = await addSkill({ user, cvId: targetCvId, payload: { name, category, level } });
+        const row = await addSkill({ user, cvId: targetCvId, payload: { name, category } });
         logger.info({ userId: user.id, skillId: row.id }, 'chat-tool addSkill');
         return `Added skill "${row.name}".`;
       },
@@ -68,16 +68,16 @@ export function buildSectionTools(user: User, activeCv: ActiveCvRef) {
 
     editSkill: tool({
       description:
-        'Edit a skill\'s name / category / level. Get the id from `readProfile`. ' +
+        'Edit a skill\'s name / category. Get the id from `readProfile`. ' +
         'Omit cvId to target the selected CV.',
       inputSchema: editSkillInputSchema,
-      execute: async ({ cvId, skillId, name, category, level }) => {
+      execute: async ({ cvId, skillId, name, category }) => {
         const targetCvId = cvId ?? activeCv.current;
         const row = await editSkill({
           user,
           cvId: targetCvId,
           skillId,
-          patch: { name, category, level },
+          patch: { name, category },
         });
         logger.info({ userId: user.id, skillId }, 'chat-tool editSkill');
         return `Updated skill "${row.name}".`;

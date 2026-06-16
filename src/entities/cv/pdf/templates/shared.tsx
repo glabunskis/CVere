@@ -114,39 +114,55 @@ export function ProjectsSection({
   );
 }
 
+const UNCATEGORISED_KEY = '';
+
 export function SkillsSection({
   skills,
+  skillCategories = [],
   styles,
 }: {
   skills: AiProfile['skills'];
+  skillCategories?: string[];
   styles: PdfStyles;
 }) {
   if (!skills.length) return null;
 
-  // Group skills by category when categories exist; otherwise fall back to a flat list.
+  // Bucket skills by category name (empty string = uncategorised).
   const grouped = new Map<string, typeof skills>();
   for (const skill of skills) {
-    const key = skill.category && skill.category.trim().length > 0 ? skill.category : '';
+    const key = skill.category && skill.category.trim().length > 0 ? skill.category : UNCATEGORISED_KEY;
     const bucket = grouped.get(key) ?? [];
     bucket.push(skill);
     grouped.set(key, bucket);
   }
 
-  const hasCategories = Array.from(grouped.keys()).some((key) => key.length > 0);
+  // Order: persisted categories first (in their stored order), then any
+  // leftover categories not in the list, then uncategorised skills last.
+  const orderedKeys: string[] = [];
+  for (const category of skillCategories) {
+    if (grouped.has(category)) orderedKeys.push(category);
+  }
+  for (const key of grouped.keys()) {
+    if (key !== UNCATEGORISED_KEY && !orderedKeys.includes(key)) orderedKeys.push(key);
+  }
+  if (grouped.has(UNCATEGORISED_KEY)) orderedKeys.push(UNCATEGORISED_KEY);
+
+  const hasCategories = orderedKeys.some((key) => key !== UNCATEGORISED_KEY);
 
   return (
     <Section title='Technical Skills' styles={styles}>
       {hasCategories ? (
-        Array.from(grouped.entries()).map(([category, items]) => (
-          <Text key={category || 'misc'} style={styles.paragraph}>
-            <Text style={styles.itemTitle}>{category || 'Other'}: </Text>
-            {items.map((s) => s.name).join(', ')}
-          </Text>
-        ))
+        orderedKeys.map((category) => {
+          const items = grouped.get(category) ?? [];
+          return (
+            <Text key={category || 'misc'} style={styles.paragraph}>
+              <Text style={styles.itemTitle}>{category || 'Other'}: </Text>
+              {items.map((s) => s.name).join(', ')}
+            </Text>
+          );
+        })
       ) : (
-        <Text style={styles.paragraph}>
-          {skills.map((s) => (s.level ? `${s.name} (${s.level})` : s.name)).join(', ')}
-        </Text>
+        <Text style={styles.paragraph}>{skills.map((s) => s.name).join(', ')}</Text>
       )}
     </Section>
   );

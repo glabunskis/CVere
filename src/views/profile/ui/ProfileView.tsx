@@ -15,6 +15,7 @@ type ProfileViewProps = {
   fallbackEmail: string | null;
   fallbackFullName: string | null;
   sections: ProfileChildren;
+  skillCategories: string[];
   educationDateFormat: CvDateFormat;
   certificationDateFormat: CvDateFormat;
 };
@@ -26,6 +27,7 @@ export function ProfileView({
   fallbackEmail,
   fallbackFullName,
   sections,
+  skillCategories,
   educationDateFormat,
   certificationDateFormat,
 }: ProfileViewProps) {
@@ -41,6 +43,7 @@ export function ProfileView({
         fallbackEmail={fallbackEmail}
         fallbackFullName={fallbackFullName}
         sections={sections}
+        skillCategories={skillCategories}
         educationDateFormat={educationDateFormat}
         certificationDateFormat={certificationDateFormat}
       />

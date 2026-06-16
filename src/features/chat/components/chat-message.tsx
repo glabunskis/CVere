@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDownIcon } from 'lucide-react';
+import { ChevronDownIcon, SparklesIcon } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
 
@@ -90,15 +90,26 @@ export function ChatMessage({ message, isStreamingLastAssistant = false }: Props
         isUser ? 'items-end' : 'items-start',
       )}
     >
-      <span className='px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground'>
-        {isUser ? 'You' : isAssistant ? 'Assistant' : message.role}
-      </span>
+      {isAssistant ? (
+        <div className='flex items-center gap-1.5 px-1'>
+          <span className='flex size-4 items-center justify-center rounded bg-muted'>
+            <SparklesIcon className='size-2.5 text-muted-foreground' />
+          </span>
+          <span className='text-[10px] font-medium uppercase tracking-wide text-muted-foreground'>
+            Assistant
+          </span>
+        </div>
+      ) : (
+        <span className='px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground'>
+          {isUser ? 'You' : message.role}
+        </span>
+      )}
       <div
         className={cn(
           'flex max-w-[90%] flex-col gap-2 rounded-lg px-3 py-2 text-sm',
           isUser
             ? 'bg-primary text-primary-foreground'
-            : 'bg-muted text-foreground',
+            : 'rounded-tl-sm bg-muted text-fg-soft',
         )}
       >
         {message.parts.map((part, index) => {

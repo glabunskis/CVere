@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
-import { CircleUser } from 'lucide-react';
+import { UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { signOut } from '@/features/auth/auth-actions';
+import { Avatar, AvatarFallback } from '@/shared/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,8 +30,15 @@ export function AccountMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className='rounded-full'>
-        <CircleUser size={24} />
+      <DropdownMenuTrigger
+        className='rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
+        aria-label='Account menu'
+      >
+        <Avatar size='sm'>
+          <AvatarFallback>
+            <UserIcon className='size-3.5' />
+          </AvatarFallback>
+        </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className='me-4'>
         <DropdownMenuItem render={<Link href='/account' />}>Account</DropdownMenuItem>

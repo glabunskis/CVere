@@ -116,14 +116,12 @@ export const updateProfileSection = authActionClient
         position: payload.position,
         name: payload.name,
         category: payload.category ?? null,
-        level: payload.level ?? null,
       };
       const updatable = {
         user_id: ctx.user.id,
         position: payload.position,
         name: payload.name,
         category: payload.category ?? null,
-        level: payload.level ?? null,
       };
       if (payload.id) {
         const { error } = await supabase

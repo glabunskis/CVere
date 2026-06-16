@@ -9,6 +9,7 @@ import { Label } from '@/shared/ui/label';
 import { Textarea } from '@/shared/ui/textarea';
 
 import { updateProfileSection } from '../actions/update-profile-section';
+import { refreshCvPreview } from '../lib/refresh-preview';
 
 type Props = {
   initialSummary: string | null;
@@ -20,7 +21,10 @@ export function SummaryEditor({ initialSummary, readOnly = false }: Props) {
   const [, startTransition] = useTransition();
 
   const { execute, isExecuting } = useAction(updateProfileSection, {
-    onSuccess: () => toast.success('Summary saved'),
+    onSuccess: () => {
+      toast.success('Summary saved');
+      refreshCvPreview();
+    },
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to save summary'),
   });
 
