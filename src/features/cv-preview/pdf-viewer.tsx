@@ -24,12 +24,15 @@ export function PdfViewer({ url, zoom, onZoomDelta }: Props) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [numPages, setNumPages] = useState(0);
   const [availableWidth, setAvailableWidth] = useState(0);
-  // Rasterize the page canvas at >=2x so thin serif strokes stay crisp on
-  // standard (1x) displays. Capped to keep canvas sizes reasonable when zoomed.
-  const [pixelRatio, setPixelRatio] = useState(2);
+  // The display's real device pixel ratio. react-pdf multiplies `width` by the
+  // `devicePixelRatio` we pass, and the browser then downscales the canvas to
+  // this real ratio. To avoid fractional downscaling (which makes pdf.js render
+  // gaps between glyphs), the value we pass must be a whole-number multiple of
+  // this. Default 2 covers the common HiDPI case before hydration.
+  const [deviceRatio, setDeviceRatio] = useState(2);
 
   useEffect(() => {
-    setPixelRatio(Math.min(3, Math.max(2, Math.ceil(window.devicePixelRatio || 1))));
+    setDeviceRatio(window.devicePixelRatio || 1);
   }, []);
 
   // The actual scrolling element is the ScrollArea Viewport. We reach it from
@@ -60,6 +63,10 @@ export function PdfViewer({ url, zoom, onZoomDelta }: Props) {
   }, [onZoomDelta]);
 
   const pageWidth = availableWidth > 0 ? availableWidth * zoom : undefined;
+  // Render the canvas 1:1 with physical pixels (no browser up-/down-scaling).
+  // Any supersample + downscale resamples and softens glyphs; matching the
+  // device ratio exactly is the sharpest at every zoom level.
+  const renderRatio = deviceRatio;
 
   return (
     <ScrollArea className='h-full w-full' scrollbars='both'>
@@ -85,7 +92,7 @@ export function PdfViewer({ url, zoom, onZoomDelta }: Props) {
             key={`${url}-${index + 1}`}
             pageNumber={index + 1}
             width={pageWidth}
-            devicePixelRatio={pixelRatio}
+            devicePixelRatio={renderRatio}
             renderTextLayer={false}
             renderAnnotationLayer={false}
             className='overflow-hidden rounded-sm shadow-lg ring-1 ring-black/5'

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useAction } from 'next-safe-action/hooks';
 import { CheckIcon, ExternalLinkIcon, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,9 +10,19 @@ import { HistoryControls } from '@/features/cv-history/history-controls';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 
-import { PdfViewer } from './pdf-viewer';
 import { usePreviewStore } from './preview-store';
 import { renderCv } from './render-cv';
+
+// react-pdf touches browser-only globals (DOMMatrix) at module-evaluation
+// time, which crashes during SSR. Load it client-side only.
+const PdfViewer = dynamic(() => import('./pdf-viewer').then((m) => m.PdfViewer), {
+  ssr: false,
+  loading: () => (
+    <div className='flex h-full items-center justify-center text-sm text-muted-foreground'>
+      Loading preview…
+    </div>
+  ),
+});
 
 type Props = {
   selectedCvTitle?: string;
