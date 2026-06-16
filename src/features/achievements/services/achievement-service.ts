@@ -66,7 +66,7 @@ export type IntegrateResult = {
 
 /**
  * Apply an achievement to the chosen section. Shared by:
- * - the `/achievements` page safe-action (which revalidates affected paths)
+ * - the achievements panel safe-action (which revalidates affected paths)
  * - the chat `integrateAchievement` tool (route renders PDF at end of turn)
  *
  * Only the `integrableSectionSchema` sections are supported. `experience` and

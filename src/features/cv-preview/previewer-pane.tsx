@@ -1,13 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
-import { CheckIcon, ExternalLinkIcon } from 'lucide-react';
+import { CheckIcon, ExternalLinkIcon, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { HistoryControls } from '@/features/cv-history/history-controls';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 
+import { PdfViewer } from './pdf-viewer';
 import { usePreviewStore } from './preview-store';
 import { renderCv } from './render-cv';
 
@@ -15,11 +17,19 @@ type Props = {
   selectedCvTitle?: string;
 };
 
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 3;
+
+const clampZoom = (value: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100));
+
 export function PreviewerPane({ selectedCvTitle }: Props) {
   const signedUrl = usePreviewStore((s) => s.signedUrl);
   const markPreviewDirty = usePreviewStore((s) => s.markPreviewDirty);
   const previewTarget = usePreviewStore((s) => s.previewTarget);
   const isRefreshing = usePreviewStore((s) => s.isRefreshing);
+
+  const [zoom, setZoom] = useState(1);
+  const adjustZoom = (delta: number) => setZoom((current) => clampZoom(current + delta));
 
   const { execute: rerender, isExecuting: rerendering } = useAction(renderCv, {
     onSuccess: () => {
@@ -82,6 +92,40 @@ export function PreviewerPane({ selectedCvTitle }: Props) {
           {/* Divider */}
           <div className='h-4 w-px shrink-0 bg-border' />
 
+          {/* Zoom controls (fit-to-width at 100%) */}
+          {signedUrl ? (
+            <div className='flex items-center gap-1'>
+              <Button
+                size='icon-sm'
+                variant='outline'
+                aria-label='Zoom out'
+                disabled={zoom <= MIN_ZOOM}
+                onClick={() => adjustZoom(-0.1)}
+              >
+                <ZoomOutIcon />
+              </Button>
+              <Button
+                size='sm'
+                variant='ghost'
+                aria-label='Reset zoom to fit width'
+                className='w-12 tabular-nums'
+                onClick={() => setZoom(1)}
+              >
+                {Math.round(zoom * 100)}%
+              </Button>
+              <Button
+                size='icon-sm'
+                variant='outline'
+                aria-label='Zoom in'
+                disabled={zoom >= MAX_ZOOM}
+                onClick={() => adjustZoom(0.1)}
+              >
+                <ZoomInIcon />
+              </Button>
+              <div className='h-4 w-px shrink-0 bg-border' />
+            </div>
+          ) : null}
+
           {/* Undo / Redo */}
           <HistoryControls />
 
@@ -100,15 +144,12 @@ export function PreviewerPane({ selectedCvTitle }: Props) {
         </div>
       </div>
 
-      {/* PDF canvas gutter + iframe */}
-      <div className='relative flex-1 bg-gutter'>
+      {/* PDF canvas gutter + custom (chrome-free) viewer.
+          `min-h-0` keeps this the only scroll region so the toolbar above stays
+          fixed while the PDF scrolls. */}
+      <div className='relative min-h-0 flex-1 bg-gutter'>
         {signedUrl ? (
-          <iframe
-            key={signedUrl}
-            src={`${signedUrl}#toolbar=1&navpanes=0`}
-            title='CV preview'
-            className='absolute inset-0 h-full w-full'
-          />
+          <PdfViewer url={signedUrl} zoom={zoom} onZoomDelta={adjustZoom} />
         ) : (
           <div className='flex h-full items-center justify-center text-sm text-muted-foreground'>
             No preview yet for this target. Press Refresh to render.

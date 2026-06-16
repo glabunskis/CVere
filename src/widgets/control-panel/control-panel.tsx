@@ -58,7 +58,10 @@ export function ControlPanel({
     <aside className='flex h-full min-h-0 flex-col overflow-hidden bg-card'>
       <Tabs value={activeTab} onValueChange={onTabChange} className='flex h-full min-h-0 flex-col gap-0'>
         <div className='flex h-[52px] shrink-0 items-center gap-1 border-b border-border bg-card px-2'>
-          <TabsList className='min-w-0 flex-1' variant='line'>
+          <TabsList
+            className='min-w-0 flex-1 [&_[data-slot=tabs-trigger]]:after:bg-primary [&_[data-slot=tabs-trigger][data-active]]:text-foreground'
+            variant='line'
+          >
             <TabsTrigger value='library'>Library</TabsTrigger>
             <TabsTrigger value='editor'>CV editor</TabsTrigger>
             <TabsTrigger value='style'>Style</TabsTrigger>

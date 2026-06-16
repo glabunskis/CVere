@@ -16,7 +16,6 @@ export const undoCvAction = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     const state = await undoCv(ctx.user, parsedInput.cvId);
     revalidatePath('/dashboard');
-    revalidatePath('/profile');
     return { ok: true as const, ...state };
   });
 
@@ -25,7 +24,6 @@ export const redoCvAction = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     const state = await redoCv(ctx.user, parsedInput.cvId);
     revalidatePath('/dashboard');
-    revalidatePath('/profile');
     return { ok: true as const, ...state };
   });
 

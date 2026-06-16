@@ -69,7 +69,6 @@ export const startVacancyTailor = authActionClient
     await setSelectedCv(ctx.user.id, cv.id);
 
     revalidatePath('/dashboard');
-    revalidatePath('/profile');
     revalidatePath('/vacancies');
     return { ok: true as const, cvId: cv.id };
   });

@@ -176,7 +176,6 @@ export const importTex = authActionClient.inputSchema(importTexSchema).action(as
   await renderAndUploadCv({ user: ctx.user, cvId: cv.id });
 
   revalidatePath('/dashboard');
-  revalidatePath('/profile');
 
   return { ok: true as const, counts, warnings: parsed.warnings, summaryUpdated: !!parsed.summary };
 });

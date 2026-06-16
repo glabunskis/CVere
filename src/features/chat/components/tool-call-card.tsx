@@ -1,10 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDownIcon, WrenchIcon } from 'lucide-react';
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ClockIcon,
+  LoaderIcon,
+  TriangleAlertIcon,
+} from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
-import { Badge } from '@/shared/ui/badge';
 
 import { TOOL_REGISTRY } from '../tools/tool-registry';
 
@@ -12,11 +17,80 @@ const REGISTRY_LABELS: Record<string, string> = Object.fromEntries(
   TOOL_REGISTRY.map((t) => [t.name, t.label]),
 );
 
+/** Gated behind NEXT_PUBLIC_TOOL_DEBUG. When off, cards are not expandable and
+ * raw tool I/O (arguments + result) is never shown to the user. */
+const TOOL_DEBUG = process.env.NEXT_PUBLIC_TOOL_DEBUG === 'true';
+
+/** Present-continuous / past-tense forms for the imperative verbs used in the
+ * tool registry labels, so the card reads as an activity ("Editing summary")
+ * rather than a tool name. */
+const PRESENT_TENSE: Record<string, string> = {
+  list: 'Listing',
+  create: 'Creating',
+  read: 'Reading',
+  rewrite: 'Rewriting',
+  edit: 'Editing',
+  add: 'Adding',
+  remove: 'Removing',
+  move: 'Moving',
+  set: 'Setting',
+  reset: 'Resetting',
+  integrate: 'Integrating',
+  dismiss: 'Dismissing',
+};
+
+const PAST_TENSE: Record<string, string> = {
+  list: 'Listed',
+  create: 'Created',
+  read: 'Read',
+  rewrite: 'Rewrote',
+  edit: 'Edited',
+  add: 'Added',
+  remove: 'Removed',
+  move: 'Moved',
+  set: 'Set',
+  reset: 'Reset',
+  integrate: 'Integrated',
+  dismiss: 'Dismissed',
+};
+
 function humanizeToolName(toolName: string): string {
   if (REGISTRY_LABELS[toolName]) return REGISTRY_LABELS[toolName];
   return toolName
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/^./, (c) => c.toUpperCase());
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/**
+ * Turns an imperative registry label ("Edit experience bullet") into an
+ * activity phrase that reflects the current state: present continuous while
+ * running ("Editing experience bullet"), past tense once done ("Edited
+ * experience bullet"), and an infinitive for the error / approval framing.
+ */
+function actionPhrase(toolName: string, state: ToolPartState): string {
+  const label = humanizeToolName(toolName);
+  const [verb, ...rest] = label.split(' ');
+  const verbKey = verb.toLowerCase();
+  const object = rest.join(' ');
+  const withObject = (head: string) => (object ? `${head} ${object}` : head);
+
+  switch (state) {
+    case 'input-streaming':
+    case 'input-available':
+      return withObject(PRESENT_TENSE[verbKey] ?? `${capitalize(verbKey)}ing`);
+    case 'output-available':
+      return withObject(PAST_TENSE[verbKey] ?? `${capitalize(verbKey)}ed`);
+    case 'output-error':
+      return withObject(`Couldn't ${verbKey}`);
+    case 'approval-requested':
+      return withObject(`Approve to ${verbKey}`);
+    default:
+      return label;
+  }
 }
 
 export type ToolPartState =
@@ -34,27 +108,36 @@ type Props = {
   errorText?: string;
 };
 
-function ToolStatusBadge({ state, errorText }: { state: ToolPartState; errorText?: string }) {
+function StatusIcon({ state }: { state: ToolPartState }) {
   switch (state) {
     case 'input-streaming':
     case 'input-available':
       return (
-        <Badge variant='outline' title='Working...'>
-          Working
-        </Badge>
+        <LoaderIcon
+          className='size-3 shrink-0 animate-spin text-muted-foreground'
+          aria-hidden='true'
+        />
       );
     case 'output-available':
-      return <Badge variant='success'>Done</Badge>;
+      return (
+        <CheckIcon
+          className='size-3 shrink-0 text-emerald-600 dark:text-emerald-400'
+          aria-hidden='true'
+        />
+      );
     case 'output-error':
       return (
-        <Badge variant='destructive' title={errorText}>
-          Error
-        </Badge>
+        <TriangleAlertIcon className='size-3 shrink-0 text-destructive' aria-hidden='true' />
       );
     case 'approval-requested':
-      return <Badge variant='warning'>Awaiting approval</Badge>;
+      return (
+        <ClockIcon
+          className='size-3 shrink-0 text-amber-600 dark:text-amber-400'
+          aria-hidden='true'
+        />
+      );
     default:
-      return <Badge variant='outline'>{state}</Badge>;
+      return null;
   }
 }
 
@@ -172,7 +255,26 @@ export function ToolCallCard({ toolName, state, input, output, errorText }: Prop
   const open = userOpen ?? shouldAutoOpen(state);
 
   const summary = summarize({ state, input, output, errorText });
-  const label = humanizeToolName(toolName);
+  const phrase = actionPhrase(toolName, state);
+  const isWorking = state === 'input-streaming' || state === 'input-available';
+
+  // Without debug enabled the card is a static, non-interactive activity line:
+  // no chevron, no click target, and the raw I/O panel is never rendered.
+  if (!TOOL_DEBUG) {
+    return (
+      <div className='flex items-center gap-2 rounded-md border bg-background/60 px-2 py-1.5 text-xs'>
+        <StatusIcon state={state} />
+        <span
+          className={cn('font-medium text-foreground', isWorking && 'text-muted-foreground')}
+        >
+          {phrase}
+        </span>
+        {summary ? (
+          <span className='min-w-0 flex-1 truncate text-muted-foreground'>{summary}</span>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className='rounded-md border bg-background/60 text-xs'>
@@ -182,14 +284,20 @@ export function ToolCallCard({ toolName, state, input, output, errorText }: Prop
         className='flex w-full items-center gap-2 px-2 py-1.5 text-left transition-colors hover:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
         aria-expanded={open}
       >
-        <WrenchIcon className='size-3 shrink-0 text-muted-foreground' />
-        <span className='font-medium text-foreground'>{label}</span>
+        <StatusIcon state={state} />
+        <span
+          className={cn(
+            'font-medium text-foreground',
+            isWorking && 'text-muted-foreground',
+          )}
+        >
+          {phrase}
+        </span>
         {summary ? (
           <span className='min-w-0 flex-1 truncate text-muted-foreground'>{summary}</span>
         ) : (
           <span className='flex-1' />
         )}
-        <ToolStatusBadge state={state} errorText={errorText} />
         <ChevronDownIcon
           className={cn(
             'size-3 shrink-0 text-muted-foreground transition-transform',

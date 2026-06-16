@@ -35,7 +35,6 @@ export const setSelectedCvAction = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     await setSelectedCv(ctx.user.id, parsedInput.cvId);
     revalidatePath('/dashboard');
-    revalidatePath('/profile');
     return { ok: true as const, cvId: parsedInput.cvId };
   });
 
@@ -44,7 +43,6 @@ export const renameCvAction = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     const row = await renameCv(ctx.user.id, parsedInput.cvId, parsedInput.title);
     revalidatePath('/dashboard');
-    revalidatePath('/profile');
     return { ok: true as const, cv: row };
   });
 
@@ -53,7 +51,6 @@ export const deleteCvAction = authActionClient
   .action(async ({ parsedInput, ctx }) => {
     await deleteCv(ctx.user.id, parsedInput.cvId);
     revalidatePath('/dashboard');
-    revalidatePath('/profile');
     return { ok: true as const };
   });
 
@@ -68,6 +65,5 @@ export const createCvAction = authActionClient
     });
     await setSelectedCv(ctx.user.id, row.id);
     revalidatePath('/dashboard');
-    revalidatePath('/profile');
     return { ok: true as const, cv: row };
   });

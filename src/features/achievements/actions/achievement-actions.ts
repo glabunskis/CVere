@@ -29,7 +29,6 @@ export const addAchievement = authActionClient
     });
     if (error) throw new Error(error.message);
 
-    revalidatePath('/achievements');
     revalidatePath('/dashboard');
     return { ok: true as const };
   });
@@ -38,7 +37,6 @@ export const dismissAchievement = authActionClient
   .inputSchema(dismissAchievementSchema)
   .action(async ({ parsedInput, ctx }) => {
     await dismissAchievementById({ user: ctx.user, achievementId: parsedInput.id });
-    revalidatePath('/achievements');
     revalidatePath('/dashboard');
     return { ok: true as const };
   });
@@ -53,8 +51,6 @@ export const integrateAchievement = authActionClient
     });
     await renderAndUploadCv({ user: ctx.user, cvId: result.cvId });
 
-    revalidatePath('/achievements');
-    revalidatePath('/profile');
     revalidatePath('/dashboard');
     return { ok: true as const, alreadyIntegrated: result.alreadyIntegrated };
   });

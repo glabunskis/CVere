@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import type { PropsWithChildren } from 'react';
 
-const APP_PREFIXES = ['/dashboard', '/profile', '/achievements', '/vacancies'];
+const APP_PREFIXES = ['/dashboard', '/vacancies'];
 
 export function HeaderGate({ children }: PropsWithChildren) {
   const pathname = usePathname();

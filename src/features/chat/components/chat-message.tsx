@@ -66,6 +66,11 @@ function ReasoningDisclosure({ text }: { text: string }) {
   );
 }
 
+function isRenderablePart(part: { type: string }): boolean {
+  if (part.type === 'text' || part.type === 'reasoning') return true;
+  return isToolPart(part);
+}
+
 export function ChatMessage({ message, isStreamingLastAssistant = false }: Props) {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
@@ -81,6 +86,18 @@ export function ChatMessage({ message, isStreamingLastAssistant = false }: Props
         break;
       }
     }
+  }
+
+  // While a turn is starting the assistant message can exist with only
+  // non-visible parts (e.g. a lone `step-start`), which would otherwise paint
+  // an empty bubble. Track whether there is anything to render so we can show
+  // a caret in its place while streaming, or skip the bubble entirely.
+  const hasRenderableContent = message.parts.some(isRenderablePart);
+  const showPlaceholderCaret =
+    isAssistant && isStreamingLastAssistant && !hasRenderableContent;
+
+  if (isAssistant && !hasRenderableContent && !showPlaceholderCaret) {
+    return null;
   }
 
   return (
@@ -112,6 +129,7 @@ export function ChatMessage({ message, isStreamingLastAssistant = false }: Props
             : 'rounded-tl-sm bg-muted text-fg-soft',
         )}
       >
+        {showPlaceholderCaret ? <StreamingText text='' showCaret /> : null}
         {message.parts.map((part, index) => {
           if (part.type === 'text') {
             return (

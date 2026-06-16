@@ -236,7 +236,6 @@ export const updateProfileSection = authActionClient
     await recordCvVersion({ user: ctx.user, cvId: cv.id, before, after, source: 'manual' });
     await renderAndUploadCv({ user: ctx.user, cvId: cv.id });
     revalidatePath('/dashboard');
-    revalidatePath('/profile');
     return { ok: true as const };
   });
 
@@ -301,6 +300,5 @@ export const deleteProfileChild = authActionClient
     await recordCvVersion({ user: ctx.user, cvId: cv.id, before, after, source: 'manual' });
     await renderAndUploadCv({ user: ctx.user, cvId: cv.id });
     revalidatePath('/dashboard');
-    revalidatePath('/profile');
     return { ok: true as const };
   });

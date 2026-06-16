@@ -40,7 +40,6 @@ async function commit({
   await recordCvVersion({ user, cvId, before, after, source: 'manual' });
   await renderAndUploadCv({ user, cvId });
   revalidatePath('/dashboard');
-  revalidatePath('/profile');
 }
 
 export const quickAddSkill = authActionClient

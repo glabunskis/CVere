@@ -51,6 +51,5 @@ export const updateCvStyle = authActionClient
     await renderAndUploadCv({ user: ctx.user, cvId: selectedCv.id });
 
     revalidatePath('/dashboard');
-    revalidatePath('/profile');
     return { ok: true as const };
   });

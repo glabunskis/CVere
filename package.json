@@ -46,6 +46,7 @@
     "react-dom": "^19.2.5",
     "react-email": "^5.2.10",
     "react-hook-form": "^7.72.1",
+    "react-pdf": "^10.4.1",
     "react-resizable-panels": "^4.11.2",
     "resend": "^6.10.0",
     "resumable-stream": "^2.2.12",

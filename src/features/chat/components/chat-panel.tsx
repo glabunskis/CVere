@@ -354,7 +354,7 @@ export function ChatPanel({
   }
 
   return (
-    <div className='flex h-full min-h-0'>
+    <div className='relative flex h-full min-h-0'>
       <SessionRail
         sessions={sessionList}
         activeSessionId={activeSessionId}
@@ -372,13 +372,14 @@ export function ChatPanel({
           </span>
           <Button
             type='button'
-            size='icon-xs'
-            variant='ghost'
+            size='sm'
+            className='shadow-[0_0_0_4px_var(--primary-soft)]'
             onClick={() => createSession({})}
             disabled={creatingSession}
             aria-label='New chat'
           >
             <PlusIcon />
+            New Chat
           </Button>
           {onCollapse && (
             <Button

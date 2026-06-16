@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 import {
   MessageSquareIcon,
-  MoreHorizontalIcon,
   PanelLeftIcon,
   PencilIcon,
   Trash2Icon,
@@ -26,12 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu';
 import { Input } from '@/shared/ui/input';
 
 import type { ChatSessionListItem } from '../types';
@@ -115,10 +108,23 @@ export function SessionRail({
 
   return (
     <>
+      {/* Keep the collapsed rail's footprint in the flex layout while the real
+          rail overlays (and dims) the chat when expanded. */}
+      <div className='w-12 shrink-0' aria-hidden />
+
+      {!collapsed ? (
+        <button
+          type='button'
+          aria-label='Collapse chat list'
+          onClick={() => setCollapsed(true)}
+          className='absolute inset-0 z-20 cursor-default bg-foreground/20 dark:bg-black/50 motion-safe:animate-in motion-safe:fade-in motion-reduce:transition-none'
+        />
+      ) : null}
+
       <aside
         className={cn(
-          'flex h-full shrink-0 flex-col border-r bg-card-2 transition-[width] motion-reduce:transition-none',
-          collapsed ? 'w-12' : 'w-[188px]',
+          'absolute inset-y-0 left-0 z-30 flex h-full flex-col border-r bg-card-2 transition-[width] motion-reduce:transition-none',
+          collapsed ? 'w-12' : 'w-[320px] shadow-2xl',
         )}
       >
         <div className='flex h-[52px] shrink-0 items-center justify-between gap-1 border-b border-border bg-card-2 px-3'>
@@ -163,45 +169,36 @@ export function SessionRail({
                   onClick={() => openSession(session.id)}
                   className='min-w-0 flex-1 rounded-sm px-1 py-1 text-left'
                 >
-                  <p className='truncate text-sm font-medium text-foreground'>{session.title}</p>
+                  <p title={session.title} className='truncate text-sm font-medium text-foreground'>{session.title}</p>
                   <p className='truncate text-[11px] text-muted-foreground'>
                     {hasMounted ? formatRelativeTime(session.lastMessageAt) : '\u00A0'}
                   </p>
                 </button>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        type='button'
-                        size='icon-xs'
-                        variant='ghost'
-                        className='opacity-70 group-hover:opacity-100'
-                      />
-                    }
-                    aria-label={`Session actions for ${session.title}`}
+                <div className='flex items-center gap-0.5 opacity-70 group-hover:opacity-100'>
+                  <Button
+                    type='button'
+                    size='icon-xs'
+                    variant='ghost'
+                    aria-label={`Rename ${session.title}`}
+                    onClick={() => {
+                      setPendingRename(session);
+                      setRenameTitle(session.title);
+                    }}
                   >
-                    <MoreHorizontalIcon />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align='end' className='w-40'>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setPendingRename(session);
-                        setRenameTitle(session.title);
-                      }}
-                    >
-                      <PencilIcon />
-                      Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      variant='destructive'
-                      onClick={() => setPendingDelete(session)}
-                    >
-                      <Trash2Icon />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <PencilIcon />
+                  </Button>
+                  <Button
+                    type='button'
+                    size='icon-xs'
+                    variant='ghost'
+                    aria-label={`Delete ${session.title}`}
+                    className='text-muted-foreground hover:text-destructive'
+                    onClick={() => setPendingDelete(session)}
+                  >
+                    <Trash2Icon />
+                  </Button>
+                </div>
               </div>
             ),
           )}

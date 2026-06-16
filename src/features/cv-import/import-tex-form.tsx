@@ -14,6 +14,9 @@ type Mode = 'append' | 'replace';
 
 const MAX_FILE_BYTES = 500_000;
 
+const SELECTED_MODE_CLASS =
+  'data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary data-[state=on]:hover:text-primary-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary aria-pressed:hover:text-primary-foreground';
+
 export function ImportTexForm() {
   const [mode, setMode] = useState<Mode>('append');
   const [pickedNames, setPickedNames] = useState<string[]>([]);
@@ -127,6 +130,7 @@ export function ImportTexForm() {
             pressed={mode === 'append'}
             onPressedChange={(next) => { if (next) setMode('append'); }}
             disabled={disabled}
+            className={SELECTED_MODE_CLASS}
           >
             Append
           </ToggleGroupItem>
@@ -134,6 +138,7 @@ export function ImportTexForm() {
             pressed={mode === 'replace'}
             onPressedChange={(next) => { if (next) setMode('replace'); }}
             disabled={disabled}
+            className={SELECTED_MODE_CLASS}
           >
             Replace
           </ToggleGroupItem>
