@@ -365,7 +365,7 @@ export function ChatPanel({
         onDeleted={handleDeleted}
       />
 
-      <div className='flex min-w-0 flex-1 flex-col'>
+      <div className='@container/chat flex min-w-0 flex-1 flex-col'>
         <div className='flex h-[52px] shrink-0 items-center gap-2 border-b border-border bg-card px-4'>
           <span className='min-w-0 flex-1 truncate text-sm font-medium text-foreground'>
             {sessionList.find((s) => s.id === activeSessionId)?.title ?? 'Chat'}
@@ -379,7 +379,9 @@ export function ChatPanel({
             aria-label='New chat'
           >
             <PlusIcon />
-            New Chat
+            <span className='-ml-1 grid min-w-0 grid-cols-[0fr] opacity-0 transition-[grid-template-columns,opacity,margin] duration-200 ease-out @min-[18rem]/chat:ml-0 @min-[18rem]/chat:grid-cols-[1fr] @min-[18rem]/chat:opacity-100'>
+              <span className='min-w-0 overflow-hidden whitespace-nowrap'>New Chat</span>
+            </span>
           </Button>
           {onCollapse && (
             <Button

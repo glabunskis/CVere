@@ -63,8 +63,14 @@ const RAIL_SIZE = '56px';
 // noticeably closer to the edge. Raise the min to widen the floor (which also
 // pushes the collapse point further from the edge, since the library uses the
 // midpoint); lower it to let the panel get narrower and collapse nearer the edge.
-const CHAT_MIN_WIDTH = '320px';
-const CONTROL_MIN_WIDTH = '340px';
+//
+// These are tuned to the tightest width at which every element stays
+// comfortable. Both side panels degrade to icon-only controls below a
+// container-query threshold (the chat's "New Chat" label and the control
+// panel's tab labels reveal once the panel is wider), so they floor low
+// without clipping. The chat floor still leaves room for the 48px session rail.
+const CHAT_MIN_WIDTH = '264px';
+const CONTROL_MIN_WIDTH = '264px';
 const PREVIEW_MIN_WIDTH = '360px';
 
 const CONTROL_TABS = [
@@ -203,7 +209,7 @@ export function DashboardWorkspace({
         collapsible
         collapsedSize={RAIL_SIZE}
         minSize={CHAT_MIN_WIDTH}
-        defaultSize={26}
+        defaultSize={24}
         onResize={(size) => {
           const collapsed = size.inPixels <= 60;
           setChatCollapsed(collapsed);
@@ -305,7 +311,7 @@ export function DashboardWorkspace({
 
       <ResizableHandle />
 
-      <ResizablePanel id='preview' minSize={PREVIEW_MIN_WIDTH} defaultSize={44}>
+      <ResizablePanel id='preview' minSize={PREVIEW_MIN_WIDTH} defaultSize={52}>
         <PreviewerPane
           selectedCvTitle={cvLibrary.items.find((item) => item.id === selectedCvId)?.title}
         />
@@ -320,7 +326,7 @@ export function DashboardWorkspace({
         collapsible
         collapsedSize={RAIL_SIZE}
         minSize={CONTROL_MIN_WIDTH}
-        defaultSize={30}
+        defaultSize={24}
         onResize={(size) => {
           const collapsed = size.inPixels <= 60;
           setControlCollapsed(collapsed);

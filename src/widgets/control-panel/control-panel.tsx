@@ -1,6 +1,12 @@
 'use client';
 
-import { PanelRightIcon } from 'lucide-react';
+import {
+  BookOpenIcon,
+  PaletteIcon,
+  PanelRightIcon,
+  PenIcon,
+  TrophyIcon,
+} from 'lucide-react';
 import type React from 'react';
 
 import type { AchievementRow } from '@/entities/achievement';
@@ -39,6 +45,13 @@ type Props = {
   onCollapse?: () => void;
 };
 
+// Crossfades a tab label in/out as the panel crosses the ~22rem container-query
+// threshold: opacity fades while the grid column tweens 0fr->1fr (width) and the
+// negative margin absorbs the icon gap when collapsed, so the swap is animated
+// rather than an instant show/hide.
+const TAB_LABEL_REVEAL =
+  '-ml-1.5 grid min-w-0 grid-cols-[0fr] opacity-0 transition-[grid-template-columns,opacity,margin] duration-200 ease-out @min-[22rem]/control:ml-0 @min-[22rem]/control:grid-cols-[1fr] @min-[22rem]/control:opacity-100';
+
 export function ControlPanel({
   template,
   accentHex,
@@ -58,17 +71,37 @@ export function ControlPanel({
   onCollapse,
 }: Props) {
   return (
-    <aside className='flex h-full min-h-0 flex-col overflow-hidden bg-card'>
+    <aside className='@container/control flex h-full min-h-0 flex-col overflow-hidden bg-card'>
       <Tabs value={activeTab} onValueChange={onTabChange} className='flex h-full min-h-0 flex-col gap-0'>
         <div className='flex h-[52px] shrink-0 items-center gap-1 border-b border-border bg-card px-2'>
           <TabsList
             className='min-w-0 flex-1 [&_[data-slot=tabs-trigger]]:after:bg-primary [&_[data-slot=tabs-trigger][data-active]]:text-foreground'
             variant='line'
           >
-            <TabsTrigger value='library'>Library</TabsTrigger>
-            <TabsTrigger value='editor'>CV editor</TabsTrigger>
-            <TabsTrigger value='style'>Style</TabsTrigger>
-            <TabsTrigger value='capture'>Achievements</TabsTrigger>
+            <TabsTrigger value='library' title='Library' aria-label='Library'>
+              <BookOpenIcon className='shrink-0' strokeWidth={2} />
+              <span className={TAB_LABEL_REVEAL}>
+                <span className='min-w-0 overflow-hidden whitespace-nowrap'>Library</span>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value='editor' title='CV editor' aria-label='CV editor'>
+              <PenIcon className='shrink-0' strokeWidth={2} />
+              <span className={TAB_LABEL_REVEAL}>
+                <span className='min-w-0 overflow-hidden whitespace-nowrap'>CV editor</span>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value='style' title='Style' aria-label='Style'>
+              <PaletteIcon className='shrink-0' strokeWidth={2} />
+              <span className={TAB_LABEL_REVEAL}>
+                <span className='min-w-0 overflow-hidden whitespace-nowrap'>Style</span>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value='capture' title='Achievements' aria-label='Achievements'>
+              <TrophyIcon className='shrink-0' strokeWidth={2} />
+              <span className={TAB_LABEL_REVEAL}>
+                <span className='min-w-0 overflow-hidden whitespace-nowrap'>Achievements</span>
+              </span>
+            </TabsTrigger>
           </TabsList>
           {onCollapse && (
             <Button
