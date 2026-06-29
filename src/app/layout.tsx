@@ -6,6 +6,7 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { APP_DESCRIPTION, APP_DISPLAY_NAME } from '@/shared/config';
 import { Logo } from '@/shared/ui/logo';
 import { Toaster } from '@/shared/ui/sonner';
+import { MotionProvider } from '@/shared/ui/motion-provider';
 import { ThemeProvider } from '@/shared/ui/theme-provider';
 import { TooltipProvider } from '@/shared/ui/tooltip';
 import { Analytics } from '@vercel/analytics/react';
@@ -39,19 +40,21 @@ export default function RootLayout({ children }: PropsWithChildren) {
     >
       <body className='flex h-dvh flex-col'>
         <ThemeProvider attribute='class' defaultTheme='dark' enableSystem={false} disableTransitionOnChange>
-          <NuqsAdapter>
-            <TooltipProvider>
-              <div className='flex h-full w-full flex-col'>
-                <HeaderGate>
-                  <AppBar />
-                </HeaderGate>
-                <main className='relative flex min-h-0 flex-1 flex-col overflow-y-auto'>{children}</main>
-                <Footer />
-              </div>
-            </TooltipProvider>
-            <Toaster />
-            <Analytics />
-          </NuqsAdapter>
+          <MotionProvider>
+            <NuqsAdapter>
+              <TooltipProvider>
+                <div className='flex h-full w-full flex-col'>
+                  <HeaderGate>
+                    <AppBar />
+                  </HeaderGate>
+                  <main className='relative flex min-h-0 flex-1 flex-col overflow-y-auto'>{children}</main>
+                  <Footer />
+                </div>
+              </TooltipProvider>
+              <Toaster />
+              <Analytics />
+            </NuqsAdapter>
+          </MotionProvider>
         </ThemeProvider>
       </body>
     </html>

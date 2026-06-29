@@ -14,6 +14,7 @@ import type { CvTemplate } from '@/features/cv-style';
 import { TemplatePicker } from '@/features/cv-style';
 import { FactEditor } from '@/features/profile-editor/components/fact-editor';
 import type { CvDateFormat } from '@/shared/lib/format-date';
+import { motion, tweenFast } from '@/shared/lib/motion';
 import { Button } from '@/shared/ui/button';
 import { ScrollArea } from '@/shared/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
@@ -83,80 +84,108 @@ export function ControlPanel({
         </div>
 
         <TabsContent value='library' keepMounted className='min-h-0 flex-1'>
-          <ScrollArea className='h-full'>
-            <div className='flex flex-col gap-4 p-4'>
-              <Section title='CV library'>
-                <CvLibraryPanel library={cvLibrary} />
-              </Section>
+          <motion.div
+            className='h-full'
+            initial={false}
+            animate={activeTab === 'library' ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
+            transition={tweenFast}
+          >
+            <ScrollArea className='h-full'>
+              <div className='flex flex-col gap-4 p-4'>
+                <Section title='CV library'>
+                  <CvLibraryPanel library={cvLibrary} />
+                </Section>
 
-              <Section title='Import'>
-                <ImportTexForm />
-              </Section>
-            </div>
-          </ScrollArea>
+                <Section title='Import'>
+                  <ImportTexForm />
+                </Section>
+              </div>
+            </ScrollArea>
+          </motion.div>
         </TabsContent>
 
         <TabsContent value='editor' keepMounted className='min-h-0 flex-1'>
-          <ScrollArea className='h-full'>
-            <div className='p-4'>
-              <FactEditor
-                // Remount the editor whenever the underlying CV data actually
-                // changes (chat edit, undo/redo, switching CV) so the field
-                // editors that seed local state from props (summary, contact)
-                // pick up fresh values. Manual in-editor saves don't change
-                // these props (no `router.refresh()`), so they never trigger a
-                // remount and can't clobber other unsaved fields.
-                key={JSON.stringify({ summary, contact, sections })}
-                summary={summary}
-                contact={contact}
-                fallbackEmail={fallbackEmail}
-                fallbackFullName={fallbackFullName}
-                sections={sections}
-                skillCategories={skillCategories}
-                educationDateFormat={educationDateFormat}
-                certificationDateFormat={certificationDateFormat}
-                experienceDateFormat={experienceDateFormat}
-              />
-            </div>
-          </ScrollArea>
+          <motion.div
+            className='h-full'
+            initial={false}
+            animate={activeTab === 'editor' ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
+            transition={tweenFast}
+          >
+            <ScrollArea className='h-full'>
+              <div className='p-4'>
+                <FactEditor
+                  // Remount the editor whenever the underlying CV data actually
+                  // changes (chat edit, undo/redo, switching CV) so the field
+                  // editors that seed local state from props (summary, contact)
+                  // pick up fresh values. Manual in-editor saves don't change
+                  // these props (no `router.refresh()`), so they never trigger a
+                  // remount and can't clobber other unsaved fields.
+                  key={JSON.stringify({ summary, contact, sections })}
+                  summary={summary}
+                  contact={contact}
+                  fallbackEmail={fallbackEmail}
+                  fallbackFullName={fallbackFullName}
+                  sections={sections}
+                  skillCategories={skillCategories}
+                  educationDateFormat={educationDateFormat}
+                  certificationDateFormat={certificationDateFormat}
+                  experienceDateFormat={experienceDateFormat}
+                />
+              </div>
+            </ScrollArea>
+          </motion.div>
         </TabsContent>
 
         <TabsContent value='style' keepMounted className='min-h-0 flex-1'>
-          <ScrollArea className='h-full'>
-            <div className='p-4'>
-              <TemplatePicker
-                template={template}
-                accentHex={accentHex}
-                educationDateFormat={educationDateFormat}
-                certificationDateFormat={certificationDateFormat}
-                experienceDateFormat={experienceDateFormat}
-              />
-            </div>
-          </ScrollArea>
+          <motion.div
+            className='h-full'
+            initial={false}
+            animate={activeTab === 'style' ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
+            transition={tweenFast}
+          >
+            <ScrollArea className='h-full'>
+              <div className='p-4'>
+                <TemplatePicker
+                  template={template}
+                  accentHex={accentHex}
+                  educationDateFormat={educationDateFormat}
+                  certificationDateFormat={certificationDateFormat}
+                  experienceDateFormat={experienceDateFormat}
+                />
+              </div>
+            </ScrollArea>
+          </motion.div>
         </TabsContent>
 
         <TabsContent value='capture' keepMounted className='min-h-0 flex-1'>
-          <ScrollArea className='h-full'>
-            <div className='flex flex-col gap-4 p-4'>
-              <Section title='Capture an achievement'>
-                <AddAchievementForm />
-              </Section>
+          <motion.div
+            className='h-full'
+            initial={false}
+            animate={activeTab === 'capture' ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
+            transition={tweenFast}
+          >
+            <ScrollArea className='h-full'>
+              <div className='flex flex-col gap-4 p-4'>
+                <Section title='Capture an achievement'>
+                  <AddAchievementForm />
+                </Section>
 
-              <Section title='Achievements'>
-                {achievements.length === 0 ? (
-                  <p className='py-6 text-center text-sm text-muted-foreground'>
-                    No pending achievements. Capture a win above.
-                  </p>
-                ) : (
-                  <div className='flex flex-col gap-3'>
-                    {achievements.map((row) => (
-                      <AchievementCard key={row.id} row={row} />
-                    ))}
-                  </div>
-                )}
-              </Section>
-            </div>
-          </ScrollArea>
+                <Section title='Achievements'>
+                  {achievements.length === 0 ? (
+                    <p className='py-6 text-center text-sm text-muted-foreground'>
+                      No pending achievements. Capture a win above.
+                    </p>
+                  ) : (
+                    <div className='flex flex-col gap-3'>
+                      {achievements.map((row) => (
+                        <AchievementCard key={row.id} row={row} />
+                      ))}
+                    </div>
+                  )}
+                </Section>
+              </div>
+            </ScrollArea>
+          </motion.div>
         </TabsContent>
       </Tabs>
     </aside>
