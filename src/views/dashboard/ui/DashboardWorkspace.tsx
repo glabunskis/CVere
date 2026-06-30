@@ -24,13 +24,7 @@ import type { CvTemplate } from '@/features/cv-style';
 import { cn } from '@/shared/lib/cn';
 import { jsonToStringArray } from '@/shared/lib/cv-json';
 import type { CvDateFormat } from '@/shared/lib/format-date';
-import {
-  AnimatePresence,
-  listContainer,
-  listItem,
-  motion,
-  MotionConfig,
-} from '@/shared/lib/motion';
+import { AnimatePresence, motion, MotionConfig, type Variants } from '@/shared/lib/motion';
 import { Button } from '@/shared/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/shared/ui/resizable';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip';
@@ -72,6 +66,22 @@ const RAIL_SIZE = '56px';
 const CHAT_MIN_WIDTH = '264px';
 const CONTROL_MIN_WIDTH = '264px';
 const PREVIEW_MIN_WIDTH = '360px';
+
+// Faster local variants for the collapsed icon rail (snappier than the shared
+// list presets): tight stagger and a quick item fade/slide.
+const railContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.025, when: 'beforeChildren' },
+  },
+};
+
+const railItem: Variants = {
+  hidden: { opacity: 0, y: 6 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.08, ease: 'easeOut' } },
+  exit: { opacity: 0, y: 6, transition: { duration: 0.08, ease: 'easeOut' } },
+};
 
 const CONTROL_TABS = [
   { value: 'library', icon: BookOpenIcon, label: 'Library' },
@@ -120,9 +130,11 @@ export function DashboardWorkspace({
   const [controlContentVisible, setControlContentVisible] = useState(true);
 
   // Width tween duration (ms). Kept in sync with the CSS duration below.
-  const PANEL_ANIM_MS = 400;
-  // Content fade duration (ms). Kept in sync with the Motion transition below.
-  const FADE_MS = 150;
+  const PANEL_ANIM_MS = 200;
+  // Content fade duration (ms). Drives every fade transition below (content
+  // fade + collapsed-rail icon fade-out). Kept well under PANEL_ANIM_MS so the
+  // fade-out no longer dominates the collapse and gates the icon reveal.
+  const FADE_MS = 50;
 
   const setAnimating = (value: boolean) => {
     animatingRef.current = value;
@@ -199,7 +211,7 @@ export function DashboardWorkspace({
       className={cn(
         'min-h-0',
         animatingPanels &&
-          '[&_[data-panel]]:transition-[flex-grow] [&_[data-panel]]:duration-[400ms] [&_[data-panel]]:ease-[cubic-bezier(0.16,1,0.3,1)]',
+          '[&_[data-panel]]:transition-[flex-grow] [&_[data-panel]]:duration-[200ms] [&_[data-panel]]:ease-[cubic-bezier(0.16,1,0.3,1)]',
       )}
     >
       {/* Chat panel — collapses to a ~56px icon rail */}
@@ -221,13 +233,13 @@ export function DashboardWorkspace({
             {chatCollapsed && (
               <motion.div
                 key='chat-rail'
-                className='absolute inset-0 z-10 flex flex-col items-center gap-1 bg-card py-2'
-                variants={listContainer}
+                className='absolute inset-y-0 left-0 z-10 flex w-14 flex-col items-center gap-1 bg-card py-2'
+                variants={railContainer}
                 initial='hidden'
                 animate='visible'
-                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                exit={{ opacity: 0, transition: { duration: FADE_MS / 1000 } }}
               >
-                <motion.div variants={listItem}>
+                <motion.div variants={railItem}>
                   <Tooltip>
                     <TooltipTrigger
                       render={
@@ -246,7 +258,7 @@ export function DashboardWorkspace({
                   </Tooltip>
                 </motion.div>
 
-                <motion.div variants={listItem}>
+                <motion.div variants={railItem}>
                   <Tooltip>
                     <TooltipTrigger
                       render={
@@ -265,7 +277,7 @@ export function DashboardWorkspace({
                   </Tooltip>
                 </motion.div>
 
-                <motion.div variants={listItem}>
+                <motion.div variants={railItem}>
                   <Tooltip>
                     <TooltipTrigger
                       render={
@@ -338,13 +350,13 @@ export function DashboardWorkspace({
             {controlCollapsed && (
               <motion.div
                 key='control-rail'
-                className='absolute inset-0 z-10 flex flex-col items-center gap-1 bg-card py-2'
-                variants={listContainer}
+                className='absolute inset-y-0 right-0 z-10 flex w-14 flex-col items-center gap-1 bg-card py-2'
+                variants={railContainer}
                 initial='hidden'
                 animate='visible'
-                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                exit={{ opacity: 0, transition: { duration: FADE_MS / 1000 } }}
               >
-                <motion.div variants={listItem}>
+                <motion.div variants={railItem}>
                   <Tooltip>
                     <TooltipTrigger
                       render={
@@ -366,7 +378,7 @@ export function DashboardWorkspace({
                 <div className='my-1 w-6 border-t border-border' />
 
                 {CONTROL_TABS.map(({ value, icon: Icon, label }) => (
-                  <motion.div key={value} variants={listItem}>
+                  <motion.div key={value} variants={railItem}>
                     <Tooltip>
                       <TooltipTrigger
                         render={
