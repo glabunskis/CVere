@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import type { EducationRow } from '@/entities/cv';
 import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/shared/lib/format-date';
+import { AnimatePresence, collapse, fadeIn, motion } from '@/shared/lib/motion';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -35,53 +36,78 @@ export function EducationEditor({ items, readOnly = false, dateFormat = DEFAULT_
         ) : null
       }
     >
-      {draft.kind === 'creating' ? (
-        <EducationForm
-          initial={{
-            position: items.length,
-            institution: '',
-            degree: '',
-            field: '',
-            startDate: '',
-            endDate: '',
-            summary: '',
-          }}
-          onCancel={() => setDraft({ kind: 'idle' })}
-          onSaved={() => setDraft({ kind: 'idle' })}
-        />
-      ) : null}
+      <AnimatePresence initial={false}>
+        {draft.kind === 'creating' ? (
+          <motion.div
+            key='create'
+            className='overflow-hidden'
+            variants={collapse}
+            initial='hidden'
+            animate='visible'
+            exit='exit'
+          >
+            <EducationForm
+              initial={{
+                position: items.length,
+                institution: '',
+                degree: '',
+                field: '',
+                startDate: '',
+                endDate: '',
+                summary: '',
+              }}
+              onCancel={() => setDraft({ kind: 'idle' })}
+              onSaved={() => setDraft({ kind: 'idle' })}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {items.length === 0 && draft.kind === 'idle' ? (
         <p className='text-sm text-muted-foreground'>No education yet.</p>
       ) : null}
 
-      {items.map((item) =>
-        draft.kind === 'editing' && draft.id === item.id ? (
-          <EducationForm
-            key={item.id}
-            initial={{
-              id: item.id,
-              position: item.position,
-              institution: item.institution,
-              degree: item.degree ?? '',
-              field: item.field ?? '',
-              startDate: item.start_date ?? '',
-              endDate: item.end_date ?? '',
-              summary: item.summary ?? '',
-            }}
-            onCancel={() => setDraft({ kind: 'idle' })}
-            onSaved={() => setDraft({ kind: 'idle' })}
-          />
-        ) : (
-          <EducationCard
-            key={item.id}
-            row={item}
-            readOnly={readOnly}
-            dateFormat={dateFormat}
-            onEdit={() => setDraft({ kind: 'editing', id: item.id })}
-          />
-        ),
-      )}
+      {items.map((item) => {
+        const isEditing = draft.kind === 'editing' && draft.id === item.id;
+        return (
+          <AnimatePresence key={item.id} mode='wait' initial={false}>
+            {isEditing ? (
+              <motion.div
+                key='edit'
+                className='overflow-hidden'
+                variants={collapse}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+              >
+                <EducationForm
+                  initial={{
+                    id: item.id,
+                    position: item.position,
+                    institution: item.institution,
+                    degree: item.degree ?? '',
+                    field: item.field ?? '',
+                    startDate: item.start_date ?? '',
+                    endDate: item.end_date ?? '',
+                    summary: item.summary ?? '',
+                  }}
+                  onCancel={() => setDraft({ kind: 'idle' })}
+                  onSaved={() => setDraft({ kind: 'idle' })}
+                />
+              </motion.div>
+            ) : (
+              <motion.div key='card' variants={fadeIn} initial='hidden' animate='visible' exit='exit'>
+                <EducationCard
+                  row={item}
+                  readOnly={readOnly}
+                  dateFormat={dateFormat}
+                  onEdit={() => setDraft({ kind: 'editing', id: item.id })}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        );
+      })}
     </SectionShell>
   );
 }

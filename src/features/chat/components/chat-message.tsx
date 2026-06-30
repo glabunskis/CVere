@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ChevronDownIcon, SparklesIcon } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
+import { fadeSlideUp, motion } from '@/shared/lib/motion';
 
 import type { ChatUIMessage } from '../types';
 
@@ -101,7 +102,11 @@ export function ChatMessage({ message, isStreamingLastAssistant = false }: Props
   }
 
   return (
-    <div
+    <motion.div
+      variants={fadeSlideUp}
+      initial='hidden'
+      animate='visible'
+      exit='exit'
       className={cn(
         'flex flex-col gap-1.5',
         isUser ? 'items-end' : 'items-start',
@@ -179,6 +184,6 @@ export function ChatMessage({ message, isStreamingLastAssistant = false }: Props
           return null;
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }

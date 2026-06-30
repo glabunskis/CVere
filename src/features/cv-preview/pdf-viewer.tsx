@@ -43,12 +43,11 @@ export function PdfViewer({ url, zoom, onZoomDelta }: Props) {
   // `devicePixelRatio` we pass, and the browser then downscales the canvas to
   // this real ratio. To avoid fractional downscaling (which makes pdf.js render
   // gaps between glyphs), the value we pass must be a whole-number multiple of
-  // this. Default 2 covers the common HiDPI case before hydration.
-  const [deviceRatio, setDeviceRatio] = useState(2);
-
-  useEffect(() => {
-    setDeviceRatio(window.devicePixelRatio || 1);
-  }, []);
+  // this. Default 2 covers the common HiDPI case during SSR; the canvas is only
+  // rasterized client-side after load, so reading the real ratio here is safe.
+  const [deviceRatio] = useState(() =>
+    typeof window === 'undefined' ? 2 : window.devicePixelRatio || 1,
+  );
 
   // The actual scrolling element is the ScrollArea Viewport. We reach it from
   // the content node to measure the fit-to-width target and to attach a

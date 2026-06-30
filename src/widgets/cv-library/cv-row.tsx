@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/shared/lib/cn';
+import { listItem, motion } from '@/shared/lib/motion';
 import { useHasMounted } from '@/shared/lib/use-has-mounted';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
@@ -24,7 +25,9 @@ function formatUpdatedAt(value: string | null | undefined): string {
 export function CvRow({ title, meta, updatedAt, isActive, onOpen, actions }: CvRowProps) {
   const hasMounted = useHasMounted();
   return (
-    <div
+    <motion.div
+      layout
+      variants={listItem}
       className={cn(
         'flex items-start gap-2 rounded-md border border-transparent px-2 py-2 transition-colors duration-150',
         isActive
@@ -57,6 +60,6 @@ export function CvRow({ title, meta, updatedAt, isActive, onOpen, actions }: CvR
         </Button>
         {actions}
       </div>
-    </div>
+    </motion.div>
   );
 }

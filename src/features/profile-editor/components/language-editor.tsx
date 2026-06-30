@@ -5,6 +5,7 @@ import { useAction } from 'next-safe-action/hooks';
 import { toast } from 'sonner';
 
 import type { LanguageRow } from '@/entities/cv';
+import { AnimatePresence, collapse, fadeIn, motion } from '@/shared/lib/motion';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -48,13 +49,24 @@ export function LanguageEditor({ items, readOnly = false }: Props) {
         ) : null
       }
     >
-      {adding ? (
-        <LanguageForm
-          initial={{ position: items.length, name: '', proficiency: null }}
-          onCancel={() => setAdding(false)}
-          onSaved={() => setAdding(false)}
-        />
-      ) : null}
+      <AnimatePresence initial={false}>
+        {adding ? (
+          <motion.div
+            key='create'
+            className='overflow-hidden'
+            variants={collapse}
+            initial='hidden'
+            animate='visible'
+            exit='exit'
+          >
+            <LanguageForm
+              initial={{ position: items.length, name: '', proficiency: null }}
+              onCancel={() => setAdding(false)}
+              onSaved={() => setAdding(false)}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {items.length === 0 && !adding ? <p className='text-sm text-muted-foreground'>No languages yet.</p> : null}
 
@@ -77,40 +89,56 @@ function LanguageRowItem({ row, readOnly }: { row: LanguageRow; readOnly: boolea
     onError: ({ error }) => toast.error(error.serverError ?? 'Failed to delete'),
   });
 
-  if (editing) {
-    return (
-      <li>
-        <LanguageForm
-          initial={{ id: row.id, position: row.position, name: row.name, proficiency: row.proficiency ?? null }}
-          onCancel={() => setEditing(false)}
-          onSaved={() => setEditing(false)}
-        />
-      </li>
-    );
-  }
-
   return (
-    <li className='flex items-start justify-between gap-2 rounded-lg border p-3'>
-      <div>
-        <p className='text-sm font-medium'>{row.name}</p>
-        <p className='text-xs text-muted-foreground'>{row.proficiency ?? '[MISSING]'}</p>
-      </div>
-      {!readOnly ? (
-        <div className='flex gap-1'>
-          <Button size='xs' variant='outline' onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-          <Button
-            size='xs'
-            variant='ghost'
-            className='hover:bg-destructive/10 hover:text-destructive'
-            disabled={deleting}
-            onClick={() => del({ section: 'language', id: row.id })}
+    <li>
+      <AnimatePresence mode='wait' initial={false}>
+        {editing ? (
+          <motion.div
+            key='edit'
+            className='overflow-hidden'
+            variants={collapse}
+            initial='hidden'
+            animate='visible'
+            exit='exit'
           >
-            Delete
-          </Button>
-        </div>
-      ) : null}
+            <LanguageForm
+              initial={{ id: row.id, position: row.position, name: row.name, proficiency: row.proficiency ?? null }}
+              onCancel={() => setEditing(false)}
+              onSaved={() => setEditing(false)}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key='card'
+            className='flex items-start justify-between gap-2 rounded-lg border p-3'
+            variants={fadeIn}
+            initial='hidden'
+            animate='visible'
+            exit='exit'
+          >
+            <div>
+              <p className='text-sm font-medium'>{row.name}</p>
+              <p className='text-xs text-muted-foreground'>{row.proficiency ?? '[MISSING]'}</p>
+            </div>
+            {!readOnly ? (
+              <div className='flex gap-1'>
+                <Button size='xs' variant='outline' onClick={() => setEditing(true)}>
+                  Edit
+                </Button>
+                <Button
+                  size='xs'
+                  variant='ghost'
+                  className='hover:bg-destructive/10 hover:text-destructive'
+                  disabled={deleting}
+                  onClick={() => del({ section: 'language', id: row.id })}
+                >
+                  Delete
+                </Button>
+              </div>
+            ) : null}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </li>
   );
 }

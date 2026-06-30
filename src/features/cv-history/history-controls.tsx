@@ -7,6 +7,7 @@ import { Redo2, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { usePreviewStore } from '@/features/cv-preview/preview-store';
+import { motion, tweenFast } from '@/shared/lib/motion';
 import { Button } from '@/shared/ui/button';
 
 import {
@@ -98,30 +99,34 @@ export function HistoryControls() {
 
   return (
     <div className='flex items-center gap-1'>
-      <Button
-        size='sm'
-        variant='outline'
-        aria-label='Undo'
-        title='Undo (Ctrl+Z)'
-        disabled={!cvId || !canUndo || undoing}
-        onClick={() => {
-          if (cvId) undo({ cvId });
-        }}
-      >
-        <Undo2 className='size-4' />
-      </Button>
-      <Button
-        size='sm'
-        variant='outline'
-        aria-label='Redo'
-        title='Redo (Ctrl+Shift+Z)'
-        disabled={!cvId || !canRedo || redoing}
-        onClick={() => {
-          if (cvId) redo({ cvId });
-        }}
-      >
-        <Redo2 className='size-4' />
-      </Button>
+      <motion.div whileTap={{ scale: 0.92 }} transition={tweenFast} className='inline-flex'>
+        <Button
+          size='sm'
+          variant='outline'
+          aria-label='Undo'
+          title='Undo (Ctrl+Z)'
+          disabled={!cvId || !canUndo || undoing}
+          onClick={() => {
+            if (cvId) undo({ cvId });
+          }}
+        >
+          <Undo2 className='size-4' />
+        </Button>
+      </motion.div>
+      <motion.div whileTap={{ scale: 0.92 }} transition={tweenFast} className='inline-flex'>
+        <Button
+          size='sm'
+          variant='outline'
+          aria-label='Redo'
+          title='Redo (Ctrl+Shift+Z)'
+          disabled={!cvId || !canRedo || redoing}
+          onClick={() => {
+            if (cvId) redo({ cvId });
+          }}
+        >
+          <Redo2 className='size-4' />
+        </Button>
+      </motion.div>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   setSelectedCvAction,
 } from '@/features/cv-management';
 import { usePreviewStore } from '@/features/cv-preview/preview-store';
+import { AnimatePresence, listContainer, motion } from '@/shared/lib/motion';
 import { Button } from '@/shared/ui/button';
 import {
   Dialog,
@@ -135,8 +136,14 @@ export function CvLibraryPanel({ library }: Props) {
             No CVs yet.
           </p>
         ) : (
-          <div className='flex flex-col gap-1.5'>
-            {library.items.map((row) => (
+          <motion.div
+            className='flex flex-col gap-1.5'
+            variants={listContainer}
+            initial='hidden'
+            animate='visible'
+          >
+            <AnimatePresence initial={false}>
+              {library.items.map((row) => (
               <CvRow
                 key={row.id}
                 title={row.title}
@@ -174,8 +181,9 @@ export function CvLibraryPanel({ library }: Props) {
                   </DropdownMenu>
                 }
               />
-            ))}
-          </div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         )}
       </div>
 

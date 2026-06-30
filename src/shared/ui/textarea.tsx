@@ -1,7 +1,7 @@
 'use client';
 
-import type { ComponentProps, PointerEvent as ReactPointerEvent } from 'react';
 import { useRef } from 'react';
+import type { ComponentProps, PointerEvent as ReactPointerEvent } from 'react';
 
 import { cn } from '@/shared/lib/cn';
 

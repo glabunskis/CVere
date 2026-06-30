@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import type { ExperienceRow } from '@/entities/cv';
 import { jsonToStringArray } from '@/shared/lib/cv-json';
 import { type CvDateFormat, DEFAULT_CV_DATE_FORMAT, formatCvDate } from '@/shared/lib/format-date';
+import { AnimatePresence, collapse, fadeIn, motion } from '@/shared/lib/motion';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -45,59 +46,84 @@ export function ExperienceEditor({ items, readOnly = false, dateFormat = DEFAULT
         ) : null
       }
     >
-      {draft.kind === 'creating' ? (
-        <ExperienceForm
-          initial={{
-            position: items.length,
-            company: '',
-            role: '',
-            location: '',
-            startDate: '',
-            endDate: '',
-            isCurrent: false,
-            summary: '',
-            bullets: [],
-            stack: [],
-          }}
-          onCancel={() => setDraft({ kind: 'idle' })}
-          onSaved={() => setDraft({ kind: 'idle' })}
-        />
-      ) : null}
+      <AnimatePresence initial={false}>
+        {draft.kind === 'creating' ? (
+          <motion.div
+            key='create'
+            className='overflow-hidden'
+            variants={collapse}
+            initial='hidden'
+            animate='visible'
+            exit='exit'
+          >
+            <ExperienceForm
+              initial={{
+                position: items.length,
+                company: '',
+                role: '',
+                location: '',
+                startDate: '',
+                endDate: '',
+                isCurrent: false,
+                summary: '',
+                bullets: [],
+                stack: [],
+              }}
+              onCancel={() => setDraft({ kind: 'idle' })}
+              onSaved={() => setDraft({ kind: 'idle' })}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {items.length === 0 && draft.kind === 'idle' ? (
         <p className='text-sm text-muted-foreground'>No experience yet. Add the most recent role first.</p>
       ) : null}
 
-      {items.map((item) =>
-        draft.kind === 'editing' && draft.id === item.id ? (
-          <ExperienceForm
-            key={item.id}
-            initial={{
-              id: item.id,
-              position: item.position,
-              company: item.company,
-              role: item.role,
-              location: item.location ?? '',
-              startDate: item.start_date ?? '',
-              endDate: item.end_date ?? '',
-              isCurrent: item.is_current,
-              summary: item.summary ?? '',
-              bullets: jsonToStringArray(item.bullets),
-              stack: jsonToStringArray(item.stack),
-            }}
-            onCancel={() => setDraft({ kind: 'idle' })}
-            onSaved={() => setDraft({ kind: 'idle' })}
-          />
-        ) : (
-          <ExperienceCard
-            key={item.id}
-            row={item}
-            readOnly={readOnly}
-            dateFormat={dateFormat}
-            onEdit={() => setDraft({ kind: 'editing', id: item.id })}
-          />
-        ),
-      )}
+      {items.map((item) => {
+        const isEditing = draft.kind === 'editing' && draft.id === item.id;
+        return (
+          <AnimatePresence key={item.id} mode='wait' initial={false}>
+            {isEditing ? (
+              <motion.div
+                key='edit'
+                className='overflow-hidden'
+                variants={collapse}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+              >
+                <ExperienceForm
+                  initial={{
+                    id: item.id,
+                    position: item.position,
+                    company: item.company,
+                    role: item.role,
+                    location: item.location ?? '',
+                    startDate: item.start_date ?? '',
+                    endDate: item.end_date ?? '',
+                    isCurrent: item.is_current,
+                    summary: item.summary ?? '',
+                    bullets: jsonToStringArray(item.bullets),
+                    stack: jsonToStringArray(item.stack),
+                  }}
+                  onCancel={() => setDraft({ kind: 'idle' })}
+                  onSaved={() => setDraft({ kind: 'idle' })}
+                />
+              </motion.div>
+            ) : (
+              <motion.div key='card' variants={fadeIn} initial='hidden' animate='visible' exit='exit'>
+                <ExperienceCard
+                  row={item}
+                  readOnly={readOnly}
+                  dateFormat={dateFormat}
+                  onEdit={() => setDraft({ kind: 'editing', id: item.id })}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        );
+      })}
     </SectionShell>
   );
 }

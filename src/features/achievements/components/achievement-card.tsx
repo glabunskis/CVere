@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import type { AchievementRow } from '@/entities/achievement/list-achievements';
 import { integrableSectionSchema } from '@/entities/achievement/schemas';
+import { listItem, motion } from '@/shared/lib/motion';
 import { useHasMounted } from '@/shared/lib/use-has-mounted';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
@@ -43,7 +44,11 @@ export function AchievementCard({ row }: { row: AchievementRow }) {
   });
 
   return (
-    <article className='flex flex-col gap-3 rounded-xl border bg-card p-4'>
+    <motion.article
+      layout
+      variants={listItem}
+      className='flex flex-col gap-3 rounded-xl border bg-card p-4'
+    >
       <header className='flex items-start justify-between gap-2'>
         <div className='flex flex-col gap-1'>
           <div className='flex items-center gap-2'>
@@ -95,7 +100,7 @@ export function AchievementCard({ row }: { row: AchievementRow }) {
           </Button>
         </div>
       ) : null}
-    </article>
+    </motion.article>
   );
 }
 

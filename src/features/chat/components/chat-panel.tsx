@@ -16,6 +16,7 @@ import { usePreviewStore } from '@/features/cv-preview/preview-store';
 import {
   isPreviewTargetMatch,
 } from '@/features/cv-preview/preview-target';
+import { AnimatePresence, fadeIn, motion } from '@/shared/lib/motion';
 import { Button } from '@/shared/ui/button';
 import {
   Empty,
@@ -399,27 +400,36 @@ export function ChatPanel({
           <ScrollArea className='h-full'>
           <div ref={contentRef} className='flex min-h-full flex-col gap-3 px-3 pt-3 pb-8'>
             {isEmpty ? (
-              <Empty className='m-auto border-0'>
-                <EmptyHeader>
-                  <EmptyMedia variant='icon'>
-                    <MessageSquareIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>Edit your CV in chat</EmptyTitle>
-                  <EmptyDescription>
-                    Ask the assistant to read your CV, rewrite a summary, tweak a
-                    bullet, or change the template. Edits land in the selected CV and
-                    the preview refreshes automatically.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
+              <motion.div
+                className='m-auto'
+                variants={fadeIn}
+                initial='hidden'
+                animate='visible'
+              >
+                <Empty className='border-0'>
+                  <EmptyHeader>
+                    <EmptyMedia variant='icon'>
+                      <MessageSquareIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>Edit your CV in chat</EmptyTitle>
+                    <EmptyDescription>
+                      Ask the assistant to read your CV, rewrite a summary, tweak a
+                      bullet, or change the template. Edits land in the selected CV and
+                      the preview refreshes automatically.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </motion.div>
             ) : (
-              messages.map((message, index) => (
-                <ChatMessage
-                  key={message.id}
-                  message={message}
-                  isStreamingLastAssistant={isStreaming && index === lastAssistantIndex}
-                />
-              ))
+              <AnimatePresence initial={false}>
+                {messages.map((message, index) => (
+                  <ChatMessage
+                    key={message.id}
+                    message={message}
+                    isStreamingLastAssistant={isStreaming && index === lastAssistantIndex}
+                  />
+                ))}
+              </AnimatePresence>
             )}
             {isWorking ? <WorkingIndicator /> : null}
             {showRetry ? (

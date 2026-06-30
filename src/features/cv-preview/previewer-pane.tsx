@@ -7,6 +7,7 @@ import { CheckIcon, ExternalLinkIcon, ZoomInIcon, ZoomOutIcon } from 'lucide-rea
 import { toast } from 'sonner';
 
 import { HistoryControls } from '@/features/cv-history/history-controls';
+import { AnimatePresence, fadeIn, motion } from '@/shared/lib/motion';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 
@@ -75,17 +76,33 @@ export function PreviewerPane({ selectedCvTitle }: Props) {
           {/* Transient status: the preview auto-updates after every edit; this
               reflects the brief re-sign/reload window rather than a manual
               "stale until you refresh" state. */}
-          {isRefreshing ? (
-            <div className='flex items-center gap-1.5 rounded-full border border-primary-soft-bd bg-primary-soft px-2.5 py-0.5 text-xs text-foreground'>
-              <span className='size-1.5 animate-pulse rounded-full bg-primary motion-reduce:animate-none' />
-              Updating…
-            </div>
-          ) : (
-            <div className='flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs text-muted-foreground'>
-              <CheckIcon className='size-3' />
-              Up to date
-            </div>
-          )}
+          <AnimatePresence mode='wait' initial={false}>
+            {isRefreshing ? (
+              <motion.div
+                key='updating'
+                className='flex items-center gap-1.5 rounded-full border border-primary-soft-bd bg-primary-soft px-2.5 py-0.5 text-xs text-foreground'
+                variants={fadeIn}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+              >
+                <span className='size-1.5 animate-pulse rounded-full bg-primary motion-reduce:animate-none' />
+                Updating…
+              </motion.div>
+            ) : (
+              <motion.div
+                key='up-to-date'
+                className='flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs text-muted-foreground'
+                variants={fadeIn}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+              >
+                <CheckIcon className='size-3' />
+                Up to date
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Manual re-render fallback (edits auto-render; this forces one). */}
           <Button

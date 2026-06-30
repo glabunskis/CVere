@@ -1,9 +1,9 @@
 'use client';
 
-import type React from 'react';
 import { Fragment, useState } from 'react';
 import { useAction } from 'next-safe-action/hooks';
 import { GripVertical, Plus, X } from 'lucide-react';
+import type React from 'react';
 import { toast } from 'sonner';
 
 import type { SkillRow } from '@/entities/cv';

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import type { ProjectRow } from '@/entities/cv';
 import { jsonToStringArray } from '@/shared/lib/cv-json';
+import { AnimatePresence, collapse, fadeIn, motion } from '@/shared/lib/motion';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -37,43 +38,64 @@ export function ProjectEditor({ items, readOnly = false }: Props) {
         ) : null
       }
     >
-      {draft.kind === 'creating' ? (
-        <ProjectForm
-          initial={{ position: items.length, name: '', description: '', link: '', bullets: [], stack: [] }}
-          onCancel={() => setDraft({ kind: 'idle' })}
-          onSaved={() => setDraft({ kind: 'idle' })}
-        />
-      ) : null}
+      <AnimatePresence initial={false}>
+        {draft.kind === 'creating' ? (
+          <motion.div
+            key='create'
+            className='overflow-hidden'
+            variants={collapse}
+            initial='hidden'
+            animate='visible'
+            exit='exit'
+          >
+            <ProjectForm
+              initial={{ position: items.length, name: '', description: '', link: '', bullets: [], stack: [] }}
+              onCancel={() => setDraft({ kind: 'idle' })}
+              onSaved={() => setDraft({ kind: 'idle' })}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {items.length === 0 && draft.kind === 'idle' ? (
         <p className='text-sm text-muted-foreground'>No projects yet.</p>
       ) : null}
 
-      {items.map((item) =>
-        draft.kind === 'editing' && draft.id === item.id ? (
-          <ProjectForm
-            key={item.id}
-            initial={{
-              id: item.id,
-              position: item.position,
-              name: item.name,
-              description: item.description ?? '',
-              link: item.link ?? '',
-              bullets: jsonToStringArray(item.bullets),
-              stack: jsonToStringArray(item.stack),
-            }}
-            onCancel={() => setDraft({ kind: 'idle' })}
-            onSaved={() => setDraft({ kind: 'idle' })}
-          />
-        ) : (
-          <ProjectCard
-            key={item.id}
-            row={item}
-            readOnly={readOnly}
-            onEdit={() => setDraft({ kind: 'editing', id: item.id })}
-          />
-        ),
-      )}
+      {items.map((item) => {
+        const isEditing = draft.kind === 'editing' && draft.id === item.id;
+        return (
+          <AnimatePresence key={item.id} mode='wait' initial={false}>
+            {isEditing ? (
+              <motion.div
+                key='edit'
+                className='overflow-hidden'
+                variants={collapse}
+                initial='hidden'
+                animate='visible'
+                exit='exit'
+              >
+                <ProjectForm
+                  initial={{
+                    id: item.id,
+                    position: item.position,
+                    name: item.name,
+                    description: item.description ?? '',
+                    link: item.link ?? '',
+                    bullets: jsonToStringArray(item.bullets),
+                    stack: jsonToStringArray(item.stack),
+                  }}
+                  onCancel={() => setDraft({ kind: 'idle' })}
+                  onSaved={() => setDraft({ kind: 'idle' })}
+                />
+              </motion.div>
+            ) : (
+              <motion.div key='card' variants={fadeIn} initial='hidden' animate='visible' exit='exit'>
+                <ProjectCard row={item} readOnly={readOnly} onEdit={() => setDraft({ kind: 'editing', id: item.id })} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        );
+      })}
     </SectionShell>
   );
 }

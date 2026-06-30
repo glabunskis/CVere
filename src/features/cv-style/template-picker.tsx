@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { usePreviewStore } from '@/features/cv-preview/preview-store';
 import { CV_DATE_FORMATS, type CvDateFormat } from '@/shared/lib/format-date';
+import { listContainer, motion, scaleIn } from '@/shared/lib/motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,12 +95,18 @@ export function TemplatePicker({
     <div className='flex flex-col gap-4'>
       <div className='flex flex-col gap-2'>
         <Label className='text-xs uppercase tracking-wide text-muted-foreground'>Template</Label>
-        <div className='grid grid-cols-2 gap-2'>
+        <motion.div
+          className='grid grid-cols-2 gap-2'
+          variants={listContainer}
+          initial='hidden'
+          animate='visible'
+        >
           {TEMPLATES.map((opt) => {
             const active = activeTemplate === opt.id;
             return (
-              <button
+              <motion.button
                 key={opt.id}
+                variants={scaleIn}
                 type='button'
                 onClick={() => pickTemplate(opt.id)}
                 aria-pressed={active}
@@ -114,10 +121,10 @@ export function TemplatePicker({
                 {opt.id === 'single-column' ? <SingleColumnThumbnail /> : <TwoColumnThumbnail />}
                 <span className='text-sm font-medium text-foreground'>{opt.label}</span>
                 <span className='text-muted-foreground'>{opt.description}</span>
-              </button>
+              </motion.button>
             );
           })}
-        </div>
+        </motion.div>
       </div>
 
       <Separator />

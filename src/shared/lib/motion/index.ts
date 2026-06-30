@@ -10,18 +10,18 @@
  */
 
 export {
-  motion,
   AnimatePresence,
+  motion,
   MotionConfig,
-  useReducedMotion,
-  useMotionValue,
-  useTransform,
-  useSpring,
+  type MotionProps,
+  type Transition,
   useAnimate,
   useInView,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
   type Variants,
-  type Transition,
-  type MotionProps,
 } from 'motion/react';
 
 // ---------------------------------------------------------------------------
@@ -88,4 +88,15 @@ export const listItem: import('motion/react').Variants = {
   hidden: { opacity: 0, y: 6 },
   visible: { opacity: 1, y: 0, transition: tweenFast },
   exit: { opacity: 0, y: 6, transition: tweenFast },
+};
+
+/**
+ * Auto-height + opacity expand/collapse. Apply `overflow-hidden` to the motion
+ * element so content clips while collapsing. Use for inline create/edit forms
+ * and accordion-style toggles.
+ */
+export const collapse: import('motion/react').Variants = {
+  hidden: { opacity: 0, height: 0 },
+  visible: { opacity: 1, height: 'auto', transition: { duration: 0.2, ease: 'easeOut' } },
+  exit: { opacity: 0, height: 0, transition: { duration: 0.15, ease: 'easeOut' } },
 };

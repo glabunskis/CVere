@@ -20,7 +20,7 @@ import type { CvTemplate } from '@/features/cv-style';
 import { TemplatePicker } from '@/features/cv-style';
 import { FactEditor } from '@/features/profile-editor/components/fact-editor';
 import type { CvDateFormat } from '@/shared/lib/format-date';
-import { motion, tweenFast } from '@/shared/lib/motion';
+import { AnimatePresence, listContainer, motion, tweenFast } from '@/shared/lib/motion';
 import { Button } from '@/shared/ui/button';
 import { ScrollArea } from '@/shared/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
@@ -209,11 +209,18 @@ export function ControlPanel({
                       No pending achievements. Capture a win above.
                     </p>
                   ) : (
-                    <div className='flex flex-col gap-3'>
-                      {achievements.map((row) => (
-                        <AchievementCard key={row.id} row={row} />
-                      ))}
-                    </div>
+                    <motion.div
+                      className='flex flex-col gap-3'
+                      variants={listContainer}
+                      initial='hidden'
+                      animate='visible'
+                    >
+                      <AnimatePresence initial={false}>
+                        {achievements.map((row) => (
+                          <AchievementCard key={row.id} row={row} />
+                        ))}
+                      </AnimatePresence>
+                    </motion.div>
                   )}
                 </Section>
               </div>

@@ -5,8 +5,8 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 import { APP_DESCRIPTION, APP_DISPLAY_NAME } from '@/shared/config';
 import { Logo } from '@/shared/ui/logo';
-import { Toaster } from '@/shared/ui/sonner';
 import { MotionProvider } from '@/shared/ui/motion-provider';
+import { Toaster } from '@/shared/ui/sonner';
 import { ThemeProvider } from '@/shared/ui/theme-provider';
 import { TooltipProvider } from '@/shared/ui/tooltip';
 import { Analytics } from '@vercel/analytics/react';
