@@ -5,9 +5,11 @@ description: Research a goal and write a uniform, phase-independent, handover-aw
 
 # Create a phased plan
 
-Turn the provided goal into a detailed, uniform plan saved in `.cursor/plans/`,
-structured so each phase can later be executed independently in a fresh context
-window by a lower-reasoning model.
+Turn the provided goal into a detailed, uniform plan saved in the project's own
+workspace-root `.cursor/plans/` directory (for example
+`<workspace-root>/.cursor/plans/`), NOT the global user store at
+`~/.cursor/plans/`. The plan is structured so each phase can later be executed
+independently in a fresh context window by a lower-reasoning model.
 
 The plan format is defined in @.cursor/commands/PLAN-FORMAT.md. Read it first and
 follow it exactly.
@@ -23,7 +25,11 @@ for the goal before doing anything else. Do not guess a goal.
 
 This command produces a plan only. Recommend the user run it in Plan mode. Even
 in Agent mode, do NOT modify source code or run any non-readonly command. The
-only file you write is the plan markdown under `.cursor/plans/`.
+only file you write is the plan markdown under the workspace-root `.cursor/plans/`
+directory. Write it with the `Write` file tool. Do NOT use the `CreatePlan` tool
+to save the plan: it persists to the global `~/.cursor/plans/` store with
+hash-suffixed filenames (`<name>_<hash>.plan.md`) instead of the workspace
+folder.
 
 ## Workflow
 
@@ -58,8 +64,18 @@ only file you write is the plan markdown under `.cursor/plans/`.
    - Make `todos` in frontmatter match the phases exactly (one per phase, same
      order, ids `phase-<n>-<shortname>`, all `pending`).
    - Seed an empty Handover log containing only the template reminder.
-6. Save to `.cursor/plans/<kebab-slug>.plan.md` (slug derived from the goal).
-7. Report: the saved path and a short numbered summary of the phases. Do NOT begin
+6. Save the plan:
+   - Use the `Write` file tool. Do NOT call the `CreatePlan` tool.
+   - Target the workspace-root path `.cursor/plans/<kebab-slug>.plan.md`,
+     resolved relative to the repo root the command runs in (for example
+     `<workspace-root>/.cursor/plans/`). Never save under the global
+     `~/.cursor/plans/` store.
+   - Use the derived kebab-slug filename; do NOT use a hash-suffixed name.
+7. Verify placement: confirm the file exists at the workspace-root
+   `.cursor/plans/` path (for example via a directory listing or Glob of
+   `.cursor/plans/`), and that no copy was created under the global
+   `~/.cursor/plans/` folder.
+8. Report: the saved path and a short numbered summary of the phases. Do NOT begin
    implementing any phase.
 
 ## Stop conditions

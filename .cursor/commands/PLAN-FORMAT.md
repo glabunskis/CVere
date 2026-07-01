@@ -17,7 +17,13 @@ what is written in this plan and its handover log.
 
 ## 1. Location and naming
 
-- Save plans at `.cursor/plans/<kebab-slug>.plan.md`.
+- Save plans at the workspace-root `.cursor/plans/<kebab-slug>.plan.md` (for
+  example `<workspace-root>/.cursor/plans/`), NOT the global user store at
+  `~/.cursor/plans/`.
+- Create the file with the `Write` file tool using the kebab-slug filename. Do
+  NOT use the `CreatePlan` tool to satisfy this contract: it writes
+  `<name>_<hash>.plan.md` into the global `~/.cursor/plans/` store instead of the
+  workspace folder.
 - Derive `<kebab-slug>` from the goal (lowercase, words separated by hyphens,
   no spaces, no punctuation). Example goal "Add framer motion animations" ->
   `.cursor/plans/add-framer-motion-animations.plan.md`.
