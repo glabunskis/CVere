@@ -8,7 +8,9 @@ export async function getSession() {
     error,
   } = await supabase.auth.getUser();
 
-  if (error) {
+  // A missing session is the normal state for anonymous visitors, not an error
+  // worth logging; only surface genuine auth failures.
+  if (error && error.name !== 'AuthSessionMissingError') {
     console.error(error);
   }
 
